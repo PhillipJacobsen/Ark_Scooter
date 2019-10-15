@@ -522,13 +522,13 @@ int searchRXpage;           //page number that is used for wallet search
 
 
 /********************************************************************************
- NTP TIME V2 NEW!!!!
-https://github.com/PaulStoffregen/Time/issues/58
-https://github.com/arduino-libraries/NTPClient/issues/3
-https://github.com/PaulStoffregen/Time
-https://github.com/arduino-libraries/NTPClient
+  NTP TIME V2 NEW!!!!
+  https://github.com/PaulStoffregen/Time/issues/58
+  https://github.com/arduino-libraries/NTPClient/issues/3
+  https://github.com/PaulStoffregen/Time
+  https://github.com/arduino-libraries/NTPClient
 
-General idea is to use NTPClient library as time sync provider and then use Time Paul's time library for general clock functions
+  General idea is to use NTPClient library as time sync provider and then use Time Paul's time library for general clock functions
 
 
 
@@ -542,7 +542,7 @@ General idea is to use NTPClient library as time sync provider and then use Time
   https://github.com/arduino-libraries/NTPClient/issues/36
 
 ********************************************************************************/
-#include <time.h>
+//#include <time.h>
 #include <TimeLib.h>
 
 #include <NTPClient.h>
@@ -555,8 +555,12 @@ WiFiUDP ntpUDP;
 
 // You can specify the time server pool and the offset, (in seconds)
 // additionaly you can specify the update interval (in milliseconds).
- NTPClient timeClient(ntpUDP, "pool.ntp.org",TIME_ZONE * 3600, 60000);
-  
+//us.pool.ntp.org is better if you are in USA.  
+//pool.ntp.org picks an ntp server from a worldwide pool.
+
+////updates under 30 minutes are frowned upon by time servers
+NTPClient timeClient(ntpUDP, "pool.ntp.org", TIME_ZONE * 3600, 2400000);    //60,000 = every minute.  600,000 = every 10 minute, 2,400,000 = 40 minutes
+
 
 
 time_t ntpSyncProvider() {
@@ -564,6 +568,8 @@ time_t ntpSyncProvider() {
 }
 
 
+//********!!!!!!!!!!! It seems The ESP32 hsa low-level functions to gather this in a much more efficient way than the c++ code used to with the ESP8266 or Arduinos.
+// It seems you will find plenty of examples of legacy code, that may run on the ESP32, but don't use its capabilities.
 
 /********************************************************************************
   Time Library
@@ -576,7 +582,7 @@ time_t ntpSyncProvider() {
 //int timezone = -6;        //set timezone:  MST
 //int dst = 0;              //To enable Daylight saving time set it to 3600. Otherwise, set it to 0. Not sure if this works.
 
-time_t prevDisplay = 0; // when the digital clock was displayed
+time_t prevDisplayTime = 0; // time that was displayed on TFT
 
 unsigned long timeNow;  //variable used to hold current millis() time.
 unsigned long payment_Timeout;
@@ -609,6 +615,8 @@ int searchReceivedTransaction(const char *const address, int page, const char* &
 //void ConfigureNeoPixels(RgbColor color);
 
 void ArkVendingMachine();
+
+void UpdateDisplayTime();
 /********************************************************************************
   End Function Prototypes
 ********************************************************************************/
@@ -619,14 +627,15 @@ void ArkVendingMachine();
   MAIN LOOP
 ********************************************************************************/
 void loop() {
- // timeClient.update();    //make sure time has been 
+  // timeClient.update();    //make sure time has been
 
   client.loop();  //handle the wifi and MQTT connections
 
+// TO DO: Setup sync time to be fast(maybe very few second) until first sync and then slow to every 30 minutes or so.
   if (client.isConnected()) {
-    timeClient.update();      //update 
+    timeClient.update();      //check to see if we should sync time with NTP server.
   }
-  
+
 
   //We need to call GPS.read() constantly in the main loop to watch for data arriving on the serial port
   //The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set he buffer size: Serial1.setRxBufferSize(1024);
@@ -643,6 +652,7 @@ void loop() {
 
   UpdateWiFiConnectionStatus();
   UpdateGPSConnectionStatus();
+  UpdateDisplayTime();
 
   if (millis() - previousTime_1 > 4000)  {
     Serial.println(client.isConnected());
@@ -657,8 +667,8 @@ void loop() {
   if (millis() - previousTime_3 > 4000)  {
     UpdateBatteryStatus();
     previousTime_3 += 4000;
-    
+
   }
-getTime();
-  
+  ;
+
 }

@@ -35,32 +35,27 @@ void setupDisplayTouchscreen() {
 
 
 //ALTERNATE TIME LIBRARIES
-//https://diyprojects.io/esp8266-web-server-part-3-recover-time-time-server-ntp/#.XaT-PkZKhPb
+//https://diyprojects.io/esp8266-web-server-part-3-recover-time-time-server-ntp/#.XaT-PkZKhPb     //other libraries discussed here
+//https://github.com/arduino-libraries/NTPClient
+//https://github.com/PaulStoffregen/Time
 
+//issues with NTPClient library
+//https://github.com/arduino-libraries/NTPClient/issues/52
 
-
-void getTime() {
-  // Serial.println(ctime(&now));
-  //  timeStatus();
-
+void UpdateDisplayTime() {
   if (timeStatus() != timeNotSet) {
-    if (now() != prevDisplay) { //update the display only if time has changed
-      prevDisplay = now();
-   //   digitalClockDisplay();
+    if (timeClient.getEpochTime() != prevDisplayTime) { //update the display only if time has changed
+      prevDisplayTime = timeClient.getEpochTime();
 
-
-
-
-      time_t t = now();
-      // setTime(t);
-      time_t now = time(nullptr);   //get current time
-
+      //NOTE!!! now() routine is a time library
       Serial.print("time is: ");
-      Serial.println(t);
-      //Serial.println(ctime(&now));
-
+     // time_t t = now();   //returns the current time as seconds since Jan 1 1970 (this is
+     // Serial.println(t);
+      Serial.println(timeClient.getEpochTime());
+      //now() is updated with setSyncInterval(1 defined in Paul Stoggregen's library.  This is seems to be independent of the update interval defined in the NTPClient library
+      //Serial.println(second(t));
       Serial.println(timeClient.getFormattedTime());
-      Serial.println(getTimeStampString());
+      Serial.println(getTimeStampString());     //get data + time
 
       tft.setTextColor(ILI9341_WHITE);
       tft.fillRect(0, 60 - 18, 240, 20, ILI9341_BLACK); //clear the last voltage reading
@@ -173,17 +168,17 @@ void onConnectionEstablished()
   // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
   //  configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
 
+  setSyncProvider(&ntpSyncProvider);
+ // setSyncInterval(1);     // default is 300 set the number of seconds between re-sync. Use this to override default when declaring NTPClient
 
   //  new method to get time
   timeClient.begin();
   //timeClient.setTimeOffset(TIME_ZONE);
 
-  setSyncProvider(&ntpSyncProvider);
-  // setSyncInterval(1);     //syncronize every 1 seconds
 
-  //delay(10);
-  timeClient.forceUpdate();
-  //delay(800);
+  timeClient.forceUpdate(); //get time sync now. returns true/false
+  setTime(timeClient.getEpochTime());
+
 
   // Subscribe to "mytopic/test" and display received message to Serial
   client.subscribe("mytopic/test", [](const String & payload) {
@@ -214,16 +209,12 @@ void onConnectionEstablished()
 
   //wait for time to sync from servers
   //  while (time(nullptr) <= 100000) {
-  //    delay(50);
+  delay(50);
   //  }
 
-
-  //delay(300);
-  //timeClient.update();
-  //delay(10);
   //--------------------------------------------
   //  get time synced from NTP server
-  getTime();
+  UpdateDisplayTime();
 
 }
 
