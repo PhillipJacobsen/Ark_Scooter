@@ -15,7 +15,7 @@ void setupDisplayTouchscreen() {
   // tft.setFont();    //configure standard adafruit font
   tft.begin();
   tft.fillScreen(ILI9341_BLACK);  //clear screen
-//  tft.setFont(&FreeSansBold9pt7b);
+  //  tft.setFont(&FreeSansBold9pt7b);
   tft.setFont(&FreeSans9pt7b);    //9pt = 12pixel height(I think)  https://reeddesign.co.uk/test/points-pixels.html
 
 
@@ -34,16 +34,77 @@ void setupDisplayTouchscreen() {
 }
 
 
+//ALTERNATE TIME LIBRARIES
+//https://diyprojects.io/esp8266-web-server-part-3-recover-time-time-server-ntp/#.XaT-PkZKhPb
+
+
 
 void getTime() {
-  time_t now = time(nullptr);   //get current time
-  Serial.print("time is: ");
-  Serial.println(ctime(&now));
+  // Serial.println(ctime(&now));
+  //  timeStatus();
 
-  tft.setTextColor(ILI9341_WHITE);
-  tft.print(ctime(&now));      //dislay the current time
+  if (timeStatus() != timeNotSet) {
+    if (now() != prevDisplay) { //update the display only if time has changed
+      prevDisplay = now();
+   //   digitalClockDisplay();
+
+
+
+
+      time_t t = now();
+      // setTime(t);
+      time_t now = time(nullptr);   //get current time
+
+      Serial.print("time is: ");
+      Serial.println(t);
+      //Serial.println(ctime(&now));
+
+      Serial.println(timeClient.getFormattedTime());
+      Serial.println(getTimeStampString());
+
+      tft.setTextColor(ILI9341_WHITE);
+      tft.fillRect(0, 60 - 18, 240, 20, ILI9341_BLACK); //clear the last voltage reading
+      tft.setCursor(0, 60);
+      tft.print(getTimeStampString());
+      // tft.print(ctime(&now));      //dislay the current time
+    }
+  }
 }
 
+
+
+
+
+
+
+
+
+String getTimeStampString() {
+  time_t rawtime = timeClient.getEpochTime();
+  struct tm * ti;
+  ti = localtime (&rawtime);
+
+  uint16_t year = ti->tm_year + 1900;
+  String yearStr = String(year);
+
+  uint8_t month = ti->tm_mon + 1;
+  String monthStr = month < 10 ? "0" + String(month) : String(month);
+
+  uint8_t day = ti->tm_mday;
+  String dayStr = day < 10 ? "0" + String(day) : String(day);
+
+  uint8_t hours = ti->tm_hour;
+  String hoursStr = hours < 10 ? "0" + String(hours) : String(hours);
+
+  uint8_t minutes = ti->tm_min;
+  String minuteStr = minutes < 10 ? "0" + String(minutes) : String(minutes);
+
+  uint8_t seconds = ti->tm_sec;
+  String secondStr = seconds < 10 ? "0" + String(seconds) : String(seconds);
+
+  return yearStr + "-" + monthStr + "-" + dayStr + " " +
+         hoursStr + ":" + minuteStr + ":" + secondStr;
+}
 
 
 /********************************************************************************
@@ -52,7 +113,9 @@ void getTime() {
   apparently this will enable the core to periodically sync the time with the NTP server. I don't really know how often this happens
   I am not sure if daylight savings mode works correctly. Previously it seems like this was not working on ESP2866
 ********************************************************************************/
-void setupTime() {
+
+/*
+  void setupTime (){
 
   configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
   // printLocalTime();
@@ -75,8 +138,9 @@ void setupTime() {
   //  time(&now);
   //  timeinfo = localtime(&now);
   //  Serial.println(timeinfo->tm_hour);
-}
+  }
 
+*/
 
 void ConfigureNeoPixels(RgbColor color) {
   strip.SetPixelColor(0, color);
@@ -107,8 +171,19 @@ void onConnectionEstablished()
   //--------------------------------------------
   //  sync local time to NTP server
   // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
-  configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
+  //  configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
 
+
+  //  new method to get time
+  timeClient.begin();
+  //timeClient.setTimeOffset(TIME_ZONE);
+
+  setSyncProvider(&ntpSyncProvider);
+  // setSyncInterval(1);     //syncronize every 1 seconds
+
+  //delay(10);
+  timeClient.forceUpdate();
+  //delay(800);
 
   // Subscribe to "mytopic/test" and display received message to Serial
   client.subscribe("mytopic/test", [](const String & payload) {
@@ -138,16 +213,17 @@ void onConnectionEstablished()
 
 
   //wait for time to sync from servers
-  while (time(nullptr) <= 100000) {
-    delay(50);
-  }
+  //  while (time(nullptr) <= 100000) {
+  //    delay(50);
+  //  }
+
+
+  //delay(300);
+  //timeClient.update();
+  //delay(10);
   //--------------------------------------------
   //  get time synced from NTP server
   getTime();
-
-
-
-
 
 }
 
@@ -229,5 +305,7 @@ void setup()
   //display QR code;
   QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
   displayQRcode(QRcodeText);
+
+
 
 }

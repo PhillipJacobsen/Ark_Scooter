@@ -520,17 +520,63 @@ int searchRXpage;           //page number that is used for wallet search
 #include <ArduinoJson.h>
 
 
+
+/********************************************************************************
+ NTP TIME V2 NEW!!!!
+https://github.com/PaulStoffregen/Time/issues/58
+https://github.com/arduino-libraries/NTPClient/issues/3
+https://github.com/PaulStoffregen/Time
+https://github.com/arduino-libraries/NTPClient
+
+General idea is to use NTPClient library as time sync provider and then use Time Paul's time library for general clock functions
+
+
+
+********************************************************************************/
+
+
+
+/********************************************************************************
+  NTP Time Sync New Library
+
+  https://github.com/arduino-libraries/NTPClient/issues/36
+
+********************************************************************************/
+#include <time.h>
+#include <TimeLib.h>
+
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+
+WiFiUDP ntpUDP;
+// By default 'pool.ntp.org' is used with 60 seconds update interval and
+// no offset
+//NTPClient timeClient(ntpUDP);
+
+// You can specify the time server pool and the offset, (in seconds)
+// additionaly you can specify the update interval (in milliseconds).
+ NTPClient timeClient(ntpUDP, "pool.ntp.org",TIME_ZONE * 3600, 60000);
+  
+
+
+time_t ntpSyncProvider() {
+  return timeClient.getEpochTime();
+}
+
+
+
 /********************************************************************************
   Time Library
   required for internal clock to syncronize with NTP server.
   I need to do a bit more work in regards to Daylight savings time and the periodic sync time with the NTP service after initial syncronization
 ********************************************************************************/
-#include "time.h"
+//#include "time.h"
 //#include <TimeLib.h>    //https://github.com/PaulStoffregen/Time
 //defined items below in secrets.h
 //int timezone = -6;        //set timezone:  MST
 //int dst = 0;              //To enable Daylight saving time set it to 3600. Otherwise, set it to 0. Not sure if this works.
 
+time_t prevDisplay = 0; // when the digital clock was displayed
 
 unsigned long timeNow;  //variable used to hold current millis() time.
 unsigned long payment_Timeout;
@@ -573,7 +619,14 @@ void ArkVendingMachine();
   MAIN LOOP
 ********************************************************************************/
 void loop() {
+ // timeClient.update();    //make sure time has been 
+
   client.loop();  //handle the wifi and MQTT connections
+
+  if (client.isConnected()) {
+    timeClient.update();      //update 
+  }
+  
 
   //We need to call GPS.read() constantly in the main loop to watch for data arriving on the serial port
   //The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set he buffer size: Serial1.setRxBufferSize(1024);
@@ -601,8 +654,11 @@ void loop() {
     previousTime_2 += 3000;
   }
 
-  if (millis() - previousTime_3 > 10000)  {
+  if (millis() - previousTime_3 > 4000)  {
     UpdateBatteryStatus();
-    previousTime_3 += 10000;
+    previousTime_3 += 4000;
+    
   }
+getTime();
+  
 }

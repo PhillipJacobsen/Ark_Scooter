@@ -78,6 +78,7 @@ void UpdateBatteryStatus() {
 
 void UpdateWiFiConnectionStatus() {
   if (client.isConnected()) {
+    
     if (!WiFI_status) {
       tft.fillCircle(50, 301 - 6, 6, ILI9341_GREEN); //x,y,radius,color     //WiFi Status
       tft.fillCircle(130, 301 - 6, 6, ILI9341_GREEN); //x,y,radius,color    //MQTT Status
