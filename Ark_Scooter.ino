@@ -531,6 +531,7 @@ int searchRXpage;           //page number that is used for wallet search
 //int timezone = -6;        //set timezone:  MST
 //int dst = 0;              //To enable Daylight saving time set it to 3600. Otherwise, set it to 0. Not sure if this works.
 
+time_t prevDisplayTime = 0; // time that was displayed on TFT
 
 unsigned long timeNow;  //variable used to hold current millis() time.
 unsigned long payment_Timeout;
@@ -563,6 +564,7 @@ int searchReceivedTransaction(const char *const address, int page, const char* &
 //void ConfigureNeoPixels(RgbColor color);
 
 void ArkVendingMachine();
+void UpdateDisplayTime();
 /********************************************************************************
   End Function Prototypes
 ********************************************************************************/
@@ -590,6 +592,7 @@ void loop() {
 
   UpdateWiFiConnectionStatus();
   UpdateGPSConnectionStatus();
+  UpdateDisplayTime();
 
   if (millis() - previousTime_1 > 4000)  {
     Serial.println(client.isConnected());
