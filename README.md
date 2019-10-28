@@ -19,21 +19,22 @@ ESP32 Adafruit Huzzah
   Source: https://www.adafruit.com/product/3213
   https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
 
-TFT FeatherWing 2.4" 320x240 Touchscreen
-  Source: https://www.adafruit.com/product/3315
-		TFT_CS 	-> pin #15
-		TFT_DC 	-> pin #33
-		RT 		-> pin #32
-		SD		-> pin #14
-		SCK		-> SCK
-		MISO	-> MISO
-		MOSI	-> MOSI
+**TFT FeatherWing 2.4" 320x240 Touchscreen**
+Source: https://www.adafruit.com/product/3315
+TFT_CS 	-> pin #15
+TFT_DC 	-> pin #33
+RT 	-> pin #32
+SD	-> pin #14
+SCK	-> SCK
+MISO	-> MISO
+MOSI	-> MOSI
 
-Adafruit GPS FeatherWing:
-  Source: https://www.adafruit.com/product/3133
+**Adafruit GPS FeatherWing**
+Source: https://www.adafruit.com/product/3133
 
 pin 21: lock control
 
+**ADC**
 A0 / GPIO26: DAC2
 A1 / GPIO25: DAC1
 
