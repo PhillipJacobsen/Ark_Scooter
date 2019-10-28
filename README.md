@@ -45,3 +45,26 @@ NEOPIXELS NOT CONNECTED YET.
 	NEOPIXEL-> pin  
 	VCC -> 3.3V  
 	GND  
+	
+	
+## Libraries 
+### EspMQTTClient by @plapointe6 Version 1.6.2
+    WiFi and MQTT connection handler for ESP32
+    This library does a nice job of encapsulating the handling of WiFi and MQTT connections.
+    You just need to provide your credentials and it will manage the connection and reconnections to the Wifi and MQTT networks.
+      Available through Arduino Library Manager
+        https://github.com/plapointe6/EspMQTTClient
+
+    EspMQTTClient is a wrapper around the MQTT PubSubClient Library Version 2.7 by @knolleary
+    PubSubClient is a MQTT client for doing simple publish/subscribe messaging
+        https://github.com/knolleary/pubsubclient
+
+    Full API documentation of PubSubClient is available here: https://pubsubclient.knolleary.net
+
+    Limitations of PubSubClient
+      It can only publish QoS 0 messages. It can subscribe at QoS 0 or QoS 1.
+      The maximum message size, including header, is 128 bytes by default. This is configurable via MQTT_MAX_PACKET_SIZE in PubSubClient.h.
+      The keepalive interval is set to 15 seconds by default. This is configurable via MQTT_KEEPALIVE in PubSubClient.h.
+      The client uses MQTT 3.1.1 by default. It can be changed to use MQTT 3.1 by changing value of MQTT_VERSION in PubSubClient.h.
+
+
