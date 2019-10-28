@@ -14,7 +14,7 @@ void setupDisplayTouchscreen() {
   // setup 240x320 TFT display with custom font and clear screen
   // tft.setFont();    //configure standard adafruit font
   tft.begin();
-  tft.fillScreen(ILI9341_BLACK);  //clear screen
+  tft.fillScreen(BLACK);  //clear screen
   //  tft.setFont(&FreeSansBold9pt7b);
   tft.setFont(&FreeSans9pt7b);    //9pt = 12pixel height(I think)  https://reeddesign.co.uk/test/points-pixels.html
 
@@ -47,8 +47,8 @@ void UpdateDisplayTime() {
       Serial.println(now);
       Serial.println(ctime(&now));
 
-      tft.setTextColor(ILI9341_WHITE);
-      tft.fillRect(0, 60 - 18, 240, 20, ILI9341_BLACK); //clear the last voltage reading
+      tft.setTextColor(WHITE);
+      tft.fillRect(0, 60 - 18, 240, 20, BLACK); //clear the last voltage reading
       tft.setCursor(0, 60);
       tft.print(ctime(&now));      //dislay the current time
     }
@@ -113,7 +113,7 @@ String getTimeStampString() {
   Serial.print("time is: ");
   Serial.println(ctime(&now));
 
-  //tft.setTextColor(ILI9341_WHITE);
+  //tft.setTextColor(WHITE);
   //  tft.setTextSize(1);
   //tft.print(ctime(&now));      //dislay the current time
 
@@ -174,8 +174,8 @@ void onConnectionEstablished()
     client.publish("mytopic/test", "This is a message sent 5 seconds later");
   });
 
-  //  tft.fillScreen(ILI9341_BLACK);  //clear screen
-  tft.fillRect(0, 0, 240, 42, ILI9341_BLACK);     //clear the first 2 lines of text
+  //  tft.fillScreen(BLACK);  //clear screen
+  tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
 
   tft.setCursor(0, 20);
   tft.print("IP address: ");
@@ -245,7 +245,7 @@ void setup()
   //
   delay(500);
 
-  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextColor(WHITE);
   tft.setCursor(0, 20);
   tft.println("Connecting to WiFi");
   tft.setCursor(0, 40);

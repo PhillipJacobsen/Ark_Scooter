@@ -30,9 +30,9 @@ bool checkPaymentTimer() {
   }
   Serial.print("timeout: ");
   Serial.println ((payment_Timeout - timeNow) / 1000);
-  tft.fillRect(150, 75, 80, 18, ILI9341_BLACK);     //delete the previous time
+  tft.fillRect(150, 75, 80, 18, BLACK);     //delete the previous time
   tft.setCursor(150, 90);
-  tft.setTextColor(ILI9341_RED);
+  tft.setTextColor(RED);
   tft.println((payment_Timeout - timeNow) / 1000);
 
   return false;
@@ -80,9 +80,9 @@ void ArkVendingMachine() {         //The Vending state machine
             Serial.print("Vendor Field: ");
             Serial.println(vendorField);
 
-            tft.fillRect(2, 240, 227, 65, ILI9341_BLACK);     //clear the bottom portion of the screen
+            tft.fillRect(2, 240, 227, 65, BLACK);     //clear the bottom portion of the screen
             tft.setCursor(4, 250);
-            tft.setTextColor(ILI9341_RED);
+            tft.setTextColor(RED);
             tft.println("New Transaction in Wallet");
             tft.setCursor(4, 270);
             tft.print("Page: ");
@@ -121,9 +121,9 @@ void ArkVendingMachine() {         //The Vending state machine
           //check to see if vendorField of new transaction matches the field in QRcode that we displayed
           if  (strcmp(vendorField, VendorID) == 0) {
             Serial.println("Thanks for the payment!");
-            tft.fillRoundRect(0, 150, 150, 169, 2, ILI9341_BLACK);     //remove the QRcode
+            tft.fillRoundRect(0, 150, 150, 169, 2, BLACK);     //remove the QRcode
             tft.setCursor(0, 180);
-            tft.setTextColor(ILI9341_GREEN);
+            tft.setTextColor(GREEN);
             tft.println("Thanks for the payment");
             tft.print("Vendor:");
             tft.println(VendorID);
@@ -133,9 +133,9 @@ void ArkVendingMachine() {         //The Vending state machine
 
           }
           else {                            //transaction with incorrect vendor field received
-            tft.fillRect(0, 150, 239, 20, ILI9341_BLACK);     //clear the area
+            tft.fillRect(0, 150, 239, 20, BLACK);     //clear the area
             tft.setCursor(0, 165);
-            tft.setTextColor(ILI9341_RED);
+            tft.setTextColor(RED);
             tft.println("Invalid Vendor Received");
             vmState = WAIT_FOR_PAY;         //stay in the current state
             break;

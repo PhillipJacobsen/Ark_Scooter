@@ -16,7 +16,7 @@ void displayQRcode(char *const QRcodeText) {
   //qrcode_initText(&qrcode, qrcodeData, QRcode_Version, QRcode_ECC, "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3");
   qrcode_initText(&qrcode, qrcodeData, QRcode_Version, QRcode_ECC, QRcodeText);
 
-  tft.fillRoundRect(27, 77, 186, 186, 4, ILI9341_WHITE);   //white background with a few pixels of guard around the code
+  tft.fillRoundRect(27, 77, 186, 186, 4, WHITE);   //white background with a few pixels of guard around the code
 
   //this will put the QRcode on the top left corner
   uint8_t x0 = 35;

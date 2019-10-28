@@ -34,7 +34,10 @@ int searchReceivedTransaction(const char *const address, int page, const char* &
 
   timeAPIstart = millis();  //get time that API read started
 
-  std::string transactionSearchResponse = connection.api.transactions.search( {{"recipientId", address}, {"orderBy", "timestamp:asc"} }, 1, page);
+// std::string transactionSearchResponse = connection.api.transactions.search( {{"recipientId", address}, {"orderBy", "timestamp:asc"} }, 1, page);
+  std::string transactionSearchResponse = connection.api.transactions.search( {{"recipientId", address}, {"orderBy", "timestamp:asc"} }, "?limit=1&page=1");
+
+  
 
   timeNow = millis() - timeAPIstart;  //get current time
   Serial.print("Ark API read time:");
@@ -287,7 +290,7 @@ void searchTransaction() {
   std::string vendorFieldHexString;
   vendorFieldHexString = "6964647955";
   //std::string transactionSearchResponse = connection.api.transactions.search( {{"vendorFieldHex", vendorFieldHexString}, {"orderBy", "timestamp:asc"} },1,1);
-  std::string transactionSearchResponse = connection.api.transactions.search( {{"recipientId", ArkAddress}, {"orderBy", "timestamp:asc"} }, 1, 1);
+  std::string transactionSearchResponse = connection.api.transactions.search( {{"recipientId", ArkAddress}, {"orderBy", "timestamp:asc"} }, "?limit=1&page=1");
 
   Serial.print("\nSearch Result Transactions: ");
   Serial.println(transactionSearchResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
