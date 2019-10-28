@@ -1,5 +1,11 @@
 # Proof of Concept Scooter Rental
 
+notes: 
+//IOT example projects   https://github.com/debsahu/ESP-MQTT-AWS-IoT-Core/issues
+//good example of good reconnect code for mqtt and wifi. also good ntp time sync
+//https://github.com/debsahu/ESP-MQTT-AWS-IoT-Core/blob/master/Arduino/PubSubClient/PubSubClient.ino
+
+
 ## Program Features
 This program is designed to run on ESP32 Adafruit Huzzah.  
 This sketch uses the ARK Cpp-Client API to interact with an Ark V2.6 Devnet node.  
