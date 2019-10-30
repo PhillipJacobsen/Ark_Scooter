@@ -106,50 +106,7 @@ void ArkVendingMachine() {         //The Vending state machine
 
 
     case WAIT_FOR_PAY: {
-        //check to see if new new transaction has been received in wallet
-        searchRXpage = lastRXpage + 1;
-        if ( searchReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, vendorField) ) {
-          //a new transaction has been received.
-          lastRXpage++;
-          Serial.print("Page: ");
-          Serial.println(searchRXpage);
-          Serial.print("Transaction id: ");
-          Serial.println(id);
-          Serial.print("Vendor Field: ");
-          Serial.println(vendorField);
-
-          //check to see if vendorField of new transaction matches the field in QRcode that we displayed
-          if  (strcmp(vendorField, VendorID) == 0) {
-            Serial.println("Thanks for the payment!");
-            tft.fillRoundRect(0, 150, 150, 169, 2, BLACK);     //remove the QRcode
-            tft.setCursor(0, 180);
-            tft.setTextColor(GREEN);
-            tft.println("Thanks for the payment");
-            tft.print("Vendor:");
-            tft.println(VendorID);
-            tft.println("Enjoy the candy!");
-            vmState = VEND_ITEM;            //State is now VEND_ITEM
-            break;
-
-          }
-          else {                            //transaction with incorrect vendor field received
-            tft.fillRect(0, 150, 239, 20, BLACK);     //clear the area
-            tft.setCursor(0, 165);
-            tft.setTextColor(RED);
-            tft.println("Invalid Vendor Received");
-            vmState = WAIT_FOR_PAY;         //stay in the current state
-            break;
-          }
-        }
-
-        //check to see if time has expired before payment has been received
-        if (checkPaymentTimer()) {
-          vmState = DRAW_HOME;              //timer has elapsed without receiving payment. go back to start of state machine
-          break;
-        }
-
-
-
+ 
 
         vmState = WAIT_FOR_PAY;     //stay in the same state
         break;

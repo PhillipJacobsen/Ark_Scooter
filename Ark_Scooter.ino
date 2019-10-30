@@ -25,14 +25,37 @@
 /********************************************************************************
                               Conditional Assembly
 ********************************************************************************/
-#define NYBBLE   //this configures system for my custom bridgechain. If undefined then system will be configured for Ark Devnet.
-#define ARDUINOJSON_USE_LONG_LONG 1   //this may not be required. Was used previously for compatibility with Telegram which used JSON v5 library
+#define RADIANS   //this configures system for my custom bridgechain. If undefined then system will be configured for Ark Devnet.
+//#define ARDUINOJSON_USE_LONG_LONG 1   //this may not be required. Was used previously for compatibility with Telegram which used JSON v5 library
 
 /********************************************************************************
                               Private Data
   IMPORTANT - Modify the secrets.h file with your network connection details
 ********************************************************************************/
 #include "secrets.h"
+
+/********************************************************************************
+                              Library Requirements
+********************************************************************************/
+const int LED_PIN = 13;    //LED integrated in Adafruit HUZZAH32
+int ledStatus = 0;
+
+const int BAT_PIN = 35;    //ADC connected to Battery input pin (A13 = 35;)
+//const int DAC1 = 25;      //declared in \packages\esp32\hardware\esp32\1.0.4\variants\feather_esp32/pins_arduino.h
+//const int DAC2 = 26;
+
+
+/********************************************************************************
+                              Global Variables
+********************************************************************************/
+bool WiFi_status = false;
+bool GPS_status = false;
+bool ARK_status = false;
+bool MQTT_status = false;
+
+
+int battery = 0;
+float batteryFloat;
 
 /********************************************************************************
     EspMQTTClient Library by @plapointe6 Version 1.6.2
@@ -66,17 +89,17 @@ Adafruit_GPS GPS(&GPSSerial);
 
 
 /********************************************************************************
-  driver libraries for ILI9341 2.4" 240x320 TFT FeatherWing display + touchscreen
-    http://www.adafruit.com/products/3315 
+  Libraries for ILI9341 2.4" 240x320 TFT FeatherWing display + touchscreen
+    http://www.adafruit.com/products/3315
   Adafruit GFX libraries
     graphics primitives documentation:  https://learn.adafruit.com/adafruit-gfx-graphics-library/graphics-primitives
     top left corner is (0,0)
 ********************************************************************************/
 #include <SPI.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_ILI9341.h>       //hardware specific library for display
-#include <Adafruit_STMPE610.h>      //hardware specific library for the touch sensor
-#include "bitmaps.h"                //bitmaps stored in program memory
+#include <Adafruit_ILI9341.h>         //hardware specific library for display
+#include <Adafruit_STMPE610.h>        //hardware specific library for the touch sensor
+#include "bitmaps.h"                  //bitmaps stored in program memory
 #include <Fonts/FreeSans9pt7b.h>      //add custom fonts
 #include <Fonts/FreeSansBold9pt7b.h>  //add custom fonts
 
@@ -97,33 +120,22 @@ Adafruit_GPS GPS(&GPSSerial);
 #define MINPRESSURE 10
 #define MAXPRESSURE 1000
 
-
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);    //create TFT display object
 Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);         //create Touchscreen object
 
-int CursorX = 0;         //used to store current cursor position of the display
-int CursorY = 0;         //used to store current cursor position of the display
-
-
-//  use these tools to get 16bit hex color definitions  "5-6-5 16-bit mode"
-//  http://www.barth-dev.de/online/rgb565-color-picker/
-//  http://henrysbench.capnfatz.com/henrys-bench/arduino-adafruit-gfx-library-user-guide/arduino-16-bit-tft-rgb565-color-basics-and-selection/
-
-
 // RGB565 Color Definitions
 // This is a good tool for color conversions into RGB565 format
-//http://www.barth-dev.de/online/rgb565-color-picker/
-
+// http://www.barth-dev.de/online/rgb565-color-picker/
 #define BLACK  ILI9341_BLACK
 #define WHITE  ILI9341_WHITE
 #define RED  ILI9341_RED
 #define GREEN  ILI9341_GREEN
-
 #define ArkRed 0xF1A7       // rgb(241, 55, 58)
 #define ArkLightRed 0xFCD3  // rgb(248, 155, 156)
+#define QRCODE_DARK_PIXEL_COLOR 0xF1A7
 
-
-
+int CursorX = 0;         //used to store current cursor position of the display
+int CursorY = 0;         //used to store current cursor position of the display
 
 
 /********************************************************************************
@@ -139,35 +151,47 @@ int CursorY = 0;         //used to store current cursor position of the display
 const int QRcode_Version = 10;  // set the version (range 1->40)
 const int QRcode_ECC = 2;       // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
 QRCode qrcode;                  // Create the QR code object
-// QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
-char* QRcodeText;
 
+char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
 
 
 /********************************************************************************
-                              Library Requirements
+   Arduino Json Libary - works with Version5.  NOT yet compatible with Version6
+    Data returned from Ark API is in JSON format.
+    This libary is used to parse and deserialize the reponse
 ********************************************************************************/
-const int ledPin = 13;    //LED integrated in Adafruit HUZZAH32
-int ledStatus = 0;
+#include <ArduinoJson.h>
 
-#define DAC1 25
-#define DAC2 26
+/********************************************************************************
+  Time Library
+  required for internal clock to syncronize with NTP server.
+********************************************************************************/
+#include "time.h"
 
-#define QRcodeDarkPixelColor   0xF1A7
+time_t prevDisplayTime = 0; // time that was displayed on TFT
+
+unsigned long timeNow;  //variable used to hold current millis() time.
+unsigned long payment_Timeout;
+unsigned long timeAPIfinish;  //variable used to measure API access time
+unsigned long timeAPIstart;  //variable used to measure API access time
 
 //int ARK_mtbs = 8000; //mean time between polling Ark API for new transactions
 uint32_t previousTime_1 = millis();
-uint32_t previousTime_2 = millis();
+
+uint32_t UpdateInterval_MQTT_Publish = 3000;
+uint32_t previousUpdateTime_MQTT_Publish = millis();
+
+uint32_t UpdateInterval_Battery = 10000;
+uint32_t previousUpdateTime_Battery = millis();
+
 uint32_t previousTime_3 = millis();
 
+int ARK_mtbs = 8000; //mean time between polling Ark API for new transactions
+unsigned long ARKscan_lasttime;   //last time Ark API poll has been done
 
-bool MQTT_status = false;
-bool WiFI_status = false;
-bool GPS_status = false;
-bool ARK_status = false;
 
-int battery = 0;
-float batteryFloat;
+
+
 
 
 
@@ -178,93 +202,28 @@ float batteryFloat;
 
 
 /********************************************************************************
-
-  // I NEED TO UPDATE COMMENTS FOR ESP32 module. These comments are for ESP8266
-
-    Makuna NeoPixel Library - optimized for ESP8266
-      Available through Arduino Library Manager however development is done using lastest Master Branch on Github
-      https://github.com/Makuna/NeoPixelBus/
-
-      This library is optimized to use the DMA on the ESP8266 for minimal cup usage. The standard Adafruit library has the potential to interfere with the
-      WiFi processing done by the low level SDK
-      NeoPixelBus<FEATURE, METHOD> strip(pixelCount, pixelPin);
-       NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(16);
-      On the ESP8266 the Neo800KbpsMethod method will use this underlying method: NeoEsp8266Dma800KbpsMethod
-      The NeoEsp8266Dma800KbpsMethod is the underlying method that gets used if you use Neo800KbpsMethod on Esp8266 platforms. There should be no need to use it directly.
-      The NeoEsp8266Dma800KbpsMethod only supports the RDX0/GPIO3 pin. The Pin argument is omitted. See other esp8266 methods below if you don't have this pin available.
-      This method uses very little CPU for actually sending the data to NeoPixels but it requires an extra buffer for the DMA to read from.
-      Thus there is a trade off of CPU use versus memory use. The extra buffer needed is four times the size of the primary pixel buffer.
-       It also requires the use of the RDX0/GPIO3 pin. The normal feature of this pin is the "Serial" receive.
-      Using this DMA method will not allow you to receive serial from the primary Serial object; but it will not stop you from sending output to the terminal program of a PC
-      Due to the pin overlap, there are a few things to take into consideration.
-      First, when you are flashing the Esp8266, some LED types will react to the flashing and turn on.
-      This is important if you have longer strips of pixels where the power use of full bright might exceed your design.
-      Second, the NeoPixelBus::Begin() MUST be called after the Serial.begin().
-      If they are called out of order, no pixel data will be sent as the Serial reconfigured the RDX0/GPIO3 pin to its needs.
-********************************************************************************/
-#include <NeoPixelBus.h>
-#define PixelPin 12        //Neopixel Data Pin  connected to DMA
-#define PixelCount 8       //Length of Neopixel Strand
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin); //default on ESP8266 is to use the D9(GPIO3,RXD0) pin with DMA.
-
-#define colorSaturation 128
-RgbColor red(colorSaturation, 0, 0);
-RgbColor green(0, colorSaturation, 0);
-RgbColor blue(0, 0, colorSaturation);
-RgbColor off(0, 0, 0);
-RgbColor redgreen(colorSaturation, colorSaturation, 0);
-RgbColor greenblue(0, colorSaturation, colorSaturation);
-RgbColor black(0);
-
-
-
-
-
-
-
-/********************************************************************************
-   Ark Client Library (version 1.2.0)
-    Available through Arduino Library Manager
+   Ark Client Library (version 1.3.0)
     https://github.com/ArkEcosystem/cpp-client
+
+    Ark Crypto Library (version 0.6.0)
+      https://github.com/ArkEcosystem/Cpp-Crypto
+
+    Bip66 v0. (version 0.3.1)
+    https://github.com/sleepdefic1t/bip66
+
+    https://docs.ark.io/iot/#which-sdk-supports-iot
+    https://docs.ark.io/tutorials/iot/storing-data-on-the-blockchain.html#step-1-project-setup
+    https://docs.ark.io/tutorials/iot/reacting-to-data-on-the-blockchain.html#step-1-project-setup
 ********************************************************************************/
 #include <arkClient.h>
-/**
-    This is where you define the IP address of an Ark Node (Or bridgechain node).
-    You can find more Ark Mainnet and Devnet peers here: https://github.com/ArkEcosystem/peers
-    The Public API port for the V2 Ark network is '4003'
-*/
+//#include <arkCrypto.h>
 
 
+//This is a small hex helper header included in ARK Cpp-Crypto
+//#include "utils/hex.hpp"
 
-
-//Wallet Address on bridgechain
-#ifdef NYBBLE
-const char* ArkAddress = "TPW83DRkPcU9KyVZfCKrXMeAKDKExMhAnE";   //NYBBLE testnet address
-char QRcodeArkAddress[] = "TPW83DRkPcU9KyVZfCKrXMeAKDKExMhAnE";   //jakeIOT testnet address
-const char* ArkPublicKey = "02060c5793d2d42f11c8b18018c2c1ed5d81ed0ffc0afd0fe8ef5cee2dfbd3b787";       //jakeIOT testnet public key
-
-//Wallet Address on Ark Devnet
-#else
-const char* ArkAddress = "DFcWwEGwBaYCNb1wxGErGN1TJu8QdQYgCt";   //Ark Devnet address
-char QRcodeArkAddress[] = "DFcWwEGwBaYCNb1wxGErGN1TJu8QdQYgCt";   //Ark Devnet address
-const char* ArkPublicKey = "029b2f577bd7afd878b258d791abfb379a6ea3c9436a73a77ad6a348ad48a5c0b9";       //Ark Devnet public key
-//char *QRcodeArkAddress = "DHy5z5XNKXhxztLDpT88iD2ozR7ab5Sw2w";  //compiler may place this string in a location in memory that cannot be modified
-#endif
-
-char VendorID[64];
-
-//define the payment timeout in ms
-#define PAYMENT_WAIT_TIME 90000
-
-
-
-/**
-   This is how you define a connection while speficying the API class as a 'template argument'
-   You instantiate a connection by passing a IP address as a 'c_string', and the port as an 'int'.
-*/
+// create ARK blockchain connection
 Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);
-/**/
-
 
 //I think a structure here for transaction details would be better form
 //I need to do some work here to make things less hacky
@@ -287,33 +246,6 @@ int searchRXpage;           //page number that is used for wallet search
 
 
 
-/********************************************************************************
-   Arduino Json Libary - works with Version5.  NOT compatible with Version6
-    Available through Arduino Library Manager
-    Data returned from Ark API is in JSON format.
-    This libary is used to parse and deserialize the reponse
-********************************************************************************/
-#include <ArduinoJson.h>
-
-
-/********************************************************************************
-  Time Library
-  required for internal clock to syncronize with NTP server.
-  I need to do a bit more work in regards to Daylight savings time and the periodic sync time with the NTP service after initial syncronization
-********************************************************************************/
-#include "time.h"
-//#include <TimeLib.h>    //https://github.com/PaulStoffregen/Time
-//defined items below in secrets.h
-//int timezone = -6;        //set timezone:  MST
-//int dst = 0;              //To enable Daylight saving time set it to 3600. Otherwise, set it to 0. Not sure if this works.
-
-time_t prevDisplayTime = 0; // time that was displayed on TFT
-
-unsigned long timeNow;  //variable used to hold current millis() time.
-unsigned long payment_Timeout;
-unsigned long timeAPIfinish;  //variable used to measure API access time
-unsigned long timeAPIstart;  //variable used to measure API access time
-
 
 
 /********************************************************************************
@@ -323,8 +255,6 @@ unsigned long timeAPIstart;  //variable used to measure API access time
 enum VendingMachineStates {DRAW_HOME, WAIT_FOR_USER, WAIT_FOR_PAY, VEND_ITEM};   //The five possible states of the Vending state machine
 VendingMachineStates vmState = DRAW_HOME;   //initialize the starting state.
 
-int ARK_mtbs = 8000; //mean time between polling Ark API for new transactions
-long ARKscan_lasttime;   //last time Ark API poll has been done
 
 
 
@@ -335,26 +265,28 @@ long ARKscan_lasttime;   //last time Ark API poll has been done
 ********************************************************************************/
 void setup();
 int searchReceivedTransaction(const char *const address, int page, const char* &id, int &amount, const char* &senderAddress, const char* &vendorField );
-
-//NeoPixels not yet connected.
-//void ConfigureNeoPixels(RgbColor color);
-
 void ArkVendingMachine();
 void UpdateDisplayTime();
-/********************************************************************************
-  End Function Prototypes
-********************************************************************************/
-
+void UpdateWiFiConnectionStatus();
+void UpdateGPSConnectionStatus();
+void UpdateDisplayTime();
+void GPStoMQTT();
+void UpdateBatteryStatus();
 
 
 /********************************************************************************
   MAIN LOOP
 ********************************************************************************/
 void loop() {
-  client.loop();  //handle the wifi and MQTT connections
 
+  //--------------------------------------------
+  // Handle the WiFi and MQTT connections  
+  client.loop();  
+
+  //--------------------------------------------
+  // Parse GPS data if available
   //We need to call GPS.read() constantly in the main loop to watch for data arriving on the serial port
-  //The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set he buffer size: Serial1.setRxBufferSize(1024);
+  //The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set he buffer size???: Serial1.setRxBufferSize(1024);
   // I need to learn more about the hardware buffer available on the ESP32 serial port.
   char c = GPS.read();
 
@@ -364,24 +296,35 @@ void loop() {
       return; // we can fail to parse a sentence in which case we should just wait for another
   }
 
-  //  https://kd7dmp.net/2016/09/10/gps-speedometer/
 
-  UpdateWiFiConnectionStatus();
-  UpdateGPSConnectionStatus();
-  UpdateDisplayTime();
+  //--------------------------------------------
+  // Update all the data on the Status Bar
+  UpdateWiFiConnectionStatus();     //update WiFi status bar
+  UpdateMQTTConnectionStatus();     //update MQTT status bar
+  UpdateGPSConnectionStatus();      //update GPS status bar
+  UpdateDisplayTime();              //update the clock every 1 second
+  if (millis() - previousUpdateTime_Battery > UpdateInterval_Battery)  {    
+    UpdateBatteryStatus();          //update battery status every UpdateInterval_Battery (10seconds)
+    previousUpdateTime_Battery += UpdateInterval_Battery;
+  }
 
+
+  
+  //--------------------------------------------
+  // Update all the data on the Status Bar
   if (millis() - previousTime_1 > 4000)  {
     Serial.println(client.isConnected());
     previousTime_1 += 4000;
   }
 
-  if (millis() - previousTime_2 > 3000)  {
+  //--------------------------------------------
+  // Publish MQTT data every UpdateInterval_MQTT_Publish (3 seconds)
+  if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
     GPStoMQTT();
-    previousTime_2 += 3000;
+    previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
   }
 
-  if (millis() - previousTime_3 > 10000)  {
-    UpdateBatteryStatus();
-    previousTime_3 += 10000;
-  }
+
+
+
 }

@@ -3,14 +3,14 @@
 ********************************************************************************/
 
 /********************************************************************************
-  This routine configures the display and touchscreen
+  Configures the TFT display and resistive touchscreen
   There is also LITE pin which is not connected to any pads but you can use to control the backlight. Pull low to turn off the backlight. You can connect it to a PWM output pin.
   There is also an IRQ pin which is not connected to any pads but you can use to detect when touch events have occured.
   There is also an Card Detect (CD) pin which is not connected to any pads but you can use to detect when a microSD card has been inserted have occured. It will be shorted to ground when a card is not inserted.
 ********************************************************************************/
 void setupDisplayTouchscreen() {
 
-  //--------------------------------------------UpdateDisplayTime
+  //--------------------------------------------
   // setup 240x320 TFT display with custom font and clear screen
   // tft.setFont();    //configure standard adafruit font
   tft.begin();
@@ -18,7 +18,7 @@ void setupDisplayTouchscreen() {
   //  tft.setFont(&FreeSansBold9pt7b);
   tft.setFont(&FreeSans9pt7b);    //9pt = 12pixel height(I think)  https://reeddesign.co.uk/test/points-pixels.html
 
-
+  // we currently are not using the touchscreen so don't bother initializing it.
   /*
     //--------------------------------------------
     // setup touchscreencontroller.
@@ -34,109 +34,38 @@ void setupDisplayTouchscreen() {
 }
 
 
-
-//https://github.com/esp8266/Arduino/issues/4749
-void UpdateDisplayTime() {
-  time_t now = time(nullptr);   //get current time
-
-  if (now > 1500000000) {
-    if (now != prevDisplayTime) { //update the display only if time has changed
-      prevDisplayTime = now;
-
-      Serial.print("time is: ");
-      Serial.println(now);
-      Serial.println(ctime(&now));
-
-      tft.setTextColor(WHITE);
-      tft.fillRect(0, 60 - 18, 240, 20, BLACK); //clear the last voltage reading
-      tft.setCursor(0, 60);
-      tft.print(ctime(&now));      //dislay the current time
-    }
-  }
-}
-
-
-
-//https://arduino.stackexchange.com/questions/42922/get-hour-with-ctime-time-library-with-esp8266
-//use the above link for an example of how to change the below code.
-
-/*
-String getTimeStampString() {
-  time_t rawtime = timeClient.getEpochTime();
-  struct tm * ti;
-  ti = localtime (&rawtime);
-
-  uint16_t year = ti->tm_year + 1900;
-  String yearStr = String(year);
-
-  uint8_t month = ti->tm_mon + 1;
-  String monthStr = month < 10 ? "0" + String(month) : String(month);
-
-  uint8_t day = ti->tm_mday;
-  String dayStr = day < 10 ? "0" + String(day) : String(day);
-
-  uint8_t hours = ti->tm_hour;
-  String hoursStr = hours < 10 ? "0" + String(hours) : String(hours);
-
-  uint8_t minutes = ti->tm_min;
-  String minuteStr = minutes < 10 ? "0" + String(minutes) : String(minutes);
-
-  uint8_t seconds = ti->tm_sec;
-  String secondStr = seconds < 10 ? "0" + String(seconds) : String(seconds);
-
-  return yearStr + "-" + monthStr + "-" + dayStr + " " +
-         hoursStr + ":" + minuteStr + ":" + secondStr;
-}
-
-*/
-
 /********************************************************************************
-  This routine configures the ESP32 internal clock to syncronize with NTP server.
-
-  apparently this will enable the core to periodically sync the time with the NTP server. I don't really know how often this happens
-  I am not sure if daylight savings mode works correctly. Previously it seems like this was not working on ESP2866
+  Draw the status bar at the bottom of the screen
 ********************************************************************************/
+void InitStatusBar() {
+  tft.setCursor(60 - 6, 283);
+  tft.print("km/h");
 
-/*
-  void setupTime (){
+  tft.setCursor(0, 301);
+  tft.print("WiFI");
+  tft.setCursor(70, 301);
+  tft.print("MQTT");
+  tft.setCursor(0, 319);
+  tft.print("GPS");
+  tft.setCursor(70, 319);
+  tft.print("ARK");
 
-  configTime(TIME_ZONE * 3600, DST, "pool.ntp.org");
-  // printLocalTime();
-  //  delay(100);
+  tft.setCursor(150, 301);
+  tft.print("BAT");
+  tft.setCursor(150, 319);
+  tft.print("SAT");
 
-  //wait for time to sync from servers
-  while (time(nullptr) <= 100000) {
-    delay(100);
-  }
-
-  time_t now = time(nullptr);   //get current time
-  Serial.print("time is: ");
-  Serial.println(ctime(&now));
-
-  //tft.setTextColor(WHITE);
-  //  tft.setTextSize(1);
-  //tft.print(ctime(&now));      //dislay the current time
-
-  //  struct tm * timeinfo;
-  //  time(&now);
-  //  timeinfo = localtime(&now);
-  //  Serial.println(timeinfo->tm_hour);
-  }
-
-*/
-
-void ConfigureNeoPixels(RgbColor color) {
-  strip.SetPixelColor(0, color);
-  strip.SetPixelColor(1, color);
-  strip.SetPixelColor(2, color);
-  strip.SetPixelColor(3, color);
-  strip.SetPixelColor(4, color);
-  strip.SetPixelColor(5, color);
-  strip.SetPixelColor(6, color);
-  strip.SetPixelColor(7, color);
-  strip.Show();
-  Serial.print("writing new color to neopixels:");
+  tft.fillCircle(50, 301 - 6, 6, RED); //x,y,radius,color     //WiFi Status
+  tft.fillCircle(130, 301 - 6, 6, RED); //x,y,radius,color    //MQTT Status
+  tft.fillCircle(50, 319 - 6, 6, RED); //x,y,radius,color     //GPS Status
+  tft.fillCircle(130, 319 - 6, 6, RED); //x,y,radius,color    //ARK Status
 }
+
+
+
+
+
+
 
 
 
@@ -183,7 +112,6 @@ void onConnectionEstablished()
   tft.setCursor(0, 40);
   tft.println("Connected to MQTT broker");
 
-
   //wait for time to sync from servers
   while (time(nullptr) <= 100000) {
     delay(50);
@@ -191,6 +119,14 @@ void onConnectionEstablished()
   //--------------------------------------------
   //  get time synced from NTP server
   UpdateDisplayTime();
+
+  //--------------------------------------------
+  //  query Ark Node to see if it is synced
+  UpdateArkNodeConnectionStatus();
+
+  const auto blockchainResponse = connection.api.blockchain.get();
+  Serial.print("\nBlockchain Response: ");
+  Serial.println(blockchainResponse.c_str());
 
 }
 
@@ -203,15 +139,16 @@ void onConnectionEstablished()
 ********************************************************************************/
 void setup()
 {
+  //--------------------------------------------
+  // test the integrated DAC
+  dacWrite(DAC1, 50);           //range 0>255, pin25 / A1
+  //dacWrite(DAC2, 255);      //range 0>255, pin26 / A0
 
-  dacWrite(DAC1, 50);      //range 0>255, pin25 / A1
-  //  dacWrite(DAC2, 255);      //range 0>255, pin26 / A0
-
-  Serial.begin(115200);         // Initialize Serial Connection for debug / display
+  Serial.begin(115200);         // Initialize Serial Connection for debug
   while ( !Serial && millis() < 20 );
 
-  pinMode(ledPin, OUTPUT);      // initialize digital ledPin as an output.
-  digitalWrite(ledPin, LOW);    // initialize pin as off    //Adafruit HUZZAH32
+  pinMode(LED_PIN, OUTPUT);      // initialize on board LED control pin as an output.
+  digitalWrite(LED_PIN, LOW);    // Turn LED off
 
   //--------------------------------------------
   // Optional Features of EspMQTTClient
@@ -224,25 +161,21 @@ void setup()
   setupDisplayTouchscreen();
 
   // Bootup Screen
-  // Display Ark bitmap on middle  portion of screen
+  // Display Ark bitmap on middle portion of screen
   tft.drawBitmap(56, 120,  myBitmap, 128, 128, ArkRed);
 
-
-
   //--------------------------------------------
-  // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
+  // 9600 NMEA is the default baud rate for Adafruit MTK GPS
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);   // turn on RMC (recommended minimum) and GGA (fix data) including altitude
-  //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);  //use this for just the minimum recommended data
+  // GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);  //use this for just the minimum recommended data
 
   // For the parsing code to work nicely and have time to sort thru the data, and
   // print it out we don't suggest using anything higher than 1 Hz
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
-
   GPS.sendCommand(PGCMD_ANTENNA);  // Request updates on antenna status, comment out to keep quiet
 
-
-  //
+  //show bootup screen for 500ms
   delay(500);
 
   tft.setTextColor(WHITE);
@@ -251,20 +184,12 @@ void setup()
   tft.setCursor(0, 40);
   tft.println(WIFI_SSID);
 
-  // Delay for Bootup Screen to finish
+  // show bootup screen for additional 1200ms
   delay(1200);
 
-  DisplayStatusPanel();
+  InitStatusBar();        //display the status bar on the bottom of the screen
   UpdateBatteryStatus();
 
-
-
-  //--------------------------------------------
-  //  Configure NeoPixels.
-  //  NOTE! If using the ESP8266 Make sure to call strip.Begin() after you call Serial.Begin because
-  //    Din pin of NeoPixel is also connected to Serial RX pin(on ESP8266) and will configure the pin for usage by the DMA interface.
-  //  strip.Begin();
-  //  strip.ClearTo(RgbColor(0, 0, 0)); // Initialize all pixels to 'off'
 
 
   GPSSerial.println(PMTK_Q_RELEASE);// request firmware version

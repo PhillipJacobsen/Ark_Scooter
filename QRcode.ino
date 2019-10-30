@@ -44,17 +44,17 @@ void displayQRcode(char *const QRcodeText) {
       } else {
 
         //uncomment to double the QRcode. Comment to display normal code size
-        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y, QRcodeDarkPixelColor);
+        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y, QRCODE_DARK_PIXEL_COLOR);
 
-        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y + 1, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y + 1, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y + 1, QRcodeDarkPixelColor);
+        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y + 1, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y + 1, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y + 1, QRCODE_DARK_PIXEL_COLOR);
 
-        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y + 2, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y + 2, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y + 2, QRcodeDarkPixelColor);
+        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y + 2, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y + 2, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y + 2, QRCODE_DARK_PIXEL_COLOR);
 
       }
     }
