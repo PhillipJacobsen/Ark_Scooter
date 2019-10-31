@@ -116,9 +116,9 @@ void GPStoMQTT() {
       tft.setCursor(190, 319);
       tft.print(GPS.satellites);
 
-      tft.fillRect(0, 283 - 17, 50, 18, ILI9341_BLACK);   //clear the last speed reading
+      tft.fillRect(0, 283 - 17, 35, 18, ILI9341_BLACK);   //clear the last speed reading
       tft.setCursor(0, 283);
       float speedkmh = GPS.speed*1.852;
-      tft.print(speedkmh);        
+      tft.print(speedkmh,1);        
     }
 	}

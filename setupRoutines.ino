@@ -10,6 +10,10 @@
 ********************************************************************************/
 void setupDisplayTouchscreen() {
 
+  //To replace previously-drawn text when using a custom font, use the getTextBounds() function to determine the smallest rectangle encompassing a string,
+  //erase the area using fillRect(), then draw new text.
+  // https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
+
   //--------------------------------------------
   // setup 240x320 TFT display with custom font and clear screen
   // tft.setFont();    //configure standard adafruit font
@@ -38,8 +42,8 @@ void setupDisplayTouchscreen() {
   Draw the status bar at the bottom of the screen
 ********************************************************************************/
 void InitStatusBar() {
-  tft.setCursor(60 - 6, 283);
-  tft.print("km/h");
+  tft.setCursor(60 - 21, 283);
+  tft.print("kmh");
 
   tft.setCursor(0, 301);
   tft.print("WiFI");
@@ -50,6 +54,8 @@ void InitStatusBar() {
   tft.setCursor(70, 319);
   tft.print("ARK");
 
+  tft.setCursor(150, 283);
+  tft.print("RSSI");
   tft.setCursor(150, 301);
   tft.print("BAT");
   tft.setCursor(150, 319);
@@ -76,14 +82,33 @@ void test2Func (const String & payload) {
 }
 
 
-// This function is called once everything is connected (Wifi and MQTT)
-// WARNING : YOU MUST IMPLEMENT IT IF YOU USE EspMQTTClient
+
+
+/********************************************************************************
+  This function is called once everything is connected (Wifi and MQTT)
+********************************************************************************/
 void onConnectionEstablished()
 {
   //--------------------------------------------
   //  sync local time to NTP server
   // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
   configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
+
+  tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
+  tft.setCursor(0, 20);
+  tft.print("IP address: ");
+  tft.println(WiFi.localIP());
+  //  tft.setCursor(0, 40);
+  //  tft.println("Connected to MQTT broker");
+
+  //--------------------------------------------
+  //  update WiFi and MQTT connection status bar
+  UpdateWiFiConnectionStatus();     //update WiFi status bar
+  UpdateMQTTConnectionStatus();     //update MQTT status bar
+
+  //--------------------------------------------
+  //  query Ark Node to see if it is synced and update status bar
+  UpdateArkNodeConnectionStatus();
 
 
   // Subscribe to "mytopic/test" and display received message to Serial
@@ -103,14 +128,7 @@ void onConnectionEstablished()
     client.publish("mytopic/test", "This is a message sent 5 seconds later");
   });
 
-  //  tft.fillScreen(BLACK);  //clear screen
-  tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
 
-  tft.setCursor(0, 20);
-  tft.print("IP address: ");
-  tft.println(WiFi.localIP());
-  tft.setCursor(0, 40);
-  tft.println("Connected to MQTT broker");
 
   //wait for time to sync from servers
   while (time(nullptr) <= 100000) {
@@ -120,15 +138,27 @@ void onConnectionEstablished()
   //  get time synced from NTP server
   UpdateDisplayTime();
 
-  //--------------------------------------------
-  //  query Ark Node to see if it is synced
-  UpdateArkNodeConnectionStatus();
 
   const auto blockchainResponse = connection.api.blockchain.get();
   Serial.print("\nBlockchain Response: ");
   Serial.println(blockchainResponse.c_str());
 
+  delay(200);
+  tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
+
+  tft.setFont(&FreeSansBold18pt7b);
+  //  tft.setFont(&FreeSansBoldOblique24pt7b);
+  tft.setTextColor(ArkRed);
+  tft.setCursor(12, 45);
+  tft.print("Scan to Ride");
+
+
+  tft.setFont(&FreeSans9pt7b);
+  tft.setTextColor(WHITE);
+
 }
+
+
 
 
 

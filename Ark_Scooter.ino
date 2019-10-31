@@ -101,7 +101,9 @@ Adafruit_GPS GPS(&GPSSerial);
 #include <Adafruit_STMPE610.h>        //hardware specific library for the touch sensor
 #include "bitmaps.h"                  //bitmaps stored in program memory
 #include <Fonts/FreeSans9pt7b.h>      //add custom fonts
-#include <Fonts/FreeSansBold9pt7b.h>  //add custom fonts
+//#include <Fonts/FreeSansBoldOblique24pt7b.h>  //add custom fonts
+#include <Fonts/FreeSansBold18pt7b.h>  //add custom fonts
+
 
 // pin connections
 #define STMPE_CS 32
@@ -168,23 +170,25 @@ char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alph
 ********************************************************************************/
 #include "time.h"
 
+
 time_t prevDisplayTime = 0; // time that was displayed on TFT
+int prevDisplayMinute = 0;
+
+uint32_t previousTime_1 = millis();
+
+uint32_t UpdateInterval_MQTT_Publish = 5000;
+uint32_t previousUpdateTime_MQTT_Publish = millis();
+
+uint32_t UpdateInterval_Battery = 5000;
+uint32_t previousUpdateTime_Battery = millis();
+
+uint32_t previousTime_3 = millis();
+
 
 unsigned long timeNow;  //variable used to hold current millis() time.
 unsigned long payment_Timeout;
 unsigned long timeAPIfinish;  //variable used to measure API access time
 unsigned long timeAPIstart;  //variable used to measure API access time
-
-//int ARK_mtbs = 8000; //mean time between polling Ark API for new transactions
-uint32_t previousTime_1 = millis();
-
-uint32_t UpdateInterval_MQTT_Publish = 3000;
-uint32_t previousUpdateTime_MQTT_Publish = millis();
-
-uint32_t UpdateInterval_Battery = 10000;
-uint32_t previousUpdateTime_Battery = millis();
-
-uint32_t previousTime_3 = millis();
 
 int ARK_mtbs = 8000; //mean time between polling Ark API for new transactions
 unsigned long ARKscan_lasttime;   //last time Ark API poll has been done
@@ -280,8 +284,8 @@ void UpdateBatteryStatus();
 void loop() {
 
   //--------------------------------------------
-  // Handle the WiFi and MQTT connections  
-  client.loop();  
+  // Handle the WiFi and MQTT connections
+  client.loop();
 
   //--------------------------------------------
   // Parse GPS data if available
@@ -303,25 +307,27 @@ void loop() {
   UpdateMQTTConnectionStatus();     //update MQTT status bar
   UpdateGPSConnectionStatus();      //update GPS status bar
   UpdateDisplayTime();              //update the clock every 1 second
-  if (millis() - previousUpdateTime_Battery > UpdateInterval_Battery)  {    
+  if (millis() - previousUpdateTime_Battery > UpdateInterval_Battery)  {
     UpdateBatteryStatus();          //update battery status every UpdateInterval_Battery (10seconds)
+    UpdateRSSIStatus();
     previousUpdateTime_Battery += UpdateInterval_Battery;
   }
 
 
-  
+
   //--------------------------------------------
   // Update all the data on the Status Bar
-  if (millis() - previousTime_1 > 4000)  {
-    Serial.println(client.isConnected());
-    previousTime_1 += 4000;
-  }
+  //  if (millis() - previousTime_1 > 4000)  {
+  //   Serial.println(client.isConnected());
+  //   previousTime_1 += 4000;
+  // }
 
   //--------------------------------------------
   // Publish MQTT data every UpdateInterval_MQTT_Publish (3 seconds)
   if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
     GPStoMQTT();
     previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
+
   }
 
 

@@ -7,23 +7,37 @@ void UpdateDisplayTime() {
   time_t now = time(nullptr);   //get current time
 
   if (now > 1500000000) {       //this is a check to see if NTP time has been synced. (this is a time equal to approximatly the current time)
-    if (now != prevDisplayTime) { //update the display only if time has changed
-      prevDisplayTime = now;
+    struct tm * timeinfo;
+    time(&now);
+    timeinfo = localtime(&now);
+
+    if ((timeinfo->tm_min) != prevDisplayMinute) { //update the display only if time has changed (updates every minute)
+      prevDisplayMinute = timeinfo->tm_min;
+      //   if (now != prevDisplayTime) { //update the display only if time has changed (updates every second)
+      //     prevDisplayTime = now;
 
       Serial.print("time is: ");
       Serial.println(now);
-      Serial.println(ctime(&now));
+      //      Serial.println(ctime(&now));
+
+      char formattedTime [30];
+      strftime (formattedTime, 30, "%R", timeinfo); // http://www.cplusplus.com/reference/ctime/strftime/
+      Serial.println(formattedTime);
 
       tft.setTextColor(WHITE);
-      tft.fillRect(0, 60 - 18, 240, 20, BLACK); //clear the last voltage reading
-      tft.setCursor(0, 60);
-      tft.print(ctime(&now));      //dislay the current time
+      //      tft.fillRect(0, 60 - 18, 65, 20, BLACK); //clear the previous time
+      //      tft.setCursor(0, 60);
+      tft.fillRect(70 + 13, 283 - 17, 65, 18, BLACK); //clear the previous time
+      tft.setCursor(70 + 13, 283);
+
+      //tft.print(ctime(&now));      //dislay the current time
+      tft.print(formattedTime);      //dislay the current time
     }
   }
 }
 
 
-  /********************************************************************************
+/********************************************************************************
   Update status bar with ARK node connection status.
 ********************************************************************************/
 void UpdateArkNodeConnectionStatus() {
@@ -39,11 +53,22 @@ void UpdateArkNodeConnectionStatus() {
       ARK_status = false;
     }
   }
+}
 
+/********************************************************************************
+  read the WiFi RSSI and update status bar
+  I don't know if the value can actually be measured as actual dBm or just some other relative measurement
+********************************************************************************/
+void UpdateRSSIStatus() {
+  if (client.isWifiConnected()) {
+    long rssi = WiFi.RSSI();
+    tft.fillRect(195, 283 - 18, 40, 20, BLACK);   //clear the last voltage reading
+    tft.setCursor(195, 283);
+    tft.print(rssi);
 
-  
-  
-  
+    Serial.print("RSSI:");
+    Serial.println(rssi);
+  }
 }
 
 /********************************************************************************
@@ -62,7 +87,7 @@ void UpdateBatteryStatus() {
   //    battery = battery /620.60606060606;
   Serial.println(batteryFloat);
 
-  tft.fillRect(190, 301 - 20, 40, 22, BLACK);   //clear the last voltage reading
+  tft.fillRect(190, 301 - 18, 40, 20, BLACK);   //clear the last voltage reading
   tft.setCursor(190, 301);
   tft.print(batteryFloat);
   tft.print("V");
@@ -146,10 +171,10 @@ void UpdateGPSConnectionStatus() {
       tft.setCursor(190, 319);
       tft.print(GPS.satellites);
 
-      tft.fillRect(0, 283 - 17, 50, 18, BLACK);   //clear the last speed reading
+      tft.fillRect(0, 283 - 17, 35, 18, BLACK);   //clear the last speed reading
       tft.setCursor(0, 283);
       float speedkmh = GPS.speed * 1.852;
-      tft.print(speedkmh);
+      tft.print(speedkmh,1);
 
       GPS_status = true;
     }
@@ -161,11 +186,31 @@ void UpdateGPSConnectionStatus() {
       tft.setCursor(190, 319);
       tft.print('0');
 
-      tft.fillRect(0, 283 - 17, 50, 18, BLACK);   //clear the last speed reading
+      tft.fillRect(0, 283 - 17, 35, 18, BLACK);   //clear the last speed reading
       tft.setCursor(0, 283);
-      //      tft.print('0');
+      tft.print('0');
 
       GPS_status = false;
     }
   }
+}
+
+
+
+/*
+   Return the quality (Received Signal Strength Indicator)
+   of the WiFi network.
+   Returns a number between 0 and 100 if WiFi is connected.
+   Returns -1 if WiFi is disconnected.
+  https://github.com/tttapa/Projects/blob/master/ESP8266/WiFi/RSSI-WiFi-Quality/RSSI-WiFi-Quality.ino
+*/
+int getQuality() {
+  if (WiFi.status() != WL_CONNECTED)
+    return -1;
+  int dBm = WiFi.RSSI();
+  if (dBm <= -100)
+    return 0;
+  if (dBm >= -50)
+    return 100;
+  return 2 * (dBm + 100);
 }
