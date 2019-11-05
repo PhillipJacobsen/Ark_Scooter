@@ -46,7 +46,7 @@ void InitStatusBar() {
   tft.print("kmh");
 
   tft.setCursor(0, 301);
-  tft.print("WiFI");
+  tft.print("WiFi");
   tft.setCursor(70, 301);
   tft.print("MQTT");
   tft.setCursor(0, 319);

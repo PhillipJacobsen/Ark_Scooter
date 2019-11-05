@@ -3,11 +3,8 @@
 
 
 
-/*
-void StateMachine() {       
 
-mWifiConnected = true or false
-mMqttConnected = true or false
+void StateMachine() {       
 
     case DRAW_HOME: {
         drawHomeScreen();
@@ -18,7 +15,7 @@ mMqttConnected = true or false
       }
 
 }
-*/
+
 
 
 
