@@ -259,7 +259,8 @@ int searchRXpage;           //page number that is used for wallet search
 enum VendingMachineStates {DRAW_HOME, WAIT_FOR_USER, WAIT_FOR_PAY, VEND_ITEM};   //The five possible states of the Vending state machine
 VendingMachineStates vmState = DRAW_HOME;   //initialize the starting state.
 
-
+enum State_enum {STATE_0, STATE_1, STATE_2, STATE_3, STATE_4, STATE_5, STATE_6};  //The possible states of the state machine
+State_enum state = STATE_0;     //initialize the starting state.
 
 
 /********************************************************************************
@@ -286,6 +287,10 @@ void loop() {
   //--------------------------------------------
   // Handle the WiFi and MQTT connections
   client.loop();
+
+  //--------------------------------------------
+  // Process state machine
+  StateMachine();
 
   //--------------------------------------------
   // Parse GPS data if available

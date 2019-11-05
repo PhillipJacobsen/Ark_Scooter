@@ -2,6 +2,84 @@
   This file contains functions used to configure hardware peripherals and various libraries.
 ********************************************************************************/
 
+
+
+
+/********************************************************************************
+  This function is called once everything is connected (Wifi and MQTT)
+********************************************************************************/
+void onConnectionEstablished()
+{
+  //--------------------------------------------
+  //  sync local time to NTP server
+  // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
+  configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
+
+  tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
+  //tft.setCursor(0, 20);
+  //  tft.print("IP address: ");
+  //  tft.println(WiFi.localIP());
+
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  //--------------------------------------------
+  //  update WiFi and MQTT connection status bar
+  UpdateWiFiConnectionStatus();     //update WiFi status bar
+  UpdateMQTTConnectionStatus();     //update MQTT status bar
+
+  //--------------------------------------------
+  //  query Ark Node to see if it is synced and update status bar
+  UpdateArkNodeConnectionStatus();
+
+
+  // Subscribe to "mytopic/test" and display received message to Serial
+  client.subscribe("mytopic/test", [](const String & payload) {
+    Serial.println(payload);
+  });
+
+  // Subscribe to "mytopic/test2"
+  client.subscribe("mytopic/test2", test2Func);
+
+
+  // Publish a message to "mytopic/test"
+  client.publish("mytopic/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
+
+  // Execute delayed instructions
+  client.executeDelayed(5 * 1000, []() {
+    client.publish("mytopic/test", "This is a message sent 5 seconds later");
+  });
+
+
+  //wait for time to sync from servers
+  while (time(nullptr) <= 100000) {
+    delay(50);
+  }
+  //--------------------------------------------
+  //  get time synced from NTP server
+  UpdateDisplayTime();
+
+
+  // const auto blockchainResponse = connection.api.blockchain.get();
+  // Serial.print("\nBlockchain Response: ");
+  // Serial.println(blockchainResponse.c_str());
+
+ // delay(200);
+ // tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
+
+/*
+  tft.setFont(&FreeSansBold18pt7b);
+  tft.setTextColor(ArkRed);
+  tft.setCursor(0, 45);
+  tft.print("Waiting for Networks");
+  tft.setFont(&FreeSans9pt7b);
+  tft.setTextColor(WHITE);
+*/
+
+}
+
+
+
 /********************************************************************************
   Configures the TFT display and resistive touchscreen
   There is also LITE pin which is not connected to any pads but you can use to control the backlight. Pull low to turn off the backlight. You can connect it to a PWM output pin.
@@ -38,10 +116,16 @@ void setupDisplayTouchscreen() {
 }
 
 
+void clearMainScreen() {
+  tft.fillRect(0, 0, 240, 265, BLACK);     //clear the screen except for the status bar
+}
+
 /********************************************************************************
   Draw the status bar at the bottom of the screen
 ********************************************************************************/
 void InitStatusBar() {
+  tft.fillRect(0, 265, 240, 55, BLACK);     //clear the status bar area
+  
   tft.setCursor(60 - 21, 283);
   tft.print("kmh");
 
@@ -80,85 +164,6 @@ void InitStatusBar() {
 void test2Func (const String & payload) {
   Serial.println(payload);
 }
-
-
-
-
-/********************************************************************************
-  This function is called once everything is connected (Wifi and MQTT)
-********************************************************************************/
-void onConnectionEstablished()
-{
-  //--------------------------------------------
-  //  sync local time to NTP server
-  // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
-  configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
-
-  tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
-  tft.setCursor(0, 20);
-  tft.print("IP address: ");
-  tft.println(WiFi.localIP());
-  //  tft.setCursor(0, 40);
-  //  tft.println("Connected to MQTT broker");
-
-  //--------------------------------------------
-  //  update WiFi and MQTT connection status bar
-  UpdateWiFiConnectionStatus();     //update WiFi status bar
-  UpdateMQTTConnectionStatus();     //update MQTT status bar
-
-  //--------------------------------------------
-  //  query Ark Node to see if it is synced and update status bar
-  UpdateArkNodeConnectionStatus();
-
-
-  // Subscribe to "mytopic/test" and display received message to Serial
-  client.subscribe("mytopic/test", [](const String & payload) {
-    Serial.println(payload);
-  });
-
-  // Subscribe to "mytopic/test2"
-  client.subscribe("mytopic/test2", test2Func);
-
-
-  // Publish a message to "mytopic/test"
-  client.publish("mytopic/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
-
-  // Execute delayed instructions
-  client.executeDelayed(5 * 1000, []() {
-    client.publish("mytopic/test", "This is a message sent 5 seconds later");
-  });
-
-
-
-  //wait for time to sync from servers
-  while (time(nullptr) <= 100000) {
-    delay(50);
-  }
-  //--------------------------------------------
-  //  get time synced from NTP server
-  UpdateDisplayTime();
-
-
-  const auto blockchainResponse = connection.api.blockchain.get();
-  Serial.print("\nBlockchain Response: ");
-  Serial.println(blockchainResponse.c_str());
-
-  delay(200);
-  tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
-
-  tft.setFont(&FreeSansBold18pt7b);
-  //  tft.setFont(&FreeSansBoldOblique24pt7b);
-  tft.setTextColor(ArkRed);
-  tft.setCursor(12, 45);
-  tft.print("Scan to Ride");
-
-
-  tft.setFont(&FreeSans9pt7b);
-  tft.setTextColor(WHITE);
-
-}
-
-
 
 
 
@@ -209,9 +214,9 @@ void setup()
   delay(500);
 
   tft.setTextColor(WHITE);
-  tft.setCursor(0, 20);
+  tft.setCursor(50, 280);
   tft.println("Connecting to WiFi");
-  tft.setCursor(0, 40);
+  tft.setCursor(70, 300);
   tft.println(WIFI_SSID);
 
   // show bootup screen for additional 1200ms
@@ -220,12 +225,10 @@ void setup()
   InitStatusBar();        //display the status bar on the bottom of the screen
   UpdateBatteryStatus();
 
-
-
   GPSSerial.println(PMTK_Q_RELEASE);// request firmware version
 
   //display QR code;
-  QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
-  displayQRcode(QRcodeText);
+  //QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
+  //displayQRcode(QRcodeText);
 
 }

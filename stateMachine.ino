@@ -4,19 +4,118 @@
 
 
 
-void StateMachine() {       
-
-    case DRAW_HOME: {
-        drawHomeScreen();
-        ARKscan_lasttime = millis();
-        vmState = WAIT_FOR_USER;
-
+void StateMachine() {
+  switch (state) {
+    case STATE_0: {
+        if (WiFi_status) {
+          state = STATE_1;
+          Serial.print("State: ");
+          Serial.println(state);
+        }
+        else {
+          state = STATE_0;
+        }
         break;
       }
 
+    case STATE_1: {
+        if (!WiFi_status) {     //check for WiFi disconnect
+          state = STATE_0;
+        }
+        else if (MQTT_status) {  //wait for MQTT connect
+          state = STATE_2;
+          Serial.print("State: ");
+          Serial.println(state);
+        }
+        else {
+          state = STATE_1;
+        }
+        break;
+      }
+
+
+    case STATE_2: {
+        if (!WiFi_status) {     //check for WiFi disconnect
+          state = STATE_0;
+        }
+        else if (!MQTT_status) {  //check for MQTT disconnect
+          state = STATE_1;
+        }
+        else if (ARK_status) {  //wait for ARK network connect
+          state = STATE_3;
+          Serial.print("State: ");
+          Serial.println(state);
+        }
+        else {
+          state = STATE_2;
+        }
+        break;
+      }
+
+    case STATE_3: {
+        if (!WiFi_status) {     //check for WiFi disconnect
+          state = STATE_0;
+        }
+        else if (!MQTT_status) {  //check for MQTT disconnect
+          state = STATE_1;
+        }
+        else if (!ARK_status) {  //check for ARK network disconnect
+          state = STATE_2;
+        }
+        else if (GPS_status) {  //wait for GPS fix
+          clearMainScreen();
+          QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
+          displayQRcode(QRcodeText);
+
+          tft.setFont(&FreeSansBold18pt7b);
+          tft.setTextColor(ArkRed);
+          tft.setCursor(12, 45);
+          tft.print("Scan to Ride");
+          tft.setFont(&FreeSans9pt7b);
+          tft.setTextColor(WHITE);
+
+          state = STATE_4;
+          Serial.print("State: ");
+          Serial.println(state);
+
+        }
+        else {
+          state = STATE_3;
+        }
+        break;
+
+      }
+
+    case STATE_4: {
+        if (!WiFi_status) {     //check for WiFi disconnect
+          clearMainScreen();
+          tft.drawBitmap(56, 120, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
+          state = STATE_0;
+        }
+        else if (!MQTT_status) {  //check for MQTT disconnect
+          clearMainScreen();
+          tft.drawBitmap(56, 120, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
+          state = STATE_1;
+        }
+        else if (!ARK_status) {  //check for ARK network disconnect
+          clearMainScreen();
+          tft.drawBitmap(56, 120, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
+          state = STATE_2;
+        }
+        else if (!GPS_status) {  //check for GPS network disconnect
+          clearMainScreen();
+          tft.drawBitmap(56, 120, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
+          state = STATE_3;
+        }
+        else {
+          state = STATE_4;
+        }
+        break;
+
+      }
+  }
+
 }
-
-
 
 
 bool checkPaymentTimer() {
@@ -53,7 +152,7 @@ void ArkVendingMachine() {         //The Vending state machine
 
     //--------------------------------------------
     case DRAW_HOME: {
-    //    drawHomeScreen();
+        //    drawHomeScreen();
         ARKscan_lasttime = millis();
         vmState = WAIT_FOR_USER;
 
@@ -64,8 +163,8 @@ void ArkVendingMachine() {         //The Vending state machine
     case WAIT_FOR_USER: {
 
         if (millis() > ARKscan_lasttime + ARK_mtbs)  {
- 
-           //check to see if new new transaction has been received in wallet
+
+          //check to see if new new transaction has been received in wallet
           searchRXpage = lastRXpage + 1;
           if ( searchReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, vendorField) ) {
             //a new unknown transaction has been received.
@@ -103,7 +202,7 @@ void ArkVendingMachine() {         //The Vending state machine
 
 
     case WAIT_FOR_PAY: {
- 
+
 
         vmState = WAIT_FOR_PAY;     //stay in the same state
         break;
@@ -111,13 +210,13 @@ void ArkVendingMachine() {         //The Vending state machine
 
 
     case VEND_ITEM: {
-         Serial.println("turn on servo");
-//        servo1.write(180);
+        Serial.println("turn on servo");
+        //        servo1.write(180);
         delay(5000);
-//        servo1.write(90);
+        //        servo1.write(90);
 
         Serial.println("turn off servo");
-        
+
         timeAPIstart = millis();  //get time that API read started
 
 
