@@ -32,22 +32,30 @@ void onConnectionEstablished()
   //  query Ark Node to see if it is synced and update status bar
   UpdateArkNodeConnectionStatus();
 
+  //--------------------------------------------
+  //  Retrieve Wallet Nonce and Balance
+  // nonce = getNonce();
+  getWallet(nonce, balance);
+  
+  GetReceivedTransaction(ArkAddress,1,id,amount,senderAddress,senderPublicKey,vendorField);
+
+  lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 
   // Subscribe to "mytopic/test" and display received message to Serial
-  client.subscribe("mytopic/test", [](const String & payload) {
+  client.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", [](const String & payload) {
     Serial.println(payload);
   });
 
   // Subscribe to "mytopic/test2"
-  client.subscribe("mytopic/test2", test2Func);
+  client.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", test2Func);
 
 
   // Publish a message to "mytopic/test"
-  client.publish("mytopic/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
+  client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
 
   // Execute delayed instructions
   client.executeDelayed(5 * 1000, []() {
-    client.publish("mytopic/test", "This is a message sent 5 seconds later");
+    client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
   });
 
 
@@ -64,17 +72,15 @@ void onConnectionEstablished()
   // Serial.print("\nBlockchain Response: ");
   // Serial.println(blockchainResponse.c_str());
 
- // delay(200);
- // tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
 
-/*
-  tft.setFont(&FreeSansBold18pt7b);
-  tft.setTextColor(ArkRed);
-  tft.setCursor(0, 45);
-  tft.print("Waiting for Networks");
-  tft.setFont(&FreeSans9pt7b);
-  tft.setTextColor(WHITE);
-*/
+  /*
+    tft.setFont(&FreeSansBold18pt7b);
+    tft.setTextColor(ArkRed);
+    tft.setCursor(0, 45);
+    tft.print("Waiting for Networks");
+    tft.setFont(&FreeSans9pt7b);
+    tft.setTextColor(WHITE);
+  */
 
 }
 
@@ -117,15 +123,19 @@ void setupDisplayTouchscreen() {
 
 
 void clearMainScreen() {
-  tft.fillRect(0, 0, 240, 265, BLACK);     //clear the screen except for the status bar
+  tft.fillRect(0, 0, 240, 265 - 20, BLACK);   //clear the screen except for the status bar
 }
 
 /********************************************************************************
   Draw the status bar at the bottom of the screen
 ********************************************************************************/
 void InitStatusBar() {
-  tft.fillRect(0, 265, 240, 55, BLACK);     //clear the status bar area
-  
+  tft.fillRect(0, 265 - 20, 240, 55 + 20, BLACK); //clear the status bar area + powered by ark.io text above it
+  tft.setTextColor(ArkRed);
+  tft.setCursor(40, 265);
+  tft.print("Powered by Ark.io");
+  tft.setTextColor(WHITE);
+
   tft.setCursor(60 - 21, 283);
   tft.print("kmh");
 
@@ -189,7 +199,7 @@ void setup()
   // Optional Features of EspMQTTClient
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
   client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
-  client.enableLastWillMessage("TestClient/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
+  client.enableLastWillMessage("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
 
   //--------------------------------------------
   //configure the 2.4" TFT display and the touchscreen controller
@@ -197,7 +207,7 @@ void setup()
 
   // Bootup Screen
   // Display Ark bitmap on middle portion of screen
-  tft.drawBitmap(56, 120,  myBitmap, 128, 128, ArkRed);
+  DisplayArkBitmap();
 
   //--------------------------------------------
   // 9600 NMEA is the default baud rate for Adafruit MTK GPS
@@ -232,3 +242,50 @@ void setup()
   //displayQRcode(QRcodeText);
 
 }
+
+
+
+
+
+
+// Load WLAN credentials from EEPROM
+// You need to call EEPROM.begin(size) before you start reading or writing, size being the number of bytes you want to use.
+// Size can be anywhere between 4 and 4096 bytes.
+//EEPROM.write does not write to flash immediately, instead you must call EEPROM.commit() whenever you wish to save changes to flash. EEPROM.end() will also commit, and will release the RAM copy of EEPROM contents.
+/*
+  void loadCredentials() {
+  EEPROM.begin(512);
+  EEPROM.get(0, ssid);
+  EEPROM.get(0 + sizeof(ssid), password);
+  EEPROM.get(0 + sizeof(ssid) + sizeof(password), coinname);
+  char ok[2 + 1];
+  //EEPROM.get(0+sizeof(ssid)+sizeof(password), ok);
+  EEPROM.get(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
+  EEPROM.end();
+  if (String(ok) != String("OK")) {
+    ssid[0] = 0;
+    password[0] = 0;
+  }
+  Serial.println("Recovered credentials:");
+  //Serial.println(ssid);
+  Serial.println(strlen(ssid) > 0 ? ssid : "<no ssid>");
+  Serial.println(strlen(password) > 0 ? "********" : "<no password>");
+  Serial.println(strlen(coinname) > 0 ? coinname : "<no coinname>");
+  }
+  /*
+
+
+  /** Store WLAN credentials to EEPROM */
+/*
+  void saveCredentials() {
+  EEPROM.begin(512);
+  EEPROM.put(0, ssid);
+  EEPROM.put(0 + sizeof(ssid), password);
+  EEPROM.put(0 + sizeof(ssid) + sizeof(password), coinname);
+  char ok[2 + 1] = "OK";
+  //EEPROM.put(0+sizeof(ssid)+sizeof(password), ok);
+  EEPROM.put(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
+  EEPROM.commit();
+  EEPROM.end();
+  }
+*/

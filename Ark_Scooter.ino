@@ -58,13 +58,22 @@ int battery = 0;
 float batteryFloat;
 
 /********************************************************************************
+  Library for reading/writing to the ESP32 flash memory.
+  ESP32 Arduino libraries emulate EEPROM using a sector (4 kilobytes) of flash memory.
+  The total flash memory size is The entire space is split between bootloader, application, OTA data, NVS, SPIFFS, and EEPROM.
+  EEPROM library on the ESP32\allows using at most 1 sector (4kB) of flash.
+********************************************************************************/
+#include <EEPROM.h>
+
+
+/********************************************************************************
     EspMQTTClient Library by @plapointe6 Version 1.6.2
     WiFi and MQTT connection handler for ESP32
     This library does a nice job of encapsulating the handling of WiFi and MQTT connections.
     You just need to provide your credentials and it will manage the connection and reconnections to the Wifi and MQTT networks.
     EspMQTTClient is a wrapper around the MQTT PubSubClient Library Version 2.7 by @knolleary
 ********************************************************************************/
-#define MQTT_MAX_PACKET_SIZE 256  // the maximum message size, including header, is 128 bytes by default. Configurable in PubSubClient.h.
+#define MQTT_MAX_PACKET_SIZE 512  // the maximum message size, including header, is 128 bytes by default. Configurable in PubSubClient.h.
 #include "EspMQTTClient.h"
 
 // configure these parameters in secrets.h
@@ -182,6 +191,12 @@ uint32_t previousUpdateTime_MQTT_Publish = millis();
 uint32_t UpdateInterval_Battery = 5000;
 uint32_t previousUpdateTime_Battery = millis();
 
+uint32_t UpdateInterval_RSSI = 5000;
+uint32_t previousUpdateTime_RSSI = millis();
+
+uint32_t UpdateInterval_RentalStartSearch = 8000;           
+uint32_t previousUpdateTime_RentalStartSearch = millis();
+
 uint32_t previousTime_3 = millis();
 
 
@@ -240,24 +255,24 @@ Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);
 
 //--------------------------------------------
 // these are used to store the received transation details returned from wallet search
-const char*  id;            //transaction ID
-int amount;                 //transactions amount
-const char* senderAddress;  //transaction address of sender
-const char* vendorField;    //vendor field
+const char*  id;              //transaction ID
+const char* amount;           //transactions amount
+const char* senderAddress;    //transaction address of sender
+const char* senderPublicKey;  //transaction address of sender
+const char* vendorField;      //vendor field
 
-int lastRXpage;             //page number of the last received transaction in wallet
-int searchRXpage;           //page number that is used for wallet search
+const char* QRcodeHash;       //QRcodeHash. This is 
 
+int lastRXpage = 0;             //page number of the last received transaction in wallet
+int searchRXpage = 0;           //page number that is used for wallet search
 
-
-
+uint32_t nonce;
+uint32_t balance;
 
 /********************************************************************************
   State Machine
 
 ********************************************************************************/
-enum VendingMachineStates {DRAW_HOME, WAIT_FOR_USER, WAIT_FOR_PAY, VEND_ITEM};   //The five possible states of the Vending state machine
-VendingMachineStates vmState = DRAW_HOME;   //initialize the starting state.
 
 enum State_enum {STATE_0, STATE_1, STATE_2, STATE_3, STATE_4, STATE_5, STATE_6};  //The possible states of the state machine
 State_enum state = STATE_0;     //initialize the starting state.
@@ -269,14 +284,17 @@ State_enum state = STATE_0;     //initialize the starting state.
   We have put functions in other files so we need to manually add some prototypes as the automagic doesn't work correctly
 ********************************************************************************/
 void setup();
-int searchReceivedTransaction(const char *const address, int page, const char* &id, int &amount, const char* &senderAddress, const char* &vendorField );
-void ArkVendingMachine();
+int GetReceivedTransaction(const char *const address, int page, const char* &id, const char* &amount, const char* &senderAddress, const char* &senderPublicKey, const char* &vendorField );
+int getMostRecentReceivedTransaction();
 void UpdateDisplayTime();
 void UpdateWiFiConnectionStatus();
 void UpdateGPSConnectionStatus();
+void UpdateMQTTConnectionStatus();
 void UpdateDisplayTime();
 void GPStoMQTT();
 void UpdateBatteryStatus();
+void StateMachine();
+void UpdateRSSIStatus();
 
 
 /********************************************************************************
@@ -285,17 +303,17 @@ void UpdateBatteryStatus();
 void loop() {
 
   //--------------------------------------------
-  // Handle the WiFi and MQTT connections
-  client.loop();
-
-  //--------------------------------------------
   // Process state machine
   StateMachine();
 
   //--------------------------------------------
+  // Handle the WiFi and MQTT connections
+  client.loop();
+
+  //--------------------------------------------
   // Parse GPS data if available
-  //We need to call GPS.read() constantly in the main loop to watch for data arriving on the serial port
-  //The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set he buffer size???: Serial1.setRxBufferSize(1024);
+  // We need to call GPS.read() constantly in the main loop to watch for data arriving on the serial port
+  // The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set he buffer size???: Serial1.setRxBufferSize(1024);
   // I need to learn more about the hardware buffer available on the ESP32 serial port.
   char c = GPS.read();
 
@@ -307,18 +325,15 @@ void loop() {
 
 
   //--------------------------------------------
-  // Update all the data on the Status Bar
+  // Update all the data displayed on the Status Bar
   UpdateWiFiConnectionStatus();     //update WiFi status bar
   UpdateMQTTConnectionStatus();     //update MQTT status bar
   UpdateGPSConnectionStatus();      //update GPS status bar
   UpdateDisplayTime();              //update the clock every 1 second
-  if (millis() - previousUpdateTime_Battery > UpdateInterval_Battery)  {
-    UpdateBatteryStatus();          //update battery status every UpdateInterval_Battery (10seconds)
-    UpdateRSSIStatus();
-    previousUpdateTime_Battery += UpdateInterval_Battery;
-  }
-
-
+  UpdateBatteryStatus();            //update battery status every UpdateInterval_Battery (5 seconds)
+  UpdateRSSIStatus();               //update battery status every UpdateInterval_RSSI (5 seconds)
+  
+//getMostRecentReceivedTransaction();
 
   //--------------------------------------------
   // Update all the data on the Status Bar
@@ -332,7 +347,6 @@ void loop() {
   if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
     GPStoMQTT();
     previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
-
   }
 
 

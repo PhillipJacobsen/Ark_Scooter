@@ -28,12 +28,15 @@
 //#define WIFI_SSID         "hppj"
 //#define WIFI_PASS         "1compost2"
 
-int8_t TIME_ZONE = -6;        //set timezone:  MST
-int8_t DST = 0;              //To enable Daylight saving time set it to 3600. Otherwise, set it to 0. Not sure if this works.
+//use this library to handle daylight savings
+// https://github.com/JChristensen/Timezone
+
+//int8_t TIME_ZONE = -6;        //set timezone:  MST (works in summer)
+int8_t TIME_ZONE = -7;        //set timezone:  MST (works in winter)
+int16_t DST = 0;            //To enable Daylight saving time set it to 3600. Otherwise, set it to 0. Not sure if this works.
 
 
 #ifdef RADIANS
-//const char* ARK_PEER = "159.203.42.124";  //Nybble Testnet Peer
 const char* ARK_PEER = "37.34.60.90";  //RADIANS Testnet Peer
 int ARK_PORT = 4040;
 #else
@@ -48,9 +51,9 @@ int ARK_PORT = 4003;
 
 //Wallet Address on bridgechain
 #ifdef RADIANS
-const char* ArkAddress = "TPW83DRkPcU9KyVZfCKrXMeAKDKExMhAnE";   //NYBBLE testnet address
-char QRcodeArkAddress[] = "TPW83DRkPcU9KyVZfCKrXMeAKDKExMhAnE";   //jakeIOT testnet address
-const char* ArkPublicKey = "02060c5793d2d42f11c8b18018c2c1ed5d81ed0ffc0afd0fe8ef5cee2dfbd3b787";       //jakeIOT testnet public key
+const char* ArkAddress = "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1";   //RADIANS testnet address
+char QRcodeArkAddress[] = "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1";   //RADIANS testnet address
+const char* ArkPublicKey = "03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2";       
 
 //Wallet Address on Ark Devnet
 #else

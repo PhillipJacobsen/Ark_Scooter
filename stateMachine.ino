@@ -1,9 +1,13 @@
 
 
 
+//to do: Putting the transitional code in the state switch case makes your switch statement hard to alter (have to change transitional code in multiple spots).
+//  https://www.reddit.com/r/programming/comments/1vrhdq/tutorial_implementing_state_machines/
+//  https://pastebin.com/22s5khze
 
+// https://www.embeddedrelated.com/showarticle/723.php
 
-
+//Finite Mealy State Machine
 void StateMachine() {
   switch (state) {
     case STATE_0: {
@@ -64,15 +68,18 @@ void StateMachine() {
         }
         else if (GPS_status) {  //wait for GPS fix
           clearMainScreen();
-          QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
+          //QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
+          QRcodeText = "03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2,48.972,-114.868,3.7";  //Public Key, Latitude, Longitude, Rate
           displayQRcode(QRcodeText);
 
           tft.setFont(&FreeSansBold18pt7b);
           tft.setTextColor(ArkRed);
-          tft.setCursor(12, 45);
+          tft.setCursor(12, 30);        //12,45
           tft.print("Scan to Ride");
           tft.setFont(&FreeSans9pt7b);
           tft.setTextColor(WHITE);
+
+          previousUpdateTime_RentalStartSearch = millis();    //reset transaction search counter
 
           state = STATE_4;
           Serial.print("State: ");
@@ -88,148 +95,72 @@ void StateMachine() {
 
     case STATE_4: {
         if (!WiFi_status) {     //check for WiFi disconnect
-          clearMainScreen();
-          tft.drawBitmap(56, 120, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
+          DisplayArkBitmap();
           state = STATE_0;
         }
         else if (!MQTT_status) {  //check for MQTT disconnect
-          clearMainScreen();
-          tft.drawBitmap(56, 120, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
+          DisplayArkBitmap();
           state = STATE_1;
         }
         else if (!ARK_status) {  //check for ARK network disconnect
-          clearMainScreen();
-          tft.drawBitmap(56, 120, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
+          DisplayArkBitmap();
           state = STATE_2;
         }
         else if (!GPS_status) {  //check for GPS network disconnect
-          clearMainScreen();
-          tft.drawBitmap(56, 120, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
+          DisplayArkBitmap();
           state = STATE_3;
         }
-        else {
-          state = STATE_4;
-        }
-        break;
-
-      }
-  }
-
-}
-
-
-bool checkPaymentTimer() {
-  timeNow = millis();  //get current time
-  if ((timeNow > payment_Timeout)) {
-
-    return true;
-  }
-  Serial.print("timeout: ");
-  Serial.println ((payment_Timeout - timeNow) / 1000);
-  tft.fillRect(150, 75, 80, 18, BLACK);     //delete the previous time
-  tft.setCursor(150, 90);
-  tft.setTextColor(RED);
-  tft.println((payment_Timeout - timeNow) / 1000);
-
-  return false;
-}
-
-bool checkCancelButton() {
-}
-
-bool search_newRX() {
-}
-
-
-
-void ArkVendingMachine() {         //The Vending state machine
-  // Serial.print("vmState: ");
-  //  Serial.println(vmState);
-
-
-  switch (vmState) {              //Depending on the state
-
-
-    //--------------------------------------------
-    case DRAW_HOME: {
-        //    drawHomeScreen();
-        ARKscan_lasttime = millis();
-        vmState = WAIT_FOR_USER;
-
-        break;
-      }
-
-
-    case WAIT_FOR_USER: {
-
-        if (millis() > ARKscan_lasttime + ARK_mtbs)  {
-
-          //check to see if new new transaction has been received in wallet
-          searchRXpage = lastRXpage + 1;
-          if ( searchReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, vendorField) ) {
-            //a new unknown transaction has been received.
-            lastRXpage++;
-            Serial.print("Page: ");
-            Serial.println(searchRXpage);
-            Serial.print("Transaction id: ");
-            Serial.println(id);
-            Serial.print("Vendor Field: ");
-            Serial.println(vendorField);
-
-            tft.fillRect(2, 240, 227, 65, BLACK);     //clear the bottom portion of the screen
-            tft.setCursor(4, 250);
-            tft.setTextColor(RED);
-            tft.println("New Transaction in Wallet");
-            tft.setCursor(4, 270);
-            tft.print("Page: ");
-            tft.println(searchRXpage);
-            tft.setCursor(4, 290);
-            tft.print("Vendor Field: ");
-            tft.println(vendorField);
-
-            ARKscan_lasttime = millis();
-            vmState = WAIT_FOR_USER;     //stay in the same state
+        else {                  //we are looking for a Rental Start Tx
+          if (search_RentalStartTx()) {
+            state = STATE_5;
+            Serial.print("State: ");
+            Serial.println(state);
             break;
           }
-          ARKscan_lasttime = millis();
+          else {
+            state = STATE_4;
+            break;
+          }
         }
-
-
-
-        vmState = WAIT_FOR_USER;     //default state
         break;
       }
 
+    case STATE_5: {
+        //startRideTimer();
+        //unlockScooter();
 
-    case WAIT_FOR_PAY: {
-
-
-        vmState = WAIT_FOR_PAY;     //stay in the same state
+        state = STATE_5;
         break;
       }
 
-
-    case VEND_ITEM: {
-        Serial.println("turn on servo");
-        //        servo1.write(180);
-        delay(5000);
-        //        servo1.write(90);
-
-        Serial.println("turn off servo");
-
-        timeAPIstart = millis();  //get time that API read started
+  }
+}
 
 
-        timeNow = millis() - timeAPIstart;  //get current time
-        Serial.print(" send message time:");
-        Serial.println(timeNow);
 
+int search_RentalStartTx() {
+  if (millis() - previousUpdateTime_RentalStartSearch > UpdateInterval_RentalStartSearch)  {    //poll Ark node every 8 seconds for a new transaction
+    previousUpdateTime_RentalStartSearch += UpdateInterval_RentalStartSearch;
 
-        delay(3000);
-        vmState = DRAW_HOME;             //
-        break;                          //Get out of switch
+    //check to see if new new transaction has been received in wallet
+    searchRXpage = lastRXpage + 1;
+    if ( GetReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField) ) {
+      lastRXpage++;
+
+      //check to see if vendorField of new transaction matches the field in QRcode that we displayed
+      if  (strcmp(vendorField, QRcodeHash) == 0) {
+        return 1;
       }
-
-
+      else {        //we received a transaction that did not match. We should issue refund.
+        // issueRefund();
+        return 0;
+      }
+    }
+    else {    //we did not receive a transaction
+      return 0;
+    }
+  }
+  else {      //it was not time to poll Ark network for a new transaction
+    return 0;
   }
 }

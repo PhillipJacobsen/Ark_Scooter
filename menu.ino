@@ -60,14 +60,18 @@ void UpdateArkNodeConnectionStatus() {
   I don't know if the value can actually be measured as actual dBm or just some other relative measurement
 ********************************************************************************/
 void UpdateRSSIStatus() {
-  if (client.isWifiConnected()) {
-    long rssi = WiFi.RSSI();
-    tft.fillRect(195, 283 - 18, 40, 20, BLACK);   //clear the last voltage reading
-    tft.setCursor(195, 283);
-    tft.print(rssi);
 
-    Serial.print("RSSI:");
-    Serial.println(rssi);
+  if (millis() - previousUpdateTime_RSSI > UpdateInterval_RSSI)  {
+    previousUpdateTime_RSSI += UpdateInterval_RSSI;
+    if (client.isWifiConnected()) {
+      long rssi = WiFi.RSSI();
+      tft.fillRect(195, 283 - 18, 40, 20, BLACK);   //clear the last voltage reading
+      tft.setCursor(195, 283);
+      tft.print(rssi);
+
+      Serial.print("RSSI:");
+      Serial.println(rssi);
+    }
   }
 }
 
@@ -76,21 +80,25 @@ void UpdateRSSIStatus() {
   the ESP32 ADC should really be calibrated so these readings are good for relative measurements.
 ********************************************************************************/
 void UpdateBatteryStatus() {
-  // batteryFloat = battery / 620.6; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
-  //  batteryFloat = battery / 560; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)  adjust with fudge factor
-  //4.1 real v was reading 3.7V
+  if (millis() - previousUpdateTime_Battery > UpdateInterval_Battery)  {
+    previousUpdateTime_Battery += UpdateInterval_Battery;
+    // batteryFloat = battery / 620.6; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
+    //  batteryFloat = battery / 560; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)  adjust with fudge factor
+    //4.1 real v was reading 3.7V
 
-  battery = analogRead(BAT_PIN);
-  Serial.println(battery);
-  batteryFloat = battery / 559.5; //we needed to add fudge factor to calibrate readings. There Must not be a 50% voltage divider on the input.
-  //    battery = battery / 4096;   //battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
-  //    battery = battery /620.60606060606;
-  Serial.println(batteryFloat);
+    battery = analogRead(BAT_PIN);
+    Serial.println(battery);
+    batteryFloat = battery / 559.5; //we needed to add fudge factor to calibrate readings. There Must not be a 50% voltage divider on the input.
+    //    battery = battery / 4096;   //battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
+    //    battery = battery /620.60606060606;
+    Serial.println(batteryFloat);
 
-  tft.fillRect(190, 301 - 18, 40, 20, BLACK);   //clear the last voltage reading
-  tft.setCursor(190, 301);
-  tft.print(batteryFloat);
-  tft.print("V");
+    tft.fillRect(190, 301 - 18, 40, 20, BLACK);   //clear the last voltage reading
+    tft.setCursor(190, 301);
+    tft.print(batteryFloat);
+    tft.print("V");
+
+  }
 }
 
 
@@ -174,7 +182,7 @@ void UpdateGPSConnectionStatus() {
       tft.fillRect(0, 283 - 17, 35, 18, BLACK);   //clear the last speed reading
       tft.setCursor(0, 283);
       float speedkmh = GPS.speed * 1.852;
-      tft.print(speedkmh,1);
+      tft.print(speedkmh, 1);
 
       GPS_status = true;
     }
@@ -193,4 +201,11 @@ void UpdateGPSConnectionStatus() {
       GPS_status = false;
     }
   }
+}
+
+
+
+void DisplayArkBitmap() {
+  clearMainScreen();
+  tft.drawBitmap(56, 100, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
 }
