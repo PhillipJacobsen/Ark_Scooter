@@ -104,14 +104,18 @@ void GPStoMQTT() {
     //const char* buf;
     String  buf;
     buf += F("{\"name\":\"where PJ should be fishing\",\"Fix\":true,\"lat\":");
-    buf += String(convertedLat, 8);
+    buf += String(convertedLat+0.0032, 8);      //add noise to gps signal
     buf += F(",\"lon\":");
-    buf += String(convertedLon, 8);
+    buf += String(convertedLon+0.00221, 8);
     //    buf += F(",\"alt\":0,\"speed\":0,\"sat\":0}");
     buf += F(",\"alt\":0,\"speed\":");
     buf += String(indicatedSpeed);
     buf += F(",\"sat\":");
     buf += String(GPS.satellites);
+     buf += F(",\"bat\":");
+
+    // val = map(batteryFloat, 3.6, 4.23, 0, 100);
+    buf += String(batteryPercent);   
     buf += F("}");
 
     Serial.println(buf);

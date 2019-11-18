@@ -55,6 +55,7 @@ bool MQTT_status = false;
 
 
 int battery = 0;
+int batteryPercent = 0;
 float batteryFloat;
 
 /********************************************************************************
@@ -103,6 +104,8 @@ Adafruit_GPS GPS(&GPSSerial);
   Adafruit GFX libraries
     graphics primitives documentation:  https://learn.adafruit.com/adafruit-gfx-graphics-library/graphics-primitives
     top left corner is (0,0)
+
+    http://oleddisplay.squix.ch/#/home     awesome tool for generating custom font.
 ********************************************************************************/
 #include <SPI.h>
 #include <Adafruit_GFX.h>
@@ -110,9 +113,14 @@ Adafruit_GPS GPS(&GPSSerial);
 #include <Adafruit_STMPE610.h>        //hardware specific library for the touch sensor
 #include "bitmaps.h"                  //bitmaps stored in program memory
 #include <Fonts/FreeSans9pt7b.h>      //add custom fonts
-//#include <Fonts/FreeSansBoldOblique24pt7b.h>  //add custom fonts
 #include <Fonts/FreeSansBold18pt7b.h>  //add custom fonts
+//#include <Fonts/FreeSansBold24pt7b.h>  //add custom fonts
 
+#include <Fonts/Lato_Medium_36.h>  //add custom fonts
+//#include <Fonts/Lato_Black_56.h>  //add custom fonts
+#include <Fonts/Lato_Semibold_48.h>  //add custom fonts
+//#include <Fonts/Lato_Black_88.h>  //add custom fonts
+#include <Fonts/Lato_Black_96.h>  //add custom fonts
 
 // pin connections
 #define STMPE_CS 32
@@ -143,6 +151,11 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);         //create Touchscreen
 #define GREEN  ILI9341_GREEN
 #define ArkRed 0xF1A7       // rgb(241, 55, 58)
 #define ArkLightRed 0xFCD3  // rgb(248, 155, 156)
+//#define OffWhite 0xDEDB  // rgb(218, 218, 218)
+#define OffWhite 0xCE59  // rgb(202, 202, 202)
+#define SpeedGreen 0xAFF5  // rgb(170, 255, 170)
+#define SpeedGreenDarker 0x0760  // rgb(0, 236, 0)
+
 #define QRCODE_DARK_PIXEL_COLOR 0xF1A7
 
 int CursorX = 0;         //used to store current cursor position of the display
@@ -194,7 +207,7 @@ uint32_t previousUpdateTime_Battery = millis();
 uint32_t UpdateInterval_RSSI = 5000;
 uint32_t previousUpdateTime_RSSI = millis();
 
-uint32_t UpdateInterval_RentalStartSearch = 8000;           
+uint32_t UpdateInterval_RentalStartSearch = 8000;
 uint32_t previousUpdateTime_RentalStartSearch = millis();
 
 uint32_t previousTime_3 = millis();
@@ -261,7 +274,7 @@ const char* senderAddress;    //transaction address of sender
 const char* senderPublicKey;  //transaction address of sender
 const char* vendorField;      //vendor field
 
-const char* QRcodeHash;       //QRcodeHash. This is 
+const char* QRcodeHash;       //QRcodeHash. This is
 
 int lastRXpage = 0;             //page number of the last received transaction in wallet
 int searchRXpage = 0;           //page number that is used for wallet search
@@ -332,8 +345,8 @@ void loop() {
   UpdateDisplayTime();              //update the clock every 1 second
   UpdateBatteryStatus();            //update battery status every UpdateInterval_Battery (5 seconds)
   UpdateRSSIStatus();               //update battery status every UpdateInterval_RSSI (5 seconds)
-  
-//getMostRecentReceivedTransaction();
+
+  //getMostRecentReceivedTransaction();
 
   //--------------------------------------------
   // Update all the data on the Status Bar

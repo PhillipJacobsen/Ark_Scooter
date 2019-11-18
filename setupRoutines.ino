@@ -36,8 +36,8 @@ void onConnectionEstablished()
   //  Retrieve Wallet Nonce and Balance
   // nonce = getNonce();
   getWallet(nonce, balance);
-  
-  GetReceivedTransaction(ArkAddress,1,id,amount,senderAddress,senderPublicKey,vendorField);
+
+  GetReceivedTransaction(ArkAddress, 1, id, amount, senderAddress, senderPublicKey, vendorField);
 
   lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 
@@ -237,15 +237,41 @@ void setup()
 
   GPSSerial.println(PMTK_Q_RELEASE);// request firmware version
 
-  //display QR code;
-  //QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
-  //displayQRcode(QRcodeText);
+  //displaySpeedScreen();
+
 
 }
 
 
 
+void displaySpeedScreen()
+{
 
+  // https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
+  // https://www.youtube.com/watch?v=L8MmTISmwZ8
+  // http://oleddisplay.squix.ch/#/home     awesome tool for generating custom font.
+  clearMainScreen();
+  //speedometer
+  tft.setFont(&Lato_Black_96);
+  tft.setTextColor(SpeedGreenDarker);
+  tft.setCursor(60, 105);
+  tft.print("12");
+
+  tft.setFont(&Lato_Medium_36);
+  tft.setTextColor(SpeedGreen);     // http://www.barth-dev.de/online/rgb565-color-picker/
+  tft.setCursor(75, 150);
+  tft.print("km/h");
+
+  //countdown timer
+  tft.setFont(&Lato_Semibold_48);
+  tft.setTextColor(OffWhite);
+  tft.setCursor(55, 230);
+  tft.print("10:32");
+
+  //breakpoint
+  while (1) {
+  }
+}
 
 
 // Load WLAN credentials from EEPROM

@@ -112,6 +112,8 @@ void StateMachine() {
         }
         else {                  //we are looking for a Rental Start Tx
           if (search_RentalStartTx()) {
+            //startRideTimer();
+            //unlockScooter();
             state = STATE_5;
             Serial.print("State: ");
             Serial.println(state);
@@ -125,10 +127,8 @@ void StateMachine() {
         break;
       }
 
-    case STATE_5: {
-        //startRideTimer();
-        //unlockScooter();
-
+    case STATE_5: {   // rider is using scooter
+    //wait for timer to expire and then lock scooter and send rental finish and go back to beginning 
         state = STATE_5;
         break;
       }

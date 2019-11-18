@@ -86,8 +86,16 @@ void UpdateBatteryStatus() {
     //  batteryFloat = battery / 560; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)  adjust with fudge factor
     //4.1 real v was reading 3.7V
 
+//full power = approximate range: 2014 -> 2355
+//
+
     battery = analogRead(BAT_PIN);
+    
+    batteryPercent = map(battery, 2010, 2360, 0, 100);
+    batteryPercent = constrain(batteryPercent, 0, 100);
+    Serial.print("battery: ");
     Serial.println(battery);
+    Serial.println(batteryPercent);
     batteryFloat = battery / 559.5; //we needed to add fudge factor to calibrate readings. There Must not be a 50% voltage divider on the input.
     //    battery = battery / 4096;   //battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
     //    battery = battery /620.60606060606;
