@@ -17,12 +17,12 @@
 #define MQTT_SERVER_PORT  1883
 
 //h
-//#define WIFI_SSID         "TELUS0183"
-//#define WIFI_PASS         "6z5g4hbdxi"
+#define WIFI_SSID         "TELUS0183"
+#define WIFI_PASS         "6z5g4hbdxi"
 
 //w
-#define WIFI_SSID         "TELUS6428"
-#define WIFI_PASS         "3mmkgc9gn2"
+//#define WIFI_SSID         "TELUS6428"
+//#define WIFI_PASS         "3mmkgc9gn2"
 
 //pj
 //#define WIFI_SSID         "hppj"

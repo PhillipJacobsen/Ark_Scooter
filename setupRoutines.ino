@@ -35,11 +35,42 @@ void onConnectionEstablished()
   //--------------------------------------------
   //  Retrieve Wallet Nonce and Balance
   // nonce = getNonce();
-  getWallet(nonce, balance_UINT);
+  getWallet(nonce, balance);
+  // getWallet(nonceUINT, balanceUINT, nonce, balance);
+  Serial.print("Nonce2: ");
+  Serial.println(nonce);
+  Serial.print("Balance2: ");
+  Serial.println(balance);
+
+//https://forum.arduino.cc/index.php?topic=334771.0
+
+  std::string balanceCopy = std::string(balance);
+  balanceCopied = balanceCopy.c_str();
+
+  strcpy( global_balance, balanceCopied);
+
+  Serial.print("BalanceCopy2: ");
+  Serial.println(balanceCopied);  
+
+  Serial.print("GlobalBalanceCopy2: ");
+  Serial.println(global_balance);  
+
+  //    nonceUINT = strtol(nonce);
+  // balanceUINT = strtol(balance, NULL, 10);    //returns the maximum value of a 32-bit number. Actually, we need a 64 bit number here.
+  // balanceUINT = strtol(balance, NULL, 10);    //returns the maximum value of a 32-bit number. Actually, we need a 64 bit number here.
+
+  // Serial.print("Nonce3: ");
+  //Serial.println(nonceUINT);
+  //Serial.print("Balance3: ");
+  // Serial.println(balanceUINT);
 
   GetReceivedTransaction(ArkAddress, 1, id, amount, senderAddress, senderPublicKey, vendorField);
 
+
+
   lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+
+
 
   // Subscribe to "mytopic/test" and display received message to Serial
   client.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", [](const String & payload) {
@@ -54,11 +85,11 @@ void onConnectionEstablished()
   client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
 
   // Execute delayed instructions
-  client.executeDelayed(5 * 1000, []() {
-    client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
-  });
+  //  client.executeDelayed(5 * 1000, []() {
+  //    client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
+  //  });
 
-
+  
   //wait for time to sync from servers
   while (time(nullptr) <= 100000) {
     delay(50);
@@ -82,6 +113,11 @@ void onConnectionEstablished()
     tft.setTextColor(WHITE);
   */
 
+  Serial.print("Balance5: ");
+  Serial.println(balance);
+  Serial.print("BalanceCopy5: ");
+  Serial.println(balanceCopied);  
+  
 }
 
 
@@ -172,6 +208,7 @@ void InitStatusBar() {
 
 //display received message to Serial
 void test2Func (const String & payload) {
+  Serial.print("Received MQTT message: ");
   Serial.println(payload);
 }
 

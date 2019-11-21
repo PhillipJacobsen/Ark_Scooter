@@ -305,10 +305,15 @@ const char* vendorField;      //vendor field
 
 int lastRXpage = 0;             //page number of the last received transaction in wallet
 int searchRXpage = 0;           //page number that is used for wallet search
+  
+//const uint32_t* nonceUINT;
+//long int nonceUINT;
+const char* nonce;
+//long int balanceUINT;
+const char* balance;
+const char* balanceCopied;
 
-uint32_t nonce;
-uint32_t balance_UINT;
-const char* balance_STRING;
+char global_balance[64];
 
 /********************************************************************************
   State Machine
@@ -378,7 +383,7 @@ void loop() {
 
   //getMostRecentReceivedTransaction();
 
-    build_MQTTpacket();
+//  build_MQTTpacket();
 
 
   //--------------------------------------------

@@ -64,7 +64,10 @@ bool checkArkNodeStatus() {
 
   virtual std::string get(const char *const identifier) = 0;
 ********************************************************************************/
-void getWallet(uint32_t &nonce, uint32_t &balance) {
+
+//void getWallet(const uint32_t &nonceUINT, const uint32_t &balanceUINT, const char* &nonce, const char* &balance) {
+
+void getWallet(const char* &nonce, const char* &balance_A) {
   //std::string walletGetResponse = connection.api.wallets.get(ArkAddress);
   const auto walletGetResponse = connection.api.wallets.get(ArkAddress);
 
@@ -89,9 +92,15 @@ void getWallet(uint32_t &nonce, uint32_t &balance) {
   Serial.println(data_nonce);
   Serial.print("Balance: ");
   Serial.println(data_balance);
-  balance_STRING = data_balance;      //storing to global. not very good
-  nonce = atol(data_nonce);
-  balance = atol(data_balance);
+
+  nonce = data_nonce;
+  //balance = data_balance;      //duplicate. 
+  balance_A = data["balance"];     
+
+  //  nonceUINT = atol(*nonce);
+  //  balanceUINT = atol(*balance);
+
+
 }
 
 
@@ -115,6 +124,11 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
   Serial.print("Page: ");
   Serial.println(page);
 
+//  Serial.print("!!!!!!Balance3.1: ");
+//  Serial.println(balance);
+  
+
+
   char query[50];
   strcpy(query, "?page=");
   char page_char[8];
@@ -122,28 +136,31 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
   strcat(query, page_char);
   strcat(query, "&limit=1&orderBy=timestamp:asc");
 
-//  Serial.print("query: ");
-//  Serial.println(query);
-
+  //  Serial.print("query: ");
+  //  Serial.println(query);
+    
   //--------------------------------------------
   //peform the API
   //sort by oldest transactions first.  For simplicity set limit = 1 so we only get 1 transaction returned
-  timeAPIstart = millis();  //get time that API read started
+  //timeAPIstart = millis();  //get time that API read started
   const auto walletGetResponse = connection.api.wallets.transactionsReceived(address, query);
-  timeNow = millis() - timeAPIstart;  //get elapsed time
-  Serial.print("Ark API read time: ");
-  Serial.println(timeNow);
+//  std::string walletGetResponse = connection.api.wallets.transactionsReceived(address, "?page=1&limit=1&orderBy=timestamp:asc");
+  
+  //timeNow = millis() - timeAPIstart;  //get elapsed time
+  //Serial.print("Ark API read time: ");
+  //Serial.println(timeNow);
 
-
+  
   //Serial.print("\nSearch Received Address: ");
   //Serial.println(address);
   //Serial.print("\nSearch page: ");
   //Serial.println(page );
 
-  const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(14) + 1040;
+const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(14) + 1240;
   DynamicJsonDocument doc(capacity);
 
-  //const char* json = "{\"meta\":{\"totalCountIsEstimate\":false,\"count\":1,\"pageCount\":1,\"totalCount\":1,\"next\":null,\"previous\":null,\"self\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?transform=true&page=1&limit=100\",\"first\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?transform=true&page=1&limit=100\",\"last\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?transform=true&page=1&limit=100\"},\"data\":[{\"id\":\"c45656ae40a6de17dea7694826f2bbb00d115130fbcaba257feaa820886acac3\",\"blockId\":\"4937253598533919154\",\"version\":2,\"type\":0,\"typeGroup\":1,\"amount\":\"100000000000\",\"fee\":\"9613248\",\"sender\":\"TEf7p5jf1LReywuits5orBsmpkMe8fLTkk\",\"senderPublicKey\":\"02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a\",\"recipient\":\"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1\",\"signature\":\"57d78bc151d6b41d013e528966aee161c7fbc6f4d598774f33ac30f796c4b1ab7e2b2ce5f96612aebfe120a2956ce482515f99c73b3f52d7486a29ed8391295b\",\"confirmations\":125462,\"timestamp\":{\"epoch\":374000,\"unix\":1572368340,\"human\":\"2019-10-29T16:59:00.856Z\"},\"nonce\":\"2\"}]}";
+  //const char* json = "{\"meta\":{\"totalCountIsEstimate\":true,\"count\":1,\"pageCount\":2,\"totalCount\":2,\"next\":null,\"previous\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"self\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=2&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"first\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"last\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=2&limit=1&orderBy=timestamp%3Aasc&transform=true\"},\"data\":[{\"id\":\"a59b33f8e708d14fb726a7f5bd2c3bb35c35b6389553e6be6869a6699cdc69d5\",\"blockId\":\"14320034153575802056\",\"version\":2,\"type\":0,\"typeGroup\":1,\"amount\":\"100000000\",\"fee\":\"9806624\",\"sender\":\"TEf7p5jf1LReywuits5orBsmpkMe8fLTkk\",\"senderPublicKey\":\"02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a\",\"recipient\":\"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1\",\"signature\":\"36772f190c7c11134f6c00db0cb03d3ac5ac7e972abc7ddef076afe4a4362e29afd6e55ef3a0f0fa76466d2f4bdd1afbf488e836fd2f83a195e58561ce7c7244\",\"confirmations\":16883,\"timestamp\":{\"epoch\":2191712,\"unix\":1574186052,\"human\":\"2019-11-19T17:54:12.856Z\"},\"nonce\":\"3\"}]}";
+
   deserializeJson(doc, walletGetResponse.c_str());
 
   /*
@@ -204,6 +221,8 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
     senderPublicKey = data_0_senderPublicKey;
     vendorField = data_0_vendorField;
   }
+
+
   return 1;           //transaction found
 
 }

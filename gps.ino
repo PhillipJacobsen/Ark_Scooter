@@ -83,19 +83,20 @@ void GPStoMQTT() {
       convertedLon = (0 - convertedLon);
     }
 
-    Serial.print("Location Converted2: ");
-    Serial.print(convertedLat, 8);
-    Serial.print(", ");
-    Serial.println(convertedLon, 8);
+ //   Serial.print("Location Converted2: ");
+ //   Serial.print(convertedLat, 8);
+ //   Serial.print(", ");
+ //   Serial.println(convertedLon, 8);
 
-    Serial.print("Speed (knots): "); Serial.println(GPS.speed);
+//    Serial.print("Speed (knots): "); Serial.println(GPS.speed);
     float indicatedSpeed = GPS.speed * 1.852;
-    Serial.print("Speed (km/h): "); Serial.println(indicatedSpeed);
+//    Serial.print("Speed (km/h): "); Serial.println(indicatedSpeed);
 
 
     //      Serial.print("Angle: "); Serial.println(GPS.angle);
-    Serial.print("Altitude: "); Serial.println(GPS.altitude);
-    Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
+    
+  //  Serial.print("Altitude: "); Serial.println(GPS.altitude);
+  //  Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
 
     //      msg = "{\"name\":\"where PJ should be fishing\",\"Fix\":false,\"lat\":53.53583908,\"lon\":-113.27674103,\"alt\":0,\"speed\":0,\"sat\":0}";
     //      Serial.print("Publish message: ");
@@ -104,7 +105,19 @@ void GPStoMQTT() {
 
     // https://arduino.stackexchange.com/questions/20911/how-to-append-float-value-of-into-a-string
 
-    //const char* buf;
+    /*
+       https://www.tutorialspoint.com/arduino/arduino_strings.htm
+      char query[50];
+      strcpy(query, "?page=");
+      char page_char[8];
+      itoa(page, page_char, 10);    //convert int to string
+      strcat(query, page_char);
+      strcat(query, "&limit=1&orderBy=timestamp:asc");
+
+      char buf[256];
+    strcpy(buf, "{\"name\":\"where PJ should be fishing\",\"Fix\":true,\"lat\":");
+    */
+    
     String  buf;
     buf += F("{\"name\":\"where PJ should be fishing\",\"Fix\":true,\"lat\":");
     buf += String(convertedLat + 0.0032, 8);    //add noise to gps signal
@@ -116,19 +129,36 @@ void GPStoMQTT() {
     buf += F(",\"sat\":");
     buf += String(GPS.satellites);
     buf += F(",\"bal\":");
-    //buf += String(balance);
-    //char balance_temp = balance_STRING;
+
+//String temp = buf +balance;
+//Serial.print("temp balance: ");
+//Serial.println(balanceCopied);
+Serial.print("Global temp balance: ");
+Serial.println(global_balance);
+
+
+    //buf += String("12323123123");
+    buf += String(global_balance);
+   
+    
+    //buf += String(balanceUINT, 10);
+
+  
     // buf += balance_temp.c_str();
     //buf += strstr(balance_STRING);
-    buf += String(balance_UINT, 10);
+    //int bal = *balanceUINT;
+    //buf += String(bal, 10);
     buf += F(",\"bat\":");
     buf += String(batteryPercent);
     buf += F("}");
 
+    //char a = 47;
+    //int b = (int) a;
 
-    Serial.print("debug balance  ");
-    Serial.println(balance_UINT);
-    Serial.println(balance_STRING);
+//    Serial.print("debug balance string ");
+//    Serial.println(balanceCopied);
+    //    Serial.print("debug balance ");
+    //   Serial.println(bal,10);
 
     Serial.print("Publish message: ");
     Serial.println(buf);
@@ -169,10 +199,8 @@ void build_MQTTpacket() {
 
   NodeRedMQTTpacket.fix = GPS.fix;
   NodeRedMQTTpacket.battery = batteryPercent;
-  NodeRedMQTTpacket.walletBalance = balance_UINT;
+  // NodeRedMQTTpacket.walletBalance = balanceUINT;
   if (GPS.fix) {
-
-
     //we need to do some fomatting of the GPS signal so it is suitable for mapping software on Thingsboard
     if (( GPS.lat == 'S') | ( GPS.lat == 'W')) {
       NodeRedMQTTpacket.latitude = (0 - convertDegMinToDecDeg(GPS.latitude));
@@ -184,7 +212,49 @@ void build_MQTTpacket() {
 
     NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;  //convert knots to kph
     NodeRedMQTTpacket.satellites = GPS.satellites;              //number of satellites
-
   }
+}
 
+/********************************************************************************
+  Fsend structure to NodeRed MQTT broker
+********************************************************************************/
+void send_MQTTpacket() {
+  /*
+      int battery;
+      boolean fix;
+      int satellites;
+      float latitude;
+      float longitude;
+      float speedKPH;
+      uint32_t walletBalance;
+  */
+  String  buf;
+
+  buf += F("{");
+
+  buf += F(",\"fix\":");
+  buf += String(NodeRedMQTTpacket.fix);
+
+  buf += String(NodeRedMQTTpacket.latitude + 0.0032, 8);    //add noise to gps signal
+  buf += F(",\"lon\":");
+  buf += String(NodeRedMQTTpacket.longitude + 0.00221, 8);
+  //    buf += F(",\"alt\":0,\"speed\":0,\"sat\":0}");
+  buf += F(",\"alt\":0,\"speed\":");
+  buf += String(NodeRedMQTTpacket.speedKPH);
+  buf += F(",\"sat\":");
+  buf += String(NodeRedMQTTpacket.satellites);
+  buf += F(",\"bal\":");
+  //buf += String(balance);
+  //char balance_temp = balance_STRING;
+  // buf += balance_temp.c_str();
+  //buf += strstr(balance_STRING);
+  buf += String(NodeRedMQTTpacket.walletBalance, 10);
+  buf += F(",\"bat\":");
+  buf += String(NodeRedMQTTpacket.battery);
+  buf += F("}");
+
+  Serial.print("send_MQTTpacket: ");
+  Serial.println(buf);
+
+  client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data", buf.c_str());
 }
