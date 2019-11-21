@@ -176,8 +176,8 @@ const int QRcode_Version = 10;  // set the version (range 1->40)
 const int QRcode_ECC = 2;       // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
 QRCode qrcode;                  // Create the QR code object
 
-char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
-
+//char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
+char* QRcodeHash;               // QRcodeHash. This is
 
 /********************************************************************************
    Arduino Json Libary - works with Version5.  NOT yet compatible with Version6
@@ -209,6 +209,9 @@ uint32_t previousUpdateTime_RSSI = millis();
 
 uint32_t UpdateInterval_RentalStartSearch = 8000;
 uint32_t previousUpdateTime_RentalStartSearch = millis();
+
+uint32_t UpdateInterval_GPS = 5000;
+uint32_t previousUpdateTime_GPS = millis();
 
 uint32_t previousTime_3 = millis();
 
@@ -266,21 +269,46 @@ Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);
 //   const char* vendorField;
 //};
 
+
+
+struct MQTTpacket {
+  int battery;
+  boolean fix;
+  int satellites;
+  float latitude;
+  float longitude;
+  float speedKPH;
+  uint32_t walletBalance;
+
+};
+
+struct MQTTpacket NodeRedMQTTpacket;
+
 //--------------------------------------------
 // these are used to store the received transation details returned from wallet search
+// https://www.geeksforgeeks.org/difference-const-char-p-char-const-p-const-char-const-p/
+//pointers to constant charaters. you cannot change the value but you can change the pointer
 const char*  id;              //transaction ID
 const char* amount;           //transactions amount
 const char* senderAddress;    //transaction address of sender
 const char* senderPublicKey;  //transaction address of sender
 const char* vendorField;      //vendor field
 
-const char* QRcodeHash;       //QRcodeHash. This is
+//NOTES!!!!!!!!!!!!!!
+//const char* is a pointer to memory that hopefully contains a null-terminated string.
+//A char* points to the memory location of a sequence of multiple chars.
+//char sz[] = {'t', 'e', 's', 't', 0};    //C-string
+//const char *psz = "test";
+
+//https://accu.org/index.php/journals/1445  char* x is the same as char *x
+
 
 int lastRXpage = 0;             //page number of the last received transaction in wallet
 int searchRXpage = 0;           //page number that is used for wallet search
 
 uint32_t nonce;
-uint32_t balance;
+uint32_t balance_UINT;
+const char* balance_STRING;
 
 /********************************************************************************
   State Machine
@@ -302,6 +330,7 @@ int getMostRecentReceivedTransaction();
 void UpdateDisplayTime();
 void UpdateWiFiConnectionStatus();
 void UpdateGPSConnectionStatus();
+void UpdateGPSDataStatus();
 void UpdateMQTTConnectionStatus();
 void UpdateDisplayTime();
 void GPStoMQTT();
@@ -342,11 +371,15 @@ void loop() {
   UpdateWiFiConnectionStatus();     //update WiFi status bar
   UpdateMQTTConnectionStatus();     //update MQTT status bar
   UpdateGPSConnectionStatus();      //update GPS status bar
+  UpdateGPSDataStatus();            //update GPS SAT and GPS Speed
   UpdateDisplayTime();              //update the clock every 1 second
   UpdateBatteryStatus();            //update battery status every UpdateInterval_Battery (5 seconds)
   UpdateRSSIStatus();               //update battery status every UpdateInterval_RSSI (5 seconds)
 
   //getMostRecentReceivedTransaction();
+
+    build_MQTTpacket();
+
 
   //--------------------------------------------
   // Update all the data on the Status Bar

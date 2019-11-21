@@ -67,17 +67,28 @@ void StateMachine() {
           state = STATE_2;
         }
         else if (GPS_status) {  //wait for GPS fix
-          clearMainScreen();
+
           //QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
-          QRcodeText = "03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2,48.972,-114.868,3.7";  //Public Key, Latitude, Longitude, Rate
+
+          //this is pseudorandom when the wifi or bluetooth does not have a connection. It can be considered "random" when the radios have a connection
+          //arduino random function is overloaded on to esp_random();
+          int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
+
+          //char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
+          char QRcodeText[256];
+          strcpy(QRcodeText, "rad:");
+          strcat(QRcodeText, ArkAddress);
+          strcat(QRcodeText, "?hash=");
+
+          char esprandom_char[10];
+          itoa(esprandom, esprandom_char, 10);    //convert int to string(base 10 representation).
+          QRcodeHash = esprandom_char;            //store the hash in a global to be used later.
+          strcat(QRcodeText, esprandom_char);
+          strcat(QRcodeText, "&rate=370000000");
+
+          //QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=4897212321343433&rate=370000000";  //Public Key, Latitude, Longitude, Rate
           displayQRcode(QRcodeText);
 
-          tft.setFont(&FreeSansBold18pt7b);
-          tft.setTextColor(ArkRed);
-          tft.setCursor(12, 30);        //12,45
-          tft.print("Scan to Ride");
-          tft.setFont(&FreeSans9pt7b);
-          tft.setTextColor(WHITE);
 
           previousUpdateTime_RentalStartSearch = millis();    //reset transaction search counter
 
@@ -128,7 +139,7 @@ void StateMachine() {
       }
 
     case STATE_5: {   // rider is using scooter
-    //wait for timer to expire and then lock scooter and send rental finish and go back to beginning 
+        //wait for timer to expire and then lock scooter and send rental finish and go back to beginning
         state = STATE_5;
         break;
       }

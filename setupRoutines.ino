@@ -35,7 +35,7 @@ void onConnectionEstablished()
   //--------------------------------------------
   //  Retrieve Wallet Nonce and Balance
   // nonce = getNonce();
-  getWallet(nonce, balance);
+  getWallet(nonce, balance_UINT);
 
   GetReceivedTransaction(ArkAddress, 1, id, amount, senderAddress, senderPublicKey, vendorField);
 

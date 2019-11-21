@@ -89,6 +89,7 @@ void getWallet(uint32_t &nonce, uint32_t &balance) {
   Serial.println(data_nonce);
   Serial.print("Balance: ");
   Serial.println(data_balance);
+  balance_STRING = data_balance;      //storing to global. not very good
   nonce = atol(data_nonce);
   balance = atol(data_balance);
 }
@@ -110,6 +111,9 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
 
   //this is what we need to assemble:  https://radians.nl/api/v2/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp:asc
   //query = "?page=1&limit=1&orderBy=timestamp:asc"
+
+  Serial.print("Page: ");
+  Serial.println(page);
 
   char query[50];
   strcpy(query, "?page=");

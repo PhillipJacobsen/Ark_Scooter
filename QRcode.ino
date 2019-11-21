@@ -8,12 +8,19 @@
 
 void displayQRcode(char *const QRcodeText) {
 
+  clearMainScreen();
+  tft.setFont(&FreeSansBold18pt7b);
+  tft.setTextColor(ArkRed);
+  tft.setCursor(12, 30);        //12,45
+  tft.print("Scan to Ride");
+  tft.setFont(&FreeSans9pt7b);
+  tft.setTextColor(WHITE);
+
   //--------------------------------------------
   // Allocate memory to store the QR code.
   // memory size depends on version number
   uint8_t qrcodeData[qrcode_getBufferSize(QRcode_Version)];
 
-  //qrcode_initText(&qrcode, qrcodeData, QRcode_Version, QRcode_ECC, "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3");
   qrcode_initText(&qrcode, qrcodeData, QRcode_Version, QRcode_ECC, QRcodeText);
 
   tft.fillRoundRect(27, 77 - 30, 186, 186, 4, WHITE); //white background with a few pixels of guard around the code

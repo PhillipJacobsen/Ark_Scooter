@@ -36,7 +36,6 @@ void UpdateDisplayTime() {
   }
 }
 
-
 /********************************************************************************
   Update status bar with ARK node connection status.
 ********************************************************************************/
@@ -86,12 +85,12 @@ void UpdateBatteryStatus() {
     //  batteryFloat = battery / 560; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)  adjust with fudge factor
     //4.1 real v was reading 3.7V
 
-//full power = approximate range: 2014 -> 2355
-//
+    //full power = approximate range: 1950 -> 2355
+    //
 
     battery = analogRead(BAT_PIN);
-    
-    batteryPercent = map(battery, 2010, 2360, 0, 100);
+
+    batteryPercent = map(battery, 1950, 2360, 0, 100);
     batteryPercent = constrain(batteryPercent, 0, 100);
     Serial.print("battery: ");
     Serial.println(battery);
@@ -111,30 +110,8 @@ void UpdateBatteryStatus() {
 
 
 /********************************************************************************
-  Update status bar with WifI and MQTT connection status.
-********************************************************************************/
-void UpdateWiFiMQTTConnectionStatus() {
-  if (client.isConnected()) {
-    if (!WiFi_status) {
-      tft.fillCircle(50, 301 - 6, 6, GREEN); //x,y,radius,color     //WiFi Status
-      tft.fillCircle(130, 301 - 6, 6, GREEN); //x,y,radius,color    //MQTT Status
-      WiFi_status = true;
-    }
-  }
-  else {
-    if (WiFi_status) {
-      tft.fillCircle(50, 301 - 6, 6, RED); //x,y,radius,color     //WiFi Status
-      tft.fillCircle(130, 301 - 6, 6, RED); //x,y,radius,color    //MQTT Status
-      WiFi_status = false;
-    }
-  }
-}
-
-
-
-/********************************************************************************
   Update status bar with WifI connection status
-  Display only updates on connection status change
+  Display updates only when connection status change
 ********************************************************************************/
 void UpdateWiFiConnectionStatus() {
   if (client.isWifiConnected()) {
@@ -170,6 +147,25 @@ void UpdateMQTTConnectionStatus() {
   }
 }
 
+/********************************************************************************
+  if GPS fix then update display with GPS Speed and GPS Sat
+********************************************************************************/
+void UpdateGPSDataStatus() {
+  if (GPS.fix) {
+    if (millis() - previousUpdateTime_GPS > UpdateInterval_GPS)  {
+      previousUpdateTime_GPS += UpdateInterval_GPS;
+      tft.fillRect(190, 319 - 17, 40, 18, ILI9341_BLACK); //clear the last GPS Sat reading
+      tft.setCursor(190, 319);
+      tft.print(GPS.satellites);
+
+      tft.fillRect(0, 283 - 17, 35, 18, ILI9341_BLACK);   //clear the last speed reading
+      tft.setCursor(0, 283);
+      float speedkmh = GPS.speed * 1.852;
+      tft.print(speedkmh, 1);
+
+    }
+  }
+}
 /********************************************************************************
   This routine will update the GPS Network Connection Icon on the TFT display
   Display only updates on connection status change
@@ -215,5 +211,5 @@ void UpdateGPSConnectionStatus() {
 
 void DisplayArkBitmap() {
   clearMainScreen();
-  tft.drawBitmap(56, 100, myBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
+  tft.drawBitmap(56, 100, ArkBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
 }

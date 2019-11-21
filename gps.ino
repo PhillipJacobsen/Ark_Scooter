@@ -35,32 +35,35 @@ double convertDegMinToDecDeg (float degMin) {
 
  ********************************************************************************/
 void GPStoMQTT() {
-  Serial.print("\nTime: ");
-  if (GPS.hour < 10) {
-    Serial.print('0');
-  }
-  Serial.print(GPS.hour, DEC); Serial.print(':');
-  if (GPS.minute < 10) {
-    Serial.print('0');
-  }
-  Serial.print(GPS.minute, DEC); Serial.print(':');
-  if (GPS.seconds < 10) {
-    Serial.print('0');
-  }
-  Serial.print(GPS.seconds, DEC); Serial.print('.');
-  if (GPS.milliseconds < 10) {
-    Serial.print("00");
-  } else if (GPS.milliseconds > 9 && GPS.milliseconds < 100) {
-    Serial.print("0");
-  }
-  Serial.println(GPS.milliseconds);
-  Serial.print("Date: ");
-  Serial.print(GPS.day, DEC); Serial.print('/');
-  Serial.print(GPS.month, DEC); Serial.print("/20");
-  Serial.println(GPS.year, DEC);
-  Serial.print("Fix: "); Serial.print((int)GPS.fix);
-  Serial.print(" quality: "); Serial.println((int)GPS.fixquality);
-  if (GPS.fix) {
+  if (client.isWifiConnected()) {
+
+
+    Serial.print("\nTime: ");
+    if (GPS.hour < 10) {
+      Serial.print('0');
+    }
+    Serial.print(GPS.hour, DEC); Serial.print(':');
+    if (GPS.minute < 10) {
+      Serial.print('0');
+    }
+    Serial.print(GPS.minute, DEC); Serial.print(':');
+    if (GPS.seconds < 10) {
+      Serial.print('0');
+    }
+    Serial.print(GPS.seconds, DEC); Serial.print('.');
+    if (GPS.milliseconds < 10) {
+      Serial.print("00");
+    } else if (GPS.milliseconds > 9 && GPS.milliseconds < 100) {
+      Serial.print("0");
+    }
+    Serial.println(GPS.milliseconds);
+    Serial.print("Date: ");
+    Serial.print(GPS.day, DEC); Serial.print('/');
+    Serial.print(GPS.month, DEC); Serial.print("/20");
+    Serial.println(GPS.year, DEC);
+    Serial.print("Fix: "); Serial.print((int)GPS.fix);
+    Serial.print(" quality: "); Serial.println((int)GPS.fixquality);
+    //   if (GPS.fix) {
     Serial.print("Location: ");
     Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
     Serial.print(", ");
@@ -104,33 +107,84 @@ void GPStoMQTT() {
     //const char* buf;
     String  buf;
     buf += F("{\"name\":\"where PJ should be fishing\",\"Fix\":true,\"lat\":");
-    buf += String(convertedLat+0.0032, 8);      //add noise to gps signal
+    buf += String(convertedLat + 0.0032, 8);    //add noise to gps signal
     buf += F(",\"lon\":");
-    buf += String(convertedLon+0.00221, 8);
+    buf += String(convertedLon + 0.00221, 8);
     //    buf += F(",\"alt\":0,\"speed\":0,\"sat\":0}");
     buf += F(",\"alt\":0,\"speed\":");
     buf += String(indicatedSpeed);
     buf += F(",\"sat\":");
     buf += String(GPS.satellites);
-     buf += F(",\"bat\":");
-
-    // val = map(batteryFloat, 3.6, 4.23, 0, 100);
-    buf += String(batteryPercent);   
+    buf += F(",\"bal\":");
+    //buf += String(balance);
+    //char balance_temp = balance_STRING;
+    // buf += balance_temp.c_str();
+    //buf += strstr(balance_STRING);
+    buf += String(balance_UINT, 10);
+    buf += F(",\"bat\":");
+    buf += String(batteryPercent);
     buf += F("}");
 
-    Serial.println(buf);
+
+    Serial.print("debug balance  ");
+    Serial.println(balance_UINT);
+    Serial.println(balance_STRING);
+
     Serial.print("Publish message: ");
+    Serial.println(buf);
+
     //     client.publish("test/GPS", buf.c_str());
     client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data", buf.c_str());
+    /*
 
+      int bat
+      int fix
+      int sat
+      float lat
+      float lon
+      float speed
+      uint32_t bal
 
-    tft.fillRect(190, 319 - 17, 40, 18, ILI9341_BLACK); //clear the last voltage reading
-    tft.setCursor(190, 319);
-    tft.print(GPS.satellites);
+    */
 
-    tft.fillRect(0, 283 - 17, 35, 18, ILI9341_BLACK);   //clear the last speed reading
-    tft.setCursor(0, 283);
-    float speedkmh = GPS.speed * 1.852;
-    tft.print(speedkmh, 1);
   }
+}
+
+
+/********************************************************************************
+  Fill in the data structure to be sent via MQTT
+
+  struct MQTTpacket {
+    int battery;
+    boolean fix;
+    int satellites;
+    float latitude;
+    float longitude;
+    float speedKPH;
+    uint32_t walletBalance;
+
+  };
+ ********************************************************************************/
+void build_MQTTpacket() {
+
+  NodeRedMQTTpacket.fix = GPS.fix;
+  NodeRedMQTTpacket.battery = batteryPercent;
+  NodeRedMQTTpacket.walletBalance = balance_UINT;
+  if (GPS.fix) {
+
+
+    //we need to do some fomatting of the GPS signal so it is suitable for mapping software on Thingsboard
+    if (( GPS.lat == 'S') | ( GPS.lat == 'W')) {
+      NodeRedMQTTpacket.latitude = (0 - convertDegMinToDecDeg(GPS.latitude));
+    }
+
+    if (( GPS.lon == 'S') | ( GPS.lon == 'W')) {
+      NodeRedMQTTpacket.longitude = (0 - convertDegMinToDecDeg(GPS.longitude));
+    }
+
+    NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;  //convert knots to kph
+    NodeRedMQTTpacket.satellites = GPS.satellites;              //number of satellites
+
+  }
+
 }
