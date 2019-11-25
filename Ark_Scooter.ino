@@ -221,17 +221,6 @@ unsigned long payment_Timeout;
 unsigned long timeAPIfinish;  //variable used to measure API access time
 unsigned long timeAPIstart;  //variable used to measure API access time
 
-int ARK_mtbs = 8000; //mean time between polling Ark API for new transactions
-unsigned long ARKscan_lasttime;   //last time Ark API poll has been done
-
-
-
-
-
-
-
-
-
 
 
 
@@ -272,14 +261,14 @@ Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);
 
 
 struct MQTTpacket {
+  const char* status;     
   int battery;
-  boolean fix;
+  int fix;
   int satellites;
   float latitude;
   float longitude;
   float speedKPH;
-  uint32_t walletBalance;
-
+  char walletBalance[64];
 };
 
 struct MQTTpacket NodeRedMQTTpacket;
@@ -305,7 +294,7 @@ const char* vendorField;      //vendor field
 
 int lastRXpage = 0;             //page number of the last received transaction in wallet
 int searchRXpage = 0;           //page number that is used for wallet search
-  
+
 //const uint32_t* nonceUINT;
 //long int nonceUINT;
 const char* nonce;
@@ -383,7 +372,7 @@ void loop() {
 
   //getMostRecentReceivedTransaction();
 
-//  build_MQTTpacket();
+
 
 
   //--------------------------------------------
@@ -395,10 +384,13 @@ void loop() {
 
   //--------------------------------------------
   // Publish MQTT data every UpdateInterval_MQTT_Publish (3 seconds)
-  if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
-    GPStoMQTT();
-    previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
-  }
+
+send_MQTTpacket();
+ 
+//  if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
+//      GPStoMQTT();
+//    previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
+//  }
 
 
 

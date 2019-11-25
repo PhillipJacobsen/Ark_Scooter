@@ -7,7 +7,7 @@
 
 // https://www.embeddedrelated.com/showarticle/723.php
 
-//Finite Mealy State Machine
+//Finite State Machine
 void StateMachine() {
   switch (state) {
     case STATE_0: {
