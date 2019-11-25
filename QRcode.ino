@@ -4,8 +4,7 @@
 
 /********************************************************************************
   This routine will display a large QRcode on a 240x320 TFT display
- ********************************************************************************/
-
+********************************************************************************/
 void displayQRcode(char *const QRcodeText) {
 
   clearMainScreen();
@@ -62,10 +61,7 @@ void displayQRcode(char *const QRcodeText) {
         tft.drawPixel(x0 + 3 * x,     y0 + 3 * y + 2, QRCODE_DARK_PIXEL_COLOR);
         tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y + 2, QRCODE_DARK_PIXEL_COLOR);
         tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y + 2, QRCODE_DARK_PIXEL_COLOR);
-
       }
     }
   }
-
-
 }

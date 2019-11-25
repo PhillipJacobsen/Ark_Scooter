@@ -89,7 +89,6 @@ void StateMachine() {
           //QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=4897212321343433&rate=370000000";  //Public Key, Latitude, Longitude, Rate
           displayQRcode(QRcodeText);
 
-
           previousUpdateTime_RentalStartSearch = millis();    //reset transaction search counter
 
           state = STATE_4;
@@ -123,6 +122,9 @@ void StateMachine() {
         }
         else {                  //we are looking for a Rental Start Tx
           if (search_RentalStartTx()) {
+            Serial.println("Start Ride Timer");
+            rideTime_start_ms = millis();
+
             //startRideTimer();
             //unlockScooter();
             state = STATE_5;
@@ -140,7 +142,16 @@ void StateMachine() {
 
     case STATE_5: {   // rider is using scooter
         //wait for timer to expire and then lock scooter and send rental finish and go back to beginning
-        state = STATE_5;
+        if (millis() - rideTime_start_ms > rideTime_length_ms)  {
+//use difftime
+          //http://www.cplusplus.com/reference/ctime/difftime/
+          state = STATE_6;
+         // proceed to next state
+        }
+        else {
+          state = STATE_5;
+        }
+
         break;
       }
 

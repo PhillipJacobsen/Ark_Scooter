@@ -104,11 +104,11 @@ void GPStoMQTT() {
     //Serial.print("temp balance: ");
     //Serial.println(balanceCopied);
     Serial.print("Global temp balance: ");
-    Serial.println(global_balance);
+    Serial.println(walletBalance);
 
 
     //buf += String("12323123123");
-    buf += String(global_balance);
+    buf += String(walletBalance);
 
 
     //buf += String(balanceUINT, 10);

@@ -1,6 +1,7 @@
 
 /********************************************************************************
   converts lat/long from Adafruit degree-minute format to decimal-degrees
+  http://arduinodev.woofex.net/2013/02/06/adafruit_gps_forma/
 ********************************************************************************/
 double convertDegMinToDecDeg (float degMin) {
   double min = 0.0;
@@ -15,8 +16,6 @@ double convertDegMinToDecDeg (float degMin) {
 
   return decDeg;
 }
-
-
 
 
 /********************************************************************************
@@ -34,7 +33,7 @@ double convertDegMinToDecDeg (float degMin) {
  ********************************************************************************/
 void build_MQTTpacket() {
   NodeRedMQTTpacket.battery = batteryPercent;
-  strcpy( NodeRedMQTTpacket.walletBalance, global_balance);
+  strcpy( NodeRedMQTTpacket.walletBalance, walletBalance);
 
   NodeRedMQTTpacket.fix = int(GPS.fix);
   if (NodeRedMQTTpacket.fix) {

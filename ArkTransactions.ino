@@ -1,6 +1,5 @@
 /********************************************************************************
   This file contains functions that interact with Ark client C++ API
-  code here is a hack right now. Just learning the API and working on basic program flow and function
 ********************************************************************************/
 
 
@@ -32,11 +31,8 @@ bool checkArkNodeStatus() {
 
   const size_t capacity = JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(4) + 50;
   DynamicJsonDocument doc(capacity);
-
   //  const char* json = "{\"data\":{\"synced\":true,\"now\":4047140,\"blocksCount\":-4047140,\"timestamp\":82303508}}";
-
   deserializeJson(doc, nodeStatus.c_str());
-
   JsonObject data = doc["data"];
   bool data_synced = data["synced"]; // true
   // long data_now = data["now"]; // 4047140
@@ -47,7 +43,7 @@ bool checkArkNodeStatus() {
 
 
 /********************************************************************************
-  This routine retrieves the nonce for the last transaction on the wallet
+  This routine retrieves the current nonce and the balance for the wallet
 
      This is equivalant to calling http://37.34.60.90:4040/api/v2/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1
      json-formatted object:
@@ -65,9 +61,7 @@ bool checkArkNodeStatus() {
   virtual std::string get(const char *const identifier) = 0;
 ********************************************************************************/
 
-//void getWallet(const uint32_t &nonceUINT, const uint32_t &balanceUINT, const char* &nonce, const char* &balance) {
-
-void getWallet(const char* &nonce, const char* &balance_A) {
+void getWallet(const char* &nonce, const char* &balance) {
   //std::string walletGetResponse = connection.api.wallets.get(ArkAddress);
   const auto walletGetResponse = connection.api.wallets.get(ArkAddress);
 
@@ -94,12 +88,8 @@ void getWallet(const char* &nonce, const char* &balance_A) {
   Serial.println(data_balance);
 
   nonce = data_nonce;
-  //balance = data_balance;      //duplicate. 
-  balance_A = data["balance"];     
-
-  //  nonceUINT = atol(*nonce);
-  //  balanceUINT = atol(*balance);
-
+  //balance = data_balance;      //duplicate.
+  balance = data["balance"];
 
 }
 
@@ -124,43 +114,33 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
   Serial.print("Page: ");
   Serial.println(page);
 
-//  Serial.print("!!!!!!Balance3.1: ");
-//  Serial.println(balance);
-  
-
-
   char query[50];
   strcpy(query, "?page=");
   char page_char[8];
   itoa(page, page_char, 10);    //convert int to string
   strcat(query, page_char);
   strcat(query, "&limit=1&orderBy=timestamp:asc");
-
   //  Serial.print("query: ");
   //  Serial.println(query);
-    
+
   //--------------------------------------------
   //peform the API
   //sort by oldest transactions first.  For simplicity set limit = 1 so we only get 1 transaction returned
   //timeAPIstart = millis();  //get time that API read started
   const auto walletGetResponse = connection.api.wallets.transactionsReceived(address, query);
-//  std::string walletGetResponse = connection.api.wallets.transactionsReceived(address, "?page=1&limit=1&orderBy=timestamp:asc");
-  
   //timeNow = millis() - timeAPIstart;  //get elapsed time
   //Serial.print("Ark API read time: ");
   //Serial.println(timeNow);
 
-  
+
   //Serial.print("\nSearch Received Address: ");
   //Serial.println(address);
   //Serial.print("\nSearch page: ");
   //Serial.println(page );
 
-const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(14) + 1240;
+  const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(14) + 1240 + 250; //add an extra 250 to be safe
   DynamicJsonDocument doc(capacity);
-
   //const char* json = "{\"meta\":{\"totalCountIsEstimate\":true,\"count\":1,\"pageCount\":2,\"totalCount\":2,\"next\":null,\"previous\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"self\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=2&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"first\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"last\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=2&limit=1&orderBy=timestamp%3Aasc&transform=true\"},\"data\":[{\"id\":\"a59b33f8e708d14fb726a7f5bd2c3bb35c35b6389553e6be6869a6699cdc69d5\",\"blockId\":\"14320034153575802056\",\"version\":2,\"type\":0,\"typeGroup\":1,\"amount\":\"100000000\",\"fee\":\"9806624\",\"sender\":\"TEf7p5jf1LReywuits5orBsmpkMe8fLTkk\",\"senderPublicKey\":\"02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a\",\"recipient\":\"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1\",\"signature\":\"36772f190c7c11134f6c00db0cb03d3ac5ac7e972abc7ddef076afe4a4362e29afd6e55ef3a0f0fa76466d2f4bdd1afbf488e836fd2f83a195e58561ce7c7244\",\"confirmations\":16883,\"timestamp\":{\"epoch\":2191712,\"unix\":1574186052,\"human\":\"2019-11-19T17:54:12.856Z\"},\"nonce\":\"3\"}]}";
-
   deserializeJson(doc, walletGetResponse.c_str());
 
   /*
@@ -194,8 +174,9 @@ const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_S
     long data_0_timestamp_epoch = data_0_timestamp["epoch"]; // 374000
     long data_0_timestamp_unix = data_0_timestamp["unix"]; // 1572368340
     const char* data_0_timestamp_human = data_0_timestamp["human"]; // "2019-10-29T16:59:00.856Z"
+    const char* data_0_nonce = data_0["nonce"]; // "2"
   */
-  const char* data_0_nonce = data_0["nonce"]; // "2"
+
 
   //--------------------------------------------
   //  Print the entire returned response string
@@ -222,9 +203,7 @@ const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_S
     vendorField = data_0_vendorField;
   }
 
-
   return 1;           //transaction found
-
 }
 
 
@@ -245,20 +224,9 @@ const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_S
 
 int getMostRecentReceivedTransaction() {
   Serial.println("\n\nHere are all the transactions in a wallet");
-
-  int CursorXtemp;
-  int CursorYtemp;
-
   int page = 1;
-
   {
-
     while ( GetReceivedTransaction(ArkAddress, page, id, amount, senderAddress, senderPublicKey, vendorField ) ) {
-
-      //    timeNow = millis() - timeAPIfinish;  //get current time
-      //    Serial.print("API read time:");
-      //    Serial.println(timeNow);
-
       Serial.print("Page: ");
       Serial.println(page);
       //   Serial.print("Transaction id: ");
@@ -271,65 +239,12 @@ int getMostRecentReceivedTransaction() {
       //   Serial.println(senderAddress);
       Serial.print("Vendor Field: ");
       Serial.println(vendorField);
-
-      /*    tft.setCursor(CursorX, CursorY);
-          if ( (page & 0x01) == 0) {
-            tft.setTextColor(ILI9341_WHITE);
-            tft.print("searching wallet: ");
-            CursorXtemp = tft.getCursorX();
-            CursorYtemp = tft.getCursorY();
-            tft.setTextColor(ILI9341_BLACK);
-            tft.print(page - 1);
-            tft.setCursor(CursorXtemp, CursorYtemp);
-            tft.setTextColor(ILI9341_WHITE);
-            tft.println(page);
-
-
-          }
-          else {
-            tft.setTextColor(ILI9341_RED);
-            tft.print("searching wallet: ");
-            CursorXtemp = tft.getCursorX();
-            CursorYtemp = tft.getCursorY();
-            tft.setTextColor(ILI9341_BLACK);
-            tft.print(page - 1);
-            tft.setCursor(CursorXtemp, CursorYtemp);
-            tft.setTextColor(ILI9341_RED);
-            tft.println(page);
-            //We need to clear the pixels around the page number every time we refresh.
-          }
-
-      */
       page++;
-
-      //    timeAPIfinish = millis();  //get time that API read finished
-
     };
-    //  tft.setCursor(CursorXtemp, CursorYtemp);
-    //  tft.setTextColor(ILI9341_BLACK);
-    //  tft.println(page - 1);
 
     Serial.print("No more Transactions ");
     Serial.print("\nThe most recent transaction was page #: ");
     Serial.println(page - 1);
-
     return page - 1;
   }
-
-}
-
-
-
-
-
-//quick test routine.
-void searchTransaction() {
-  //const std::map<std::string, std::string>& body_parameters, int limit = 5,
-  std::string vendorFieldHexString;
-  vendorFieldHexString = "6964647955";
-  //std::string transactionSearchResponse = connection.api.transactions.search( {{"vendorFieldHex", vendorFieldHexString}, {"orderBy", "timestamp:asc"} },1,1);
-  std::string transactionSearchResponse = connection.api.transactions.search( {{"recipientId", ArkAddress}, {"orderBy", "timestamp:asc"} }, "?limit=1&page=1");
-
-  Serial.print("\nSearch Result Transactions: ");
-  Serial.println(transactionSearchResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
 }

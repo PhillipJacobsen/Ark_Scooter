@@ -54,9 +54,9 @@ bool ARK_status = false;
 bool MQTT_status = false;
 
 
-int battery = 0;
+
 int batteryPercent = 0;
-float batteryFloat;
+//float batteryFloat;
 
 /********************************************************************************
   Library for reading/writing to the ESP32 flash memory.
@@ -78,7 +78,7 @@ float batteryFloat;
 #include "EspMQTTClient.h"
 
 // configure these parameters in secrets.h
-EspMQTTClient client(
+EspMQTTClient client(   
   WIFI_SSID,
   WIFI_PASS,
   MQTT_SERVER_IP,   // MQTT Broker server ip
@@ -90,12 +90,26 @@ EspMQTTClient client(
 
 
 /********************************************************************************
+  This is the data that is sent to the CloudMQTT broker and then red by NodeRed client
+*********************************************************************************/
+struct MQTTpacket {
+  const char* status;     
+  int battery;
+  int fix;
+  int satellites;
+  float latitude;
+  float longitude;
+  float speedKPH;
+  char walletBalance[64];
+};
+struct MQTTpacket NodeRedMQTTpacket;
+
+/********************************************************************************
     Adafruit GPS Library
 ********************************************************************************/
 #include <Adafruit_GPS.h>
 #define GPSSerial Serial1
-// Connect to the GPS on the hardware serial port
-Adafruit_GPS GPS(&GPSSerial);
+Adafruit_GPS GPS(&GPSSerial);     // Connect to the GPS on the hardware serial port
 
 
 /********************************************************************************
@@ -145,17 +159,15 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);         //create Touchscreen
 // RGB565 Color Definitions
 // This is a good tool for color conversions into RGB565 format
 // http://www.barth-dev.de/online/rgb565-color-picker/
-#define BLACK  ILI9341_BLACK
-#define WHITE  ILI9341_WHITE
-#define RED  ILI9341_RED
-#define GREEN  ILI9341_GREEN
-#define ArkRed 0xF1A7       // rgb(241, 55, 58)
-#define ArkLightRed 0xFCD3  // rgb(248, 155, 156)
-//#define OffWhite 0xDEDB  // rgb(218, 218, 218)
-#define OffWhite 0xCE59  // rgb(202, 202, 202)
-#define SpeedGreen 0xAFF5  // rgb(170, 255, 170)
-#define SpeedGreenDarker 0x0760  // rgb(0, 236, 0)
-
+#define BLACK   ILI9341_BLACK
+#define WHITE   ILI9341_WHITE
+#define RED     ILI9341_RED
+#define GREEN   ILI9341_GREEN
+#define ArkRed  0xF1A7                // rgb(241, 55, 58)
+#define ArkLightRed 0xFCD3            // rgb(248, 155, 156)
+#define OffWhite 0xCE59               // rgb(202, 202, 202)
+#define SpeedGreen 0xAFF5             // rgb(170, 255, 170)
+#define SpeedGreenDarker 0x0760       // rgb(0, 236, 0)
 #define QRCODE_DARK_PIXEL_COLOR 0xF1A7
 
 int CursorX = 0;         //used to store current cursor position of the display
@@ -192,36 +204,45 @@ char* QRcodeHash;               // QRcodeHash. This is
 ********************************************************************************/
 #include "time.h"
 
+//use these if you want to use millis() for measuring elapsed time for the ride timer.
+uint32_t rideTime_start_ms;    
+uint32_t rideTime_length_ms;     //milliseconds
 
-time_t prevDisplayTime = 0; // time that was displayed on TFT
-int prevDisplayMinute = 0;
+time_t rideTime_start_seconds = 0;
+//time_t rideTime_start_seconds = 0;
 
-uint32_t previousTime_1 = millis();
+//use these if you want to use time for measuring elapsed time for the ride timer.
+time_t prevDisplayTime = 0; // this is used if you want to update clock every second
 
+
+//time variables use for clock on the display
+//time_t prevDisplayTime = 0; // this is used if you want to update clock every second
+int prevDisplayMinute = 0;  // this is used if you want to update clock every minute
+
+//Frequency at which the MQTT packets are published
 uint32_t UpdateInterval_MQTT_Publish = 5000;
 uint32_t previousUpdateTime_MQTT_Publish = millis();
 
-uint32_t UpdateInterval_Battery = 5000;
+//Frequency at which the battery level is updated on the screen
+uint32_t UpdateInterval_Battery = 7000;
 uint32_t previousUpdateTime_Battery = millis();
 
+//Frequency at which the WiFi Receive Signal Level is updated on the screen
 uint32_t UpdateInterval_RSSI = 5000;
 uint32_t previousUpdateTime_RSSI = millis();
 
+//Frequency at which the Ark Network is polled looking for a rental start transaction
 uint32_t UpdateInterval_RentalStartSearch = 8000;
 uint32_t previousUpdateTime_RentalStartSearch = millis();
 
+//Frequency at which the Speed and # Satellites is updated on the screen
 uint32_t UpdateInterval_GPS = 5000;
 uint32_t previousUpdateTime_GPS = millis();
 
-uint32_t previousTime_3 = millis();
-
-
+//These are some variables used to measure the access time when reading from the Ark network.
 unsigned long timeNow;  //variable used to hold current millis() time.
-unsigned long payment_Timeout;
 unsigned long timeAPIfinish;  //variable used to measure API access time
 unsigned long timeAPIstart;  //variable used to measure API access time
-
-
 
 
 
@@ -260,18 +281,6 @@ Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);
 
 
 
-struct MQTTpacket {
-  const char* status;     
-  int battery;
-  int fix;
-  int satellites;
-  float latitude;
-  float longitude;
-  float speedKPH;
-  char walletBalance[64];
-};
-
-struct MQTTpacket NodeRedMQTTpacket;
 
 //--------------------------------------------
 // these are used to store the received transation details returned from wallet search
@@ -294,15 +303,18 @@ const char* vendorField;      //vendor field
 
 int lastRXpage = 0;             //page number of the last received transaction in wallet
 int searchRXpage = 0;           //page number that is used for wallet search
+char walletBalance[64];
+char walletNonce[64];
+//walletBalance[0] = (char)0;
+//walletNonce[0] = '\0';
 
 //const uint32_t* nonceUINT;
 //long int nonceUINT;
 const char* nonce;
 //long int balanceUINT;
 const char* balance;
-const char* balanceCopied;
 
-char global_balance[64];
+
 
 /********************************************************************************
   State Machine
