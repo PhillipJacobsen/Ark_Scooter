@@ -49,6 +49,25 @@ int ARK_PORT = 4003;
 #endif
 
 
+static const auto PASSPHRASE        = "afford thumb forward wall salad diet title patch holiday metal cement wisdom";  //TRXA2NUACckkYwWnS9JRkATQA453ukAcD1
+static const auto SecondPassphrase  = "this is a top secret passphrase too";
+static const auto MessageText       = "Hello World";
+//static const auto WifByte           = 0xaa;  // Ark Devnet
+
+static const auto BRIDGECHAIN_NETHASH           = "f39a61f04d6136a690a0b675ef6eedbd053665bd343b4e4f03311f12065fb875"; // std::string
+static const auto BRIDGECHAIN_SLIP44            = 1;          // uint8_t
+static const auto BRIDGECHAIN_WIF               = 0xCE;       // uint8_t
+static const auto BRIDGECHAIN_VERSION           = 0x41;       // uint8_t
+static const auto BRIDGECHAIN_EPOCH             = "2019-10-25T09:05:40.856Z";  // std::string
+
+constexpr uint64_t TYPE_0_FEE               = 1000000ULL;   //0.01RAD
+constexpr uint8_t TYPE_0_TYPE               = 0U;
+//constexpr uint32_t TYPE_0_TIMESTAMP         = 83506126UL;
+//constexpr uint32_t TYPE_0_VF_TIMESTAMP      = 83506245;
+//constexpr uint64_t TYPE_0_FEE               = 10000000ULL;
+//constexpr uint64_t TYPE_0_AMOUNT            = 1ULL;
+//constexpr uint32_t TYPE_0_EXPIRATION        = 0UL;
+
 
 const char* rate = "370000000";   //rate per minute
 

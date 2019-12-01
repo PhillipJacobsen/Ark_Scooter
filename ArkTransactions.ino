@@ -3,6 +3,46 @@
 ********************************************************************************/
 
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Send a BridgeChain transaction, tailored for a custom network.
+void sendBridgechainTransaction() {
+  // Use the Transaction Builder to make a transaction.
+
+  char tempVendorField[80];
+  strcpy(tempVendorField, "ESP32_");
+  strcat(tempVendorField, walletNonce);
+  
+  auto bridgechainTransaction = builder::Transfer()
+                                .type(TYPE_0_TYPE)
+                                .senderPublicKey(identities::Keys::fromPassphrase(PASSPHRASE).publicKey.data())
+                                .recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
+                                .vendorField(tempVendorField)
+                                .fee(TYPE_0_FEE)
+                                .sign(PASSPHRASE)
+                                .nonce(walletNonce_Uint64 + 1)
+                                .amount(1000ULL)
+                                .expiration(0UL)
+                                //  .secondSign(SecondPassphrase)
+                                .build(cfg);
+
+  const auto transactionJson = bridgechainTransaction.toJson();
+  printf("\n\nBridgechain Transaction: %s\n\n", transactionJson.c_str());
+  
+  bridgechainTransaction.sign(PASSPHRASE);
+
+  char transactionsBuffer[800];
+  snprintf(&transactionsBuffer[0], 800, "{\"transactions\":[%s]}", bridgechainTransaction.toJson().c_str());
+  std::string jsonStr = transactionsBuffer;
+  std::string sendResponse = connection.api.transactions.send(jsonStr);
+  Serial.println(sendResponse.c_str());
+
+
+}
+
+
+
+
 /********************************************************************************
   This routine checks to see if Ark node is syncronized to the chain.
   This is a maybe a good way to see if node communication is working correctly.

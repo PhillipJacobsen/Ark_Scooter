@@ -8,105 +8,85 @@
 /********************************************************************************
   This function is called once everything is connected (Wifi and MQTT)
 ********************************************************************************/
-void onConnectionEstablished()
-{
-  //--------------------------------------------
-  //  sync local time to NTP server
-  // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
-  configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
+void onConnectionEstablished() {
 
-  tft.fillRect(0, 0, 240, 42, BLACK);     //clear the first 2 lines of text
-  //tft.setCursor(0, 20);
-  //  tft.print("IP address: ");
-  //  tft.println(WiFi.localIP());
+  if (!initialConnectionEstablished_Flag) {     //execute this the first time we have established a WiFi and MQTT connection after powerup
+    initialConnectionEstablished_Flag = true;
+    //--------------------------------------------
+    //  sync local time to NTP server
+    // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
+    configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
 
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
 
+    //--------------------------------------------
+    //  query Ark Node to see if it is synced and update status bar
+    UpdateArkNodeConnectionStatus();
+
+    const char* nonce;
+    const char* balance;
+    //walletBalance[0] = (char)0;
+    //walletNonce[0] = '\0';
+
+    //--------------------------------------------
+    //  Retrieve Wallet Nonce and Balance
+    getWallet(nonce, balance);
+    //https://forum.arduino.cc/index.php?topic=334771.0
+    //  std::string balanceCopy = std::string(balance);
+    //  balanceCopied = balanceCopy.c_str();
+    strcpy(walletBalance, balance);      //copy into global character array
+    strcpy(walletNonce, nonce);          //copy into global character array
+    walletNonce_Uint64 = strtoull(nonce, NULL, 10);   //string to unsigned long long
+
+    Serial.println("64bit nonce:  ");
+    Serial.println(nonce);
+    Serial.println(walletNonce);
+    Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal
+    // nonceUINT = strtol(nonce);
+    // balanceUINT = strtol(balance, NULL, 10);    //returns the maximum value of a 32-bit number. Actually, we need a 64 bit number here.
+    // nonceUINT = atol(*nonce);
+    // balanceUINT = atol(*balance);
+
+    sendBridgechainTransaction();
+
+    lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+
+    // GetReceivedTransaction(ArkAddress, 1, id, amount, senderAddress, senderPublicKey, vendorField);
+
+
+    // Subscribe to "mytopic/test" and display received message to Serial
+    //  client.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", [](const String & payload) {
+    //    Serial.println(payload);
+    //  });
+
+    // Subscribe to "mytopic/test2"
+    //  client.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", test2Func);
+
+
+    // Publish a message to "mytopic/test"
+    //  client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
+
+    // Execute delayed instructions
+    //  client.executeDelayed(5 * 1000, []() {
+    //    client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
+    //  });
+
+    //wait for time to sync from servers
+    while (time(nullptr) <= 100000) {
+      delay(50);
+    }
+    //--------------------------------------------
+    //  get time synced from NTP server
+    UpdateDisplayTime();
+  }
+  else {
+
+  }
   //--------------------------------------------
   //  update WiFi and MQTT connection status bar
   UpdateWiFiConnectionStatus();     //update WiFi status bar
   UpdateMQTTConnectionStatus();     //update MQTT status bar
-
-  //--------------------------------------------
-  //  query Ark Node to see if it is synced and update status bar
-  UpdateArkNodeConnectionStatus();
-
-  walletBalance[0] = (char)0;
-  walletNonce[0] = '\0';
-
-  //--------------------------------------------
-  //  Retrieve Wallet Nonce and Balance
-  getWallet(nonce, balance);
-  strcpy(walletBalance, balance);      //copy data into global variable
-  strcpy(walletNonce, nonce);          //copy data into global variable
-
-  //https://forum.arduino.cc/index.php?topic=334771.0
-  //  std::string balanceCopy = std::string(balance);
-  //  balanceCopied = balanceCopy.c_str();
-
-
-  //    nonceUINT = strtol(nonce);
-  // balanceUINT = strtol(balance, NULL, 10);    //returns the maximum value of a 32-bit number. Actually, we need a 64 bit number here.
-  //  nonceUINT = atol(*nonce);
-  //  balanceUINT = atol(*balance);
-
-  // Serial.print("Nonce3: ");
-  //Serial.println(nonceUINT);
-  //Serial.print("Balance3: ");
-  // Serial.println(balanceUINT);
-
-  // GetReceivedTransaction(ArkAddress, 1, id, amount, senderAddress, senderPublicKey, vendorField);
-
-  lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
-
-
-
-  // Subscribe to "mytopic/test" and display received message to Serial
-//  client.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", [](const String & payload) {
-//    Serial.println(payload);
-//  });
-
-  // Subscribe to "mytopic/test2"
-//  client.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", test2Func);
-
-
-  // Publish a message to "mytopic/test"
-//  client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
-
-  // Execute delayed instructions
-  //  client.executeDelayed(5 * 1000, []() {
-  //    client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
-  //  });
-
-
-  //wait for time to sync from servers
-  while (time(nullptr) <= 100000) {
-    delay(50);
-  }
-  //--------------------------------------------
-  //  get time synced from NTP server
-  UpdateDisplayTime();
-
-
-  // const auto blockchainResponse = connection.api.blockchain.get();
-  // Serial.print("\nBlockchain Response: ");
-  // Serial.println(blockchainResponse.c_str());
-
-
-  /*
-    tft.setFont(&FreeSansBold18pt7b);
-    tft.setTextColor(ArkRed);
-    tft.setCursor(0, 45);
-    tft.print("Waiting for Networks");
-    tft.setFont(&FreeSans9pt7b);
-    tft.setTextColor(WHITE);
-  */
-
-  //  Serial.print("Balance5: ");
-  //  Serial.println(balance);
-  //  Serial.print("BalanceCopy5: ");
-  //  Serial.println(balanceCopied);
 
 }
 

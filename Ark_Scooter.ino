@@ -28,6 +28,8 @@
 #define RADIANS   //this configures system for my custom bridgechain. If undefined then system will be configured for Ark Devnet.
 //#define ARDUINOJSON_USE_LONG_LONG 1   //this may not be required. Was used previously for compatibility with Telegram which used JSON v5 library
 
+
+//#include <Arduino.h>
 /********************************************************************************
                               Private Data
   IMPORTANT - Modify the secrets.h file with your network connection details
@@ -48,6 +50,7 @@ const int BAT_PIN = 35;    //ADC connected to Battery input pin (A13 = 35;)
 /********************************************************************************
                               Global Variables
 ********************************************************************************/
+bool initialConnectionEstablished_Flag = false;
 bool WiFi_status = false;
 bool GPS_status = false;
 bool ARK_status = false;
@@ -57,6 +60,16 @@ bool MQTT_status = false;
 
 int batteryPercent = 0;
 //float batteryFloat;
+
+
+/********************************************************************************
+   Arduino Json Libary -
+    Data returned from Ark API is in JSON format.
+    This libary is used to parse and deserialize the reponse
+
+    This library is added by Ark crypto library so you do not need to include it here.
+********************************************************************************/
+//#include <ArduinoJson.h>
 
 /********************************************************************************
   Library for reading/writing to the ESP32 flash memory.
@@ -78,7 +91,7 @@ int batteryPercent = 0;
 #include "EspMQTTClient.h"
 
 // configure these parameters in secrets.h
-EspMQTTClient client(   
+EspMQTTClient client(
   WIFI_SSID,
   WIFI_PASS,
   MQTT_SERVER_IP,   // MQTT Broker server ip
@@ -93,7 +106,7 @@ EspMQTTClient client(
   This is the data that is sent to the CloudMQTT broker and then red by NodeRed client
 *********************************************************************************/
 struct MQTTpacket {
-  const char* status;     
+  const char* status;
   int battery;
   int fix;
   int satellites;
@@ -191,12 +204,7 @@ QRCode qrcode;                  // Create the QR code object
 //char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
 char* QRcodeHash;               // QRcodeHash. This is
 
-/********************************************************************************
-   Arduino Json Libary - works with Version5.  NOT yet compatible with Version6
-    Data returned from Ark API is in JSON format.
-    This libary is used to parse and deserialize the reponse
-********************************************************************************/
-#include <ArduinoJson.h>
+
 
 /********************************************************************************
   Time Library
@@ -205,7 +213,7 @@ char* QRcodeHash;               // QRcodeHash. This is
 #include "time.h"
 
 //use these if you want to use millis() for measuring elapsed time for the ride timer.
-uint32_t rideTime_start_ms;    
+uint32_t rideTime_start_ms;
 uint32_t rideTime_length_ms;     //milliseconds
 
 time_t rideTime_start_seconds = 0;
@@ -244,31 +252,51 @@ unsigned long timeNow;  //variable used to hold current millis() time.
 unsigned long timeAPIfinish;  //variable used to measure API access time
 unsigned long timeAPIstart;  //variable used to measure API access time
 
+/********************************************************************************
+
+    Ark Crypto Library (version 0.7.0)
+      https://github.com/ArkEcosystem/Cpp-Crypto
+
+    Bip66 Library (version 0.2.0)
+      https://github.com/sleepdefic1t/bip66
+
+********************************************************************************/
+#include <arkCrypto.h>
+#include "arkCrypto_esp32.h"  // This is a helper header that includes all the Misc ARK C++ Crypto headers required for this sketch
+
+// Namespaces
+using namespace Ark::Crypto;
+using namespace Ark::Crypto::identities;
+using namespace Ark::Crypto::transactions;
+
+//const auto publicKey    = identities::Keys::fromPassphrase(Passphrase).publicKey;
+//const auto pubKeyHash   = Hash::ripemd160(publicKey.data());
+//const auto address      = Base58::parsePubkeyHash(pubKeyHash.data(), 65);
+//const auto addressString = Address::fromPassphrase(Passphrase).toString.c_str();
+
+//BridgeChain Network Structure Model.  see Ark-Cpp-Crypto\src\common\network.hpp
+const Network BridgechainNetwork = {
+  BRIDGECHAIN_NETHASH,
+  BRIDGECHAIN_SLIP44,
+  BRIDGECHAIN_WIF,
+  BRIDGECHAIN_VERSION,
+  BRIDGECHAIN_EPOCH
+};
+
+// Load the Custom Network Configuration
+const Configuration cfg(BridgechainNetwork);
 
 
 /********************************************************************************
-   Ark Client Library (version 1.3.0)
-    https://github.com/ArkEcosystem/cpp-client
+  Ark Client Library (version 1.3.0)
+  https://github.com/ArkEcosystem/cpp-client
 
-    Ark Crypto Library (version 0.6.0)
-      https://github.com/ArkEcosystem/Cpp-Crypto
-
-    Bip66 v0. (version 0.3.1)
-    https://github.com/sleepdefic1t/bip66
-
-    https://docs.ark.io/iot/#which-sdk-supports-iot
-    https://docs.ark.io/tutorials/iot/storing-data-on-the-blockchain.html#step-1-project-setup
-    https://docs.ark.io/tutorials/iot/reacting-to-data-on-the-blockchain.html#step-1-project-setup
+  https://docs.ark.io/iot/#which-sdk-supports-iot
+  https://docs.ark.io/tutorials/iot/storing-data-on-the-blockchain.html#step-1-project-setup
+  https://docs.ark.io/tutorials/iot/reacting-to-data-on-the-blockchain.html#step-1-project-setup
 ********************************************************************************/
 #include <arkClient.h>
-//#include <arkCrypto.h>
-
-
-//This is a small hex helper header included in ARK Cpp-Crypto
-//#include "utils/hex.hpp"
-
-// create ARK blockchain connection
-Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);
+Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);   // create ARK blockchain connection
 
 //I think a structure here for transaction details would be better form
 //I need to do some work here to make things less hacky
@@ -305,14 +333,9 @@ int lastRXpage = 0;             //page number of the last received transaction i
 int searchRXpage = 0;           //page number that is used for wallet search
 char walletBalance[64];
 char walletNonce[64];
-//walletBalance[0] = (char)0;
-//walletNonce[0] = '\0';
 
-//const uint32_t* nonceUINT;
-//long int nonceUINT;
-const char* nonce;
-//long int balanceUINT;
-const char* balance;
+uint64_t walletNonce_Uint64 = 1ULL;       
+//const uint64_t* nonceUint64Pntr;
 
 
 
@@ -397,12 +420,12 @@ void loop() {
   //--------------------------------------------
   // Publish MQTT data every UpdateInterval_MQTT_Publish (3 seconds)
 
-send_MQTTpacket();
- 
-//  if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
-//      GPStoMQTT();
-//    previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
-//  }
+  send_MQTTpacket();
+
+  //  if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
+  //      GPStoMQTT();
+  //    previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
+  //  }
 
 
 
