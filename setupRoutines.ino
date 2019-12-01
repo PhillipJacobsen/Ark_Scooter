@@ -21,35 +21,28 @@ void onConnectionEstablished() {
     Serial.println(WiFi.localIP());
 
     //--------------------------------------------
+    //  update WiFi and MQTT connection status bar
+    UpdateWiFiConnectionStatus();     //update WiFi status bar
+    UpdateMQTTConnectionStatus();     //update MQTT status bar
+
+    //--------------------------------------------
+    //  query Ark Node to see if it is synced
+    //  we need some error handling here!!!!!!  What do we do if there is no ark node connected?
+    //  if (checkArkNodeStatus()) {
+
+
+    //--------------------------------------------
+    //  Retrieve Wallet Nonce and Balance
+    getWallet();
+
+    // sendBridgechainTransaction();
+
+    lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+
+    //--------------------------------------------
     //  query Ark Node to see if it is synced and update status bar
     UpdateArkNodeConnectionStatus();
 
-    const char* nonce;      //walletNonce[0] = '\0';  
-    const char* balance;    //walletBalance[0] = (char)0;  
-    //--------------------------------------------
-    //  Retrieve Wallet Nonce and Balance
-    getWallet(nonce, balance);
-    //https://forum.arduino.cc/index.php?topic=334771.0
-    //  std::string balanceCopy = std::string(balance);
-    //  balanceCopied = balanceCopy.c_str();
-    strcpy(walletBalance, balance);      //copy into global character array
-    walletBalance_Uint64 = strtoull(balance, NULL, 10);   //string to unsigned long long
-    
-    strcpy(walletNonce, nonce);          //copy into global character array   
-    Serial.println("64bit nonce:  ");
-    Serial.println(nonce);
-    Serial.println(walletNonce);
-    walletNonce_Uint64 = strtoull(nonce, NULL, 10);   //string to unsigned long long
-    Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal
-    // nonceUINT = strtol(nonce);
-    // balanceUINT = strtol(balance, NULL, 10);    //returns the maximum value of a 32-bit number. Actually, we need a 64 bit number here.
-    // nonceUINT = atol(*nonce);
-    // balanceUINT = atol(*balance);
-
-
-   // sendBridgechainTransaction();
-
-    lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 
     // GetReceivedTransaction(ArkAddress, 1, id, amount, senderAddress, senderPublicKey, vendorField);
 
@@ -79,13 +72,14 @@ void onConnectionEstablished() {
     //  get time synced from NTP server
     UpdateDisplayTime();
   }
-  else {
 
+  else {
+    //--------------------------------------------
+    //  update WiFi and MQTT connection status bar
+    UpdateWiFiConnectionStatus();     //update WiFi status bar
+    UpdateMQTTConnectionStatus();     //update MQTT status bar
   }
-  //--------------------------------------------
-  //  update WiFi and MQTT connection status bar
-  UpdateWiFiConnectionStatus();     //update WiFi status bar
-  UpdateMQTTConnectionStatus();     //update MQTT status bar
+
 
 }
 
@@ -108,9 +102,8 @@ void setupDisplayTouchscreen() {
   // tft.setFont();    //configure standard adafruit font
   tft.begin();
   tft.fillScreen(BLACK);  //clear screen
-  //  tft.setFont(&FreeSansBold9pt7b);
   tft.setFont(&FreeSans9pt7b);    //9pt = 12pixel height(I think)  https://reeddesign.co.uk/test/points-pixels.html
-
+  tft.setTextColor(WHITE);
   // we currently are not using the touchscreen so don't bother initializing it.
   /*
     //--------------------------------------------
@@ -137,7 +130,7 @@ void clearMainScreen() {
 void InitStatusBar() {
   tft.fillRect(0, 265 - 20, 240, 55 + 20, BLACK); //clear the status bar area + powered by ark.io text above it
   tft.setTextColor(ArkRed);
-  tft.setCursor(40, 265);
+  tft.setCursor(45, 260);
   tft.print("Powered by Ark.io");
   tft.setTextColor(WHITE);
 
@@ -165,10 +158,6 @@ void InitStatusBar() {
   tft.fillCircle(50, 319 - 6, 6, RED); //x,y,radius,color     //GPS Status
   tft.fillCircle(130, 319 - 6, 6, RED); //x,y,radius,color    //ARK Status
 }
-
-
-
-
 
 
 
@@ -243,15 +232,92 @@ void setup()
 
   GPSSerial.println(PMTK_Q_RELEASE);// request firmware version
 
-  //displaySpeedScreen();
+
+  //  clearMainScreen();
+  //display initial speed
+  //  float speedkmh = 12.34543;      //current speed
+  //  previousSpeed = speedkmh;       //store as previous speed in full precision
+  //  tft.setFont(&Lato_Black_96);
+  //  tft.setTextColor(SpeedGreenDarker);
+  //  tft.setCursor(60, 105);
+  //  tft.print(speedkmh, 0);         //display speed with 0 decimal point
+
+  //  delay(2000);
+
+  //  updateSpeedometer();
+  //breakpoint
+  //  while (1) {
+  //  }
+
+}
+
+
+
+
+void updateSpeedometer() {
+  char previousSpeed_char[5];
+  snprintf(&previousSpeed_char[0], 5, "%.1f", previousSpeed);        //create string with 1 decimal point.
+
+  float speedkmh = GPS.speed * 1.852;     //get current speed with full precision
+  char currentSpeed_char[5];
+  snprintf(&currentSpeed_char[0], 5, "%.1f", speedkmh);             //create string with 1 decimal point.
+
+  if  (strcmp(currentSpeed_char, previousSpeed_char) == 0) {
+    return;
+  }
+
+  int16_t  x1, y1;
+  uint16_t w, h;
+  tft.setFont(&Lato_Black_96);
+  tft.getTextBounds(previousSpeed_char, 30, 105, &x1, &y1, &w, &h);   //get bounds of the previous speed text
+  tft.fillRect(x1, y1, w, h, BLACK);                                  //clear the last speed reading
+
+  //display updated speed
+  previousSpeed = speedkmh;               //update previous speed
+  //tft.setFont(&Lato_Black_96);
+  tft.setTextColor(SpeedGreenDarker);
+  tft.setCursor(30, 105);
+  tft.print(speedkmh, 1);
+}
+
+
+
+void updateCountdownTimer() {
+ 
+  uint32_t remainingRentalTime = rideTime_length_ms - (millis() - rideTime_start_ms);   //calculate remaining ride time in ms
+  remainingRentalTime = remainingRentalTime / 1000;   //# of minutes
+  if (remainingRentalTime != remainingRentalTime_previous) {
+    //update display every second
+    char previousTimer_char[10];
+    snprintf(&previousTimer_char[0], 10, "%u", remainingRentalTime_previous);        //create string from unsigned int
+
+    char currentTimer_char[10];
+    snprintf(&currentTimer_char[0], 10, "%u", remainingRentalTime);             //create string from unsigned int
+
+    if  (strcmp(currentTimer_char, previousTimer_char) == 0) {
+      return;     //do nothing if the # of seconds is the same.
+    }
+
+    remainingRentalTime_previous = remainingRentalTime;               //update previous timer
+    //update countdown timer display
+    int16_t  x1, y1;
+    uint16_t w, h;
+    tft.setFont(&Lato_Semibold_48);
+    tft.setTextColor(OffWhite);
+    tft.getTextBounds(previousTimer_char, 55, 230, &x1, &y1, &w, &h);   //get bounds of the previous speed text
+    tft.fillRect(x1, y1, w, h, BLACK);                                  //clear the last speed reading
+
+    //display updated countdowntimer
+    tft.setCursor(55, 230);
+    tft.print(remainingRentalTime);
+  }
 
 
 }
 
 
 
-void displaySpeedScreen()
-{
+void displaySpeedScreen() {
 
   // https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
   // https://www.youtube.com/watch?v=L8MmTISmwZ8
@@ -275,9 +341,18 @@ void displaySpeedScreen()
   tft.print("10:32");
 
   //breakpoint
-  while (1) {
-  }
+  //  while (1) {
+  //  }
 }
+
+
+
+
+
+
+
+
+
 
 
 // Load WLAN credentials from EEPROM

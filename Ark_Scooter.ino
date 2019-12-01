@@ -185,7 +185,7 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);         //create Touchscreen
 
 int CursorX = 0;         //used to store current cursor position of the display
 int CursorY = 0;         //used to store current cursor position of the display
-
+float previousSpeed = 0;
 
 /********************************************************************************
     QRCode by Richard Moore version 0.0.1
@@ -241,6 +241,8 @@ uint32_t previousUpdateTime_RSSI = millis();
 //Frequency at which the Ark Network is polled looking for a rental start transaction
 uint32_t UpdateInterval_RentalStartSearch = 8000;
 uint32_t previousUpdateTime_RentalStartSearch = millis();
+
+uint32_t remainingRentalTime_previous;
 
 //Frequency at which the Speed and # Satellites is updated on the screen
 uint32_t UpdateInterval_GPS = 5000;

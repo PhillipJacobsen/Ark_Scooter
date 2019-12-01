@@ -8,10 +8,10 @@
 // Send a BridgeChain transaction, tailored for a custom network.
 void sendBridgechainTransaction() {
   // Use the Transaction Builder to make a transaction.
-walletNonce_Uint64 = walletNonce_Uint64 + 1;
+  walletNonce_Uint64 = walletNonce_Uint64 + 1;
 
   char tempVendorField[80];
-  strcpy(tempVendorField, "Ride Finished: ");
+  strcpy(tempVendorField, "Ride End: ");
   strcat(tempVendorField, QRcodeHash);
 
   auto bridgechainTransaction = builder::Transfer()
@@ -100,9 +100,16 @@ bool checkArkNodeStatus() {
   }
 
   virtual std::string get(const char *const identifier) = 0;
-********************************************************************************/
 
-void getWallet(const char* &nonce, const char* &balance) {
+  function writes directly to global variables
+  char walletBalance[64];
+  uint64_t walletNonce_Uint64 = 1ULL;
+  char walletNonce[64];
+  uint64_t walletBalance_Uint64 = 0ULL;
+
+********************************************************************************/
+//void getWallet(const char* &nonce, const char* &balance) {
+void getWallet() {
   //std::string walletGetResponse = connection.api.wallets.get(ArkAddress);
   const auto walletGetResponse = connection.api.wallets.get(ArkAddress);
 
@@ -112,24 +119,24 @@ void getWallet(const char* &nonce, const char* &balance) {
   //const char* json = "{\"data\":{\"address\":\"TKneFA9Rm6GrX9zVXhn6iGprnW2fEauouE\",\"publicKey\":\"039ae554142f4df0a22c5c25b182896e9b3a1c785c6a0b8d1581cade5936608452\",\"nonce\":\"2\",\"balance\":\"2099999480773504\",\"isDelegate\":false,\"isResigned\":false}}";
 
   deserializeJson(doc, walletGetResponse.c_str());
-
   JsonObject data = doc["data"];
-  //const char* data_address = data["address"]; // "TKneFA9Rm6GrX9zVXhn6iGprnW2fEauouE"
-  //const char* data_publicKey = data["publicKey"]; // "039ae554142f4df0a22c5c25b182896e9b3a1c785c6a0b8d1581cade5936608452"
-  //const char* data_nonce = data["nonce"]; // "2"
-  //const char* data_balance = data["balance"]; // "2099999480773504"
-  //bool data_isDelegate = data["isDelegate"]; // false
-  //bool data_isResigned = data["isResigned"]; // false
+  //  nonce = data["nonce"];
+  //  balance = data["balance"];
 
-  nonce = data["nonce"];
-  balance = data["balance"];
+  strcpy(walletBalance, data["balance"]);      //copy into global character array
+  walletBalance_Uint64 = strtoull(data["balance"], NULL, 10);   //string to unsigned long long
+
+  strcpy(walletNonce, data["nonce"]);          //copy into global character array
+  walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);   //string to unsigned long long
 
   Serial.print("\n Get Wallet ");
   Serial.println(walletGetResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
   Serial.print("Nonce: ");
-  Serial.println(nonce);
+  Serial.println(walletNonce);
+  Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal
   Serial.print("Balance: ");
-  Serial.println(balance);
+  Serial.println(walletBalance);
+
 }
 
 

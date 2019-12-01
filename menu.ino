@@ -24,7 +24,8 @@ void UpdateDisplayTime() {
       strftime (formattedTime, 30, "%R", timeinfo); // http://www.cplusplus.com/reference/ctime/strftime/
       Serial.println(formattedTime);
 
-      tft.setTextColor(WHITE);
+          tft.setFont(&FreeSans9pt7b);   
+    tft.setTextColor(WHITE);
       //      tft.fillRect(0, 60 - 18, 65, 20, BLACK); //clear the previous time
       //      tft.setCursor(0, 60);
       tft.fillRect(70 + 13, 283 - 17, 65, 18, BLACK); //clear the previous time
@@ -65,11 +66,13 @@ void UpdateRSSIStatus() {
     if (client.isWifiConnected()) {
       long rssi = WiFi.RSSI();
       tft.fillRect(195, 283 - 18, 40, 20, BLACK);   //clear the last voltage reading
+          tft.setFont(&FreeSans9pt7b);   
+    tft.setTextColor(WHITE);
       tft.setCursor(195, 283);
       tft.print(rssi);
 
-//      Serial.print("RSSI:");
-//      Serial.println(rssi);
+      //      Serial.print("RSSI:");
+      //      Serial.println(rssi);
     }
   }
 }
@@ -91,17 +94,20 @@ void UpdateBatteryStatus() {
     batteryPercent = map(battery, 1945, 2348, 0, 100);
     batteryPercent = constrain(batteryPercent, 0, 100);
 
-//    Serial.print("battery: ");
-//    Serial.print(battery);
-//    Serial.print("  ");
-//    Serial.print(batteryPercent);
-//    Serial.print("%  ");
-  
+    //    Serial.print("battery: ");
+    //    Serial.print(battery);
+    //    Serial.print("  ");
+    //    Serial.print(batteryPercent);
+    //    Serial.print("%  ");
+
     float batteryFloat = battery / 559.5; //we needed to add fudge factor to calibrate readings. There Must not be a 50% voltage divider on the input.
     //    battery = battery / 4096;   //battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
     //    battery = battery /620.60606060606;
-//    Serial.print(batteryFloat);
-//    Serial.println("V");
+    //    Serial.print(batteryFloat);
+    //    Serial.println("V");
+
+    tft.setFont(&FreeSans9pt7b);
+    tft.setTextColor(WHITE);
     tft.fillRect(190, 301 - 17, 40, 19, BLACK);   //clear the last voltage reading
     tft.setCursor(190, 301);
     tft.print(batteryFloat);
@@ -156,6 +162,9 @@ void UpdateGPSDataStatus() {
   if (GPS.fix) {
     if (millis() - previousUpdateTime_GPS > UpdateInterval_GPS)  {
       previousUpdateTime_GPS += UpdateInterval_GPS;
+
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
       tft.fillRect(190, 319 - 17, 40, 18, ILI9341_BLACK); //clear the last GPS Sat reading
       tft.setCursor(190, 319);
       tft.print(GPS.satellites);
@@ -182,6 +191,8 @@ void UpdateGPSConnectionStatus() {
       tft.fillCircle(50, 319 - 6, 6, GREEN); //x,y,radius,color     //GPS Status
 
       tft.fillRect(190, 319 - 17, 40, 18, BLACK);   //clear the last # of satellite reading
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
       tft.setCursor(190, 319);
       tft.print(GPS.satellites);
 
@@ -197,6 +208,8 @@ void UpdateGPSConnectionStatus() {
     if (GPS_status) {
       tft.fillCircle(50, 319 - 6, 6, RED); //x,y,radius,color     //GPS Status
       tft.fillRect(190, 319 - 17, 40, 18, BLACK);  //clear the last # of satellite reading
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
       tft.setCursor(190, 319);
       tft.print('0');
 

@@ -128,9 +128,19 @@ void StateMachine() {
           if (search_RentalStartTx()) {
             Serial.println("Start Ride Timer");
             rideTime_start_ms = millis();
+            rideTime_length_ms = 60000;
+            remainingRentalTime_previous = rideTime_length_ms;
 
+            clearMainScreen();
+            tft.setFont(&Lato_Medium_36);
+            tft.setTextColor(SpeedGreen);     // http://www.barth-dev.de/online/rgb565-color-picker/
+            tft.setCursor(75, 150);
+            tft.print("km/h");
 
-            rideTime_length_ms = 12000;
+            previousSpeed = 0;
+            updateSpeedometer();
+            //we need to update the initial display here
+            //remainingRentalTime_previous = 0;
 
             //startRideTimer();
             //unlockScooter();
@@ -150,15 +160,21 @@ void StateMachine() {
     case STATE_5: {   // rider is using scooter
         //wait for timer to expire and then lock scooter and send rental finish and go back to beginning
         if (millis() - rideTime_start_ms > rideTime_length_ms)  {
+          //timer has expired
           //use difftime
           //http://www.cplusplus.com/reference/ctime/difftime/
           state = STATE_6;
           Serial.print("State: ");
           Serial.println(state);
+          getWallet();                  // Retrieve Wallet Nonce and Balance
           sendBridgechainTransaction();
           // proceed to next state
         }
         else {
+          //timer has not expired
+          updateSpeedometer();
+          updateCountdownTimer();
+
           state = STATE_5;
         }
         break;
@@ -167,7 +183,6 @@ void StateMachine() {
 
 
     case STATE_6: {
-
         state = STATE_3;
         Serial.print("State: ");
         Serial.println(state);
@@ -189,7 +204,6 @@ int search_RentalStartTx() {
     searchRXpage = lastRXpage + 1;
     if ( GetReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField) ) {
       lastRXpage++;
-
       Serial.print("Received vendorField: ");
       Serial.println(vendorField);
       Serial.print("QRcodeHash: ");

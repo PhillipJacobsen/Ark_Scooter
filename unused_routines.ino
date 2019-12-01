@@ -1,3 +1,14 @@
+    //https://forum.arduino.cc/index.php?topic=334771.0
+    //  std::string balanceCopy = std::string(balance);
+    //  balanceCopied = balanceCopy.c_str(); 
+    
+    
+    // nonceUINT = strtol(nonce);
+    // balanceUINT = strtol(balance, NULL, 10);    //returns the maximum value of a 32-bit number. Actually, we need a 64 bit number here.
+    // nonceUINT = atol(*nonce);
+    // balanceUINT = atol(*balance);
+
+
 
 /********************************************************************************
   This will routine send GPS coordinates to MQTT broker if Fix is achieved.
