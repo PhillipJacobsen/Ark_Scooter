@@ -90,6 +90,7 @@ void send_MQTTpacket() {
       buf += String(NodeRedMQTTpacket.battery);
       buf += F("}");
 
+      Serial.println();
       Serial.print("send_MQTTpacket: ");
       Serial.println(buf);
       client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data", buf.c_str());

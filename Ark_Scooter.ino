@@ -202,9 +202,8 @@ const int QRcode_ECC = 2;       // set the Error Correction level (range 0-3) or
 QRCode qrcode;                  // Create the QR code object
 
 //char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
-char* QRcodeHash;               // QRcodeHash. This is
-
-
+char* QRcodeHash_pntr;               // QRcodeHash. This is
+char QRcodeHash[256];
 
 /********************************************************************************
   Time Library
@@ -228,7 +227,7 @@ time_t prevDisplayTime = 0; // this is used if you want to update clock every se
 int prevDisplayMinute = 0;  // this is used if you want to update clock every minute
 
 //Frequency at which the MQTT packets are published
-uint32_t UpdateInterval_MQTT_Publish = 5000;
+uint32_t UpdateInterval_MQTT_Publish = 15000;
 uint32_t previousUpdateTime_MQTT_Publish = millis();
 
 //Frequency at which the battery level is updated on the screen
@@ -331,12 +330,12 @@ const char* vendorField;      //vendor field
 
 int lastRXpage = 0;             //page number of the last received transaction in wallet
 int searchRXpage = 0;           //page number that is used for wallet search
+
 char walletBalance[64];
+uint64_t walletNonce_Uint64 = 1ULL;    
 char walletNonce[64];
-
-uint64_t walletNonce_Uint64 = 1ULL;       
-//const uint64_t* nonceUint64Pntr;
-
+uint64_t walletBalance_Uint64 = 0ULL;  
+   
 
 
 /********************************************************************************

@@ -24,11 +24,8 @@ void onConnectionEstablished() {
     //  query Ark Node to see if it is synced and update status bar
     UpdateArkNodeConnectionStatus();
 
-    const char* nonce;
-    const char* balance;
-    //walletBalance[0] = (char)0;
-    //walletNonce[0] = '\0';
-
+    const char* nonce;      //walletNonce[0] = '\0';  
+    const char* balance;    //walletBalance[0] = (char)0;  
     //--------------------------------------------
     //  Retrieve Wallet Nonce and Balance
     getWallet(nonce, balance);
@@ -36,19 +33,21 @@ void onConnectionEstablished() {
     //  std::string balanceCopy = std::string(balance);
     //  balanceCopied = balanceCopy.c_str();
     strcpy(walletBalance, balance);      //copy into global character array
-    strcpy(walletNonce, nonce);          //copy into global character array
-    walletNonce_Uint64 = strtoull(nonce, NULL, 10);   //string to unsigned long long
-
+    walletBalance_Uint64 = strtoull(balance, NULL, 10);   //string to unsigned long long
+    
+    strcpy(walletNonce, nonce);          //copy into global character array   
     Serial.println("64bit nonce:  ");
     Serial.println(nonce);
     Serial.println(walletNonce);
+    walletNonce_Uint64 = strtoull(nonce, NULL, 10);   //string to unsigned long long
     Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal
     // nonceUINT = strtol(nonce);
     // balanceUINT = strtol(balance, NULL, 10);    //returns the maximum value of a 32-bit number. Actually, we need a 64 bit number here.
     // nonceUINT = atol(*nonce);
     // balanceUINT = atol(*balance);
 
-    sendBridgechainTransaction();
+
+   // sendBridgechainTransaction();
 
     lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 

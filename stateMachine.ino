@@ -82,7 +82,11 @@ void StateMachine() {
 
           char esprandom_char[10];
           itoa(esprandom, esprandom_char, 10);    //convert int to string(base 10 representation).
-          QRcodeHash = esprandom_char;            //store the hash in a global to be used later.
+          //QRcodeHash = esprandom_char;            //store the hash in a global to be used later.
+          strcpy(QRcodeHash, esprandom_char);      //copy into global character array
+          Serial.print("QRcodeHash ");
+          Serial.println(QRcodeHash);
+
           strcat(QRcodeText, esprandom_char);
           strcat(QRcodeText, "&rate=370000000");
 
@@ -125,6 +129,9 @@ void StateMachine() {
             Serial.println("Start Ride Timer");
             rideTime_start_ms = millis();
 
+
+            rideTime_length_ms = 12000;
+
             //startRideTimer();
             //unlockScooter();
             state = STATE_5;
@@ -143,17 +150,31 @@ void StateMachine() {
     case STATE_5: {   // rider is using scooter
         //wait for timer to expire and then lock scooter and send rental finish and go back to beginning
         if (millis() - rideTime_start_ms > rideTime_length_ms)  {
-//use difftime
+          //use difftime
           //http://www.cplusplus.com/reference/ctime/difftime/
           state = STATE_6;
-         // proceed to next state
+          Serial.print("State: ");
+          Serial.println(state);
+          sendBridgechainTransaction();
+          // proceed to next state
         }
         else {
           state = STATE_5;
         }
-
         break;
       }
+
+
+
+    case STATE_6: {
+
+        state = STATE_3;
+        Serial.print("State: ");
+        Serial.println(state);
+        break;
+      }
+
+
 
   }
 }
@@ -168,6 +189,11 @@ int search_RentalStartTx() {
     searchRXpage = lastRXpage + 1;
     if ( GetReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField) ) {
       lastRXpage++;
+
+      Serial.print("Received vendorField: ");
+      Serial.println(vendorField);
+      Serial.print("QRcodeHash: ");
+      Serial.println(QRcodeHash);
 
       //check to see if vendorField of new transaction matches the field in QRcode that we displayed
       if  (strcmp(vendorField, QRcodeHash) == 0) {

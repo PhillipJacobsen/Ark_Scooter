@@ -68,8 +68,8 @@ void UpdateRSSIStatus() {
       tft.setCursor(195, 283);
       tft.print(rssi);
 
-      Serial.print("RSSI:");
-      Serial.println(rssi);
+//      Serial.print("RSSI:");
+//      Serial.println(rssi);
     }
   }
 }
@@ -90,17 +90,18 @@ void UpdateBatteryStatus() {
     int battery = analogRead(BAT_PIN);
     batteryPercent = map(battery, 1945, 2348, 0, 100);
     batteryPercent = constrain(batteryPercent, 0, 100);
-    Serial.print("battery: ");
-    Serial.print(battery);
-    Serial.print("  ");
-    Serial.print(batteryPercent);
-    Serial.print("%  ");
+
+//    Serial.print("battery: ");
+//    Serial.print(battery);
+//    Serial.print("  ");
+//    Serial.print(batteryPercent);
+//    Serial.print("%  ");
   
     float batteryFloat = battery / 559.5; //we needed to add fudge factor to calibrate readings. There Must not be a 50% voltage divider on the input.
     //    battery = battery / 4096;   //battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
     //    battery = battery /620.60606060606;
-    Serial.print(batteryFloat);
-    Serial.println("V");
+//    Serial.print(batteryFloat);
+//    Serial.println("V");
     tft.fillRect(190, 301 - 17, 40, 19, BLACK);   //clear the last voltage reading
     tft.setCursor(190, 301);
     tft.print(batteryFloat);

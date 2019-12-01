@@ -8,11 +8,12 @@
 // Send a BridgeChain transaction, tailored for a custom network.
 void sendBridgechainTransaction() {
   // Use the Transaction Builder to make a transaction.
+walletNonce_Uint64 = walletNonce_Uint64 + 1;
 
   char tempVendorField[80];
-  strcpy(tempVendorField, "ESP32_");
-  strcat(tempVendorField, walletNonce);
-  
+  strcpy(tempVendorField, "Ride Finished: ");
+  strcat(tempVendorField, QRcodeHash);
+
   auto bridgechainTransaction = builder::Transfer()
                                 .type(TYPE_0_TYPE)
                                 .senderPublicKey(identities::Keys::fromPassphrase(PASSPHRASE).publicKey.data())
@@ -20,19 +21,19 @@ void sendBridgechainTransaction() {
                                 .vendorField(tempVendorField)
                                 .fee(TYPE_0_FEE)
                                 .sign(PASSPHRASE)
-                                .nonce(walletNonce_Uint64 + 1)
-                                .amount(1000ULL)
+                                .nonce(walletNonce_Uint64)
+                                .amount(10000ULL)
                                 .expiration(0UL)
                                 //  .secondSign(SecondPassphrase)
                                 .build(cfg);
 
   const auto transactionJson = bridgechainTransaction.toJson();
   printf("\n\nBridgechain Transaction: %s\n\n", transactionJson.c_str());
-  
+
   bridgechainTransaction.sign(PASSPHRASE);
 
-  char transactionsBuffer[800];
-  snprintf(&transactionsBuffer[0], 800, "{\"transactions\":[%s]}", bridgechainTransaction.toJson().c_str());
+  char transactionsBuffer[600];
+  snprintf(&transactionsBuffer[0], 600, "{\"transactions\":[%s]}", bridgechainTransaction.toJson().c_str());
   std::string jsonStr = transactionsBuffer;
   std::string sendResponse = connection.api.transactions.send(jsonStr);
   Serial.println(sendResponse.c_str());
@@ -115,22 +116,20 @@ void getWallet(const char* &nonce, const char* &balance) {
   JsonObject data = doc["data"];
   //const char* data_address = data["address"]; // "TKneFA9Rm6GrX9zVXhn6iGprnW2fEauouE"
   //const char* data_publicKey = data["publicKey"]; // "039ae554142f4df0a22c5c25b182896e9b3a1c785c6a0b8d1581cade5936608452"
-  const char* data_nonce = data["nonce"]; // "2"
-  const char* data_balance = data["balance"]; // "2099999480773504"
+  //const char* data_nonce = data["nonce"]; // "2"
+  //const char* data_balance = data["balance"]; // "2099999480773504"
   //bool data_isDelegate = data["isDelegate"]; // false
   //bool data_isResigned = data["isResigned"]; // false
+
+  nonce = data["nonce"];
+  balance = data["balance"];
 
   Serial.print("\n Get Wallet ");
   Serial.println(walletGetResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
   Serial.print("Nonce: ");
-  Serial.println(data_nonce);
+  Serial.println(nonce);
   Serial.print("Balance: ");
-  Serial.println(data_balance);
-
-  nonce = data_nonce;
-  //balance = data_balance;      //duplicate.
-  balance = data["balance"];
-
+  Serial.println(balance);
 }
 
 
