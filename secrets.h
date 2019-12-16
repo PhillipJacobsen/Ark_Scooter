@@ -17,12 +17,12 @@
 #define MQTT_SERVER_PORT  1883
 
 //h
-#define WIFI_SSID         "TELUS0183"
-#define WIFI_PASS         "6z5g4hbdxi"
+//#define WIFI_SSID         "TELUS0183"
+//#define WIFI_PASS         "6z5g4hbdxi"
 
 //w
-//#define WIFI_SSID         "TELUS6428"
-//#define WIFI_PASS         "3mmkgc9gn2"
+#define WIFI_SSID         "TELUS6428"
+#define WIFI_PASS         "3mmkgc9gn2"
 
 //pj
 //#define WIFI_SSID         "hppj"
@@ -68,13 +68,12 @@ constexpr uint8_t TYPE_0_TYPE               = 0U;
 //constexpr uint64_t TYPE_0_AMOUNT            = 1ULL;
 //constexpr uint32_t TYPE_0_EXPIRATION        = 0UL;
 
-
 const char* RENTAL_RATE_STR = "370000000";                //rate per minute
 constexpr uint64_t RENTAL_RATE_UINT64 = 370000000ULL;    
 
 //Wallet Address on bridgechain
 #ifdef RADIANS
-const char* ArkAddress = "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1";   //RADIANS testnet address
+const char* ArkAddress = "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1";   //RADIANS testnet address  - nickname pjtest
 //const char* ArkPublicKey = "03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2";       
 
 #else

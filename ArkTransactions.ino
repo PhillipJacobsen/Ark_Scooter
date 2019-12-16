@@ -5,6 +5,28 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Sign a Message using a 12-word Passphrase and Verify it.
+//
+// Given the text "Hello World",
+// and the passphrase "this is a top secret passphrase",
+// the computed 'Signature" is:
+// - "304402200fb4adddd1f1d652b544ea6ab62828a0a65b712ed447e2538db0caebfa68929e02205ecb2e1c63b29879c2ecf1255db506d671c8b3fa6017f67cfd1bf07e6edd1cc8".
+//
+// ---
+void signMessage() {
+    Message message;
+    message.sign(MessageText, PASSPHRASE);
+
+    const auto signatureString = BytesToHex(message.signature);
+    printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
+
+    const bool isValid = message.verify();
+    printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Send a BridgeChain transaction, tailored for a custom network.
 void sendBridgechainTransaction() {
   // Use the Transaction Builder to make a transaction.
@@ -17,7 +39,8 @@ void sendBridgechainTransaction() {
   auto bridgechainTransaction = builder::Transfer()
                                 .type(TYPE_0_TYPE)
                                 .senderPublicKey(identities::Keys::fromPassphrase(PASSPHRASE).publicKey.data())
-                                .recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
+                                //.recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
+                                .recipientId(scooterRental.senderAddress)        //genesis_2
                                 .vendorField(tempVendorField)
                                 .fee(TYPE_0_FEE)
                                 .sign(PASSPHRASE)
@@ -120,16 +143,13 @@ void getWallet() {
 
   deserializeJson(doc, walletGetResponse.c_str());
   JsonObject data = doc["data"];
-  //  nonce = data["nonce"];
-  //  balance = data["balance"];
-
   strcpy(walletBalance, data["balance"]);      //copy into global character array
   walletBalance_Uint64 = strtoull(data["balance"], NULL, 10);   //string to unsigned long long
 
   strcpy(walletNonce, data["nonce"]);          //copy into global character array
   walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);   //string to unsigned long long
 
-  Serial.print("\n Get Wallet ");
+  Serial.print("\nGet Wallet ");
   Serial.println(walletGetResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
   Serial.print("Nonce: ");
   Serial.println(walletNonce);
@@ -166,23 +186,11 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
   itoa(page, page_char, 10);    //convert int to string
   strcat(query, page_char);
   strcat(query, "&limit=1&orderBy=timestamp:asc");
-  //  Serial.print("query: ");
-  //  Serial.println(query);
 
   //--------------------------------------------
   //peform the API
   //sort by oldest transactions first.  For simplicity set limit = 1 so we only get 1 transaction returned
-  //timeAPIstart = millis();  //get time that API read started
   const auto walletGetResponse = connection.api.wallets.transactionsReceived(address, query);
-  //timeNow = millis() - timeAPIstart;  //get elapsed time
-  //Serial.print("Ark API read time: ");
-  //Serial.println(timeNow);
-
-
-  //Serial.print("\nSearch Received Address: ");
-  //Serial.println(address);
-  //Serial.print("\nSearch page: ");
-  //Serial.println(page );
 
   const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(14) + 1240 + 250; //add an extra 250 to be safe
   DynamicJsonDocument doc(capacity);
@@ -202,18 +210,18 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
 
   JsonObject data_0 = doc["data"][0];
   const char* data_0_id = data_0["id"]; // "c45656ae40a6de17dea7694826f2bbb00d115130fbcaba257feaa820886acac3"
-  const char* data_0_blockId = data_0["blockId"]; // "4937253598533919154"
-  int data_0_version = data_0["version"]; // 2
-  int data_0_type = data_0["type"]; // 0
-  int data_0_typeGroup = data_0["typeGroup"]; // 1
+//  const char* data_0_blockId = data_0["blockId"]; // "4937253598533919154"
+//  int data_0_version = data_0["version"]; // 2
+//  int data_0_type = data_0["type"]; // 0
+//  int data_0_typeGroup = data_0["typeGroup"]; // 1
   const char* data_0_amount = data_0["amount"]; // "100000000000"
-  const char* data_0_fee = data_0["fee"]; // "9613248"
+//  const char* data_0_fee = data_0["fee"]; // "9613248"
   const char* data_0_sender = data_0["sender"]; // "TEf7p5jf1LReywuits5orBsmpkMe8fLTkk"
   const char* data_0_senderPublicKey = data_0["senderPublicKey"]; // "02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a"
-  const char* data_0_recipient = data_0["recipient"]; // "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1"
-  const char* data_0_signature = data_0["signature"]; // "57d78bc151d6b41d013e528966aee161c7fbc6f4d598774f33ac30f796c4b1ab7e2b2ce5f96612aebfe120a2956ce482515f99c73b3f52d7486a29ed8391295b"
+//  const char* data_0_recipient = data_0["recipient"]; // "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1"
+//  const char* data_0_signature = data_0["signature"]; // "57d78bc151d6b41d013e528966aee161c7fbc6f4d598774f33ac30f796c4b1ab7e2b2ce5f96612aebfe120a2956ce482515f99c73b3f52d7486a29ed8391295b"
   const char* data_0_vendorField = data_0["vendorField"];
-  long data_0_confirmations = data_0["confirmations"]; // 125462
+//  long data_0_confirmations = data_0["confirmations"]; // 125462
 
   /*
     JsonObject data_0_timestamp = data_0["timestamp"];
@@ -236,8 +244,7 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
   //--------------------------------------------
   //  the data_0_id parameter will be used to determine if a valid transaction was found.
   if (data_0_id == nullptr) {
-    Serial.println("data_0_id is null");
-    Serial.print(".");
+    Serial.println("No Transaction. data_0_id is null");
     return 0;           //no transaction found
   }
   else {
@@ -271,26 +278,22 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
 int getMostRecentReceivedTransaction() {
   Serial.println("\n\nHere are all the transactions in a wallet");
   int page = 1;
-  {
-    while ( GetReceivedTransaction(ArkAddress, page, id, amount, senderAddress, senderPublicKey, vendorField ) ) {
-      Serial.print("Page: ");
-      Serial.println(page);
-      //   Serial.print("Transaction id: ");
-      //    Serial.println(id);
-      //    Serial.print("Amount(Arktoshi): ");
-      //    Serial.println(amount);
-      //    Serial.print("Amount(Ark): ");
-      //   Serial.println(float(amount) / 100000000, 8);
-      //    Serial.print("Sender address: ");
-      //   Serial.println(senderAddress);
-      Serial.print("Vendor Field: ");
-      Serial.println(vendorField);
-      page++;
-    };
+  const char* id;               //transaction ID
+  const char* amount;           //transactions amount
+  const char* senderAddress;    //transaction address of sender
+  const char* senderPublicKey;  //transaction address of sender
+  const char* vendorField;      //vendor field
 
-    Serial.print("No more Transactions ");
-    Serial.print("\nThe most recent transaction was page #: ");
-    Serial.println(page - 1);
-    return page - 1;
-  }
+  while ( GetReceivedTransaction(ArkAddress, page, id, amount, senderAddress, senderPublicKey, vendorField ) ) {
+    Serial.print("Page: ");
+    Serial.println(page);
+    Serial.print("Vendor Field: ");
+    Serial.println(vendorField);
+    page++;
+  };
+
+  Serial.print("No more Transactions ");
+  Serial.print("\nThe most recent transaction was page #: ");
+  Serial.println(page - 1);
+  return page - 1;
 }

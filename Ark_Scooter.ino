@@ -87,11 +87,13 @@ int batteryPercent = 0;
     You just need to provide your credentials and it will manage the connection and reconnections to the Wifi and MQTT networks.
     EspMQTTClient is a wrapper around the MQTT PubSubClient Library Version 2.7 by @knolleary
 ********************************************************************************/
-#define MQTT_MAX_PACKET_SIZE 512  // the maximum message size, including header, is 128 bytes by default. Configurable in PubSubClient.h.
+//You need to update this in PubSubClient.h. Setting it here does nothing.
+//#define MQTT_MAX_PACKET_SIZE 512  // the maximum message size, including header, is 128 bytes by default. Configurable in PubSubClient.h.
+
 #include "EspMQTTClient.h"
 
 // configure these parameters in secrets.h
-EspMQTTClient client(
+EspMQTTClient WiFiMQTTclient(
   WIFI_SSID,
   WIFI_PASS,
   MQTT_SERVER_IP,   // MQTT Broker server ip
@@ -113,7 +115,8 @@ struct MQTTpacket {
   float latitude;
   float longitude;
   float speedKPH;
-  char walletBalance[64];
+  char walletBalance[65];
+  char signature[140];        //is the signature always 140 characters?
 };
 struct MQTTpacket NodeRedMQTTpacket;
 
@@ -203,7 +206,7 @@ QRCode qrcode;                  // Create the QR code object
 
 //char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
 char* QRcodeHash_pntr;               // QRcodeHash. This is
-char QRcodeHash[256];
+char QRcodeHash[16];
 
 /********************************************************************************
   Time Library
@@ -288,6 +291,8 @@ const Network BridgechainNetwork = {
 const Configuration cfg(BridgechainNetwork);
 
 
+
+
 /********************************************************************************
   Ark Client Library (version 1.3.0)
   https://github.com/ArkEcosystem/cpp-client
@@ -308,18 +313,33 @@ Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);   // c
 //   const char* vendorField;
 //};
 
-
-
-
 //--------------------------------------------
 // these are used to store the received transation details returned from wallet search
 // https://www.geeksforgeeks.org/difference-const-char-p-char-const-p-const-char-const-p/
 //pointers to constant charaters. you cannot change the value but you can change the pointer
-const char*  id;              //transaction ID
-const char* amount;           //transactions amount
-const char* senderAddress;    //transaction address of sender
-const char* senderPublicKey;  //transaction address of sender
-const char* vendorField;      //vendor field
+//const char* id;              //transaction ID
+//const char* amount;           //transactions amount
+//const char* senderAddress;    //transaction address of sender
+//const char* senderPublicKey;  //transaction address of sender
+//const char* vendorField;      //vendor field
+
+
+struct rental {
+  char senderAddress[34 + 1];
+  char payment[64 + 1];
+  uint64_t payment_Uint64;
+  // char rentalRate[64+1] = RENTAL_RATE_STR;
+  char rentalRate[64 + 1];
+  uint64_t rentalRate_Uint64;
+  float startLatitude;
+  float startLongitude;
+  float endLatitude;
+  float endLongitude;
+  char vendorField[256 + 1];
+};
+struct rental scooterRental;
+
+
 
 //NOTES!!!!!!!!!!!!!!
 //const char* is a pointer to memory that hopefully contains a null-terminated string.
@@ -331,13 +351,13 @@ const char* vendorField;      //vendor field
 
 
 int lastRXpage = 0;             //page number of the last received transaction in wallet
-int searchRXpage = 0;           //page number that is used for wallet search
 
-char walletBalance[64];
-uint64_t walletNonce_Uint64 = 1ULL;    
-char walletNonce[64];
-uint64_t walletBalance_Uint64 = 0ULL;  
-   
+
+char walletBalance[64 + 1];
+uint64_t walletNonce_Uint64 = 1ULL;
+char walletNonce[64 + 1];
+uint64_t walletBalance_Uint64 = 0ULL;
+
 
 
 /********************************************************************************
@@ -380,7 +400,7 @@ void loop() {
 
   //--------------------------------------------
   // Handle the WiFi and MQTT connections
-  client.loop();
+  WiFiMQTTclient.loop();
 
   //--------------------------------------------
   // Parse GPS data if available
@@ -414,7 +434,7 @@ void loop() {
   //--------------------------------------------
   // Update all the data on the Status Bar
   //  if (millis() - previousTime_1 > 4000)  {
-  //   Serial.println(client.isConnected());
+  //   Serial.println(WiFiMQTTclient.isConnected());
   //   previousTime_1 += 4000;
   // }
 

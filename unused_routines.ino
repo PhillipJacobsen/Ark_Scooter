@@ -16,7 +16,7 @@
 
  ********************************************************************************/
 void GPStoMQTT() {
-  if (client.isWifiConnected()) {
+  if (WiFiMQTTclient.isWifiConnected()) {
 
 
     Serial.print("\nTime: ");
@@ -82,7 +82,7 @@ void GPStoMQTT() {
     //      msg = "{\"name\":\"where PJ should be fishing\",\"Fix\":false,\"lat\":53.53583908,\"lon\":-113.27674103,\"alt\":0,\"speed\":0,\"sat\":0}";
     //      Serial.print("Publish message: ");
     //     Serial.println(msg);
-    //    client.publish("test/GPS2", msg);
+    //    WiFiMQTTclient.publish("test/GPS2", msg);
 
     // https://arduino.stackexchange.com/questions/20911/how-to-append-float-value-of-into-a-string
 
@@ -144,8 +144,8 @@ void GPStoMQTT() {
     Serial.print("Publish message: ");
     Serial.println(buf);
 
-    //     client.publish("test/GPS", buf.c_str());
-    client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data", buf.c_str());
+    //     WiFiMQTTclient.publish("test/GPS", buf.c_str());
+    WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data", buf.c_str());
 
   }
 }

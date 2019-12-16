@@ -24,8 +24,8 @@ void UpdateDisplayTime() {
       strftime (formattedTime, 30, "%R", timeinfo); // http://www.cplusplus.com/reference/ctime/strftime/
       Serial.println(formattedTime);
 
-          tft.setFont(&FreeSans9pt7b);   
-    tft.setTextColor(WHITE);
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
       //      tft.fillRect(0, 60 - 18, 65, 20, BLACK); //clear the previous time
       //      tft.setCursor(0, 60);
       tft.fillRect(70 + 13, 283 - 17, 65, 18, BLACK); //clear the previous time
@@ -63,11 +63,11 @@ void UpdateRSSIStatus() {
 
   if (millis() - previousUpdateTime_RSSI > UpdateInterval_RSSI)  {
     previousUpdateTime_RSSI += UpdateInterval_RSSI;
-    if (client.isWifiConnected()) {
+    if (WiFiMQTTclient.isWifiConnected()) {
       long rssi = WiFi.RSSI();
       tft.fillRect(195, 283 - 18, 40, 20, BLACK);   //clear the last voltage reading
-          tft.setFont(&FreeSans9pt7b);   
-    tft.setTextColor(WHITE);
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
       tft.setCursor(195, 283);
       tft.print(rssi);
 
@@ -122,7 +122,7 @@ void UpdateBatteryStatus() {
   Display updates only when connection status change
 ********************************************************************************/
 void UpdateWiFiConnectionStatus() {
-  if (client.isWifiConnected()) {
+  if (WiFiMQTTclient.isWifiConnected()) {
     if (!WiFi_status) {
       tft.fillCircle(50, 301 - 6, 6, GREEN); //x,y,radius,color     //WiFi Status
       WiFi_status = true;
@@ -141,7 +141,7 @@ void UpdateWiFiConnectionStatus() {
   Display only updates on connection status change
 ********************************************************************************/
 void UpdateMQTTConnectionStatus() {
-  if (client.isMqttConnected()) {
+  if (WiFiMQTTclient.isMqttConnected()) {
     if (!MQTT_status) {
       tft.fillCircle(130, 301 - 6, 6, GREEN); //x,y,radius,color    //MQTT Status
       MQTT_status = true;

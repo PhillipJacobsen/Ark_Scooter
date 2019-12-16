@@ -43,25 +43,24 @@ void onConnectionEstablished() {
     //  query Ark Node to see if it is synced and update status bar
     UpdateArkNodeConnectionStatus();
 
-
-    // GetReceivedTransaction(ArkAddress, 1, id, amount, senderAddress, senderPublicKey, vendorField);
-
+    scooterRental.rentalRate_Uint64 = RENTAL_RATE_UINT64;
+    strcpy(scooterRental.rentalRate, RENTAL_RATE_STR);
 
     // Subscribe to "mytopic/test" and display received message to Serial
-    //  client.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", [](const String & payload) {
+    //  WiFiMQTTclient.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", [](const String & payload) {
     //    Serial.println(payload);
     //  });
 
     // Subscribe to "mytopic/test2"
-    //  client.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", test2Func);
+    //  WiFiMQTTclient.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", test2Func);
 
 
     // Publish a message to "mytopic/test"
-    //  client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
+    //  WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
 
     // Execute delayed instructions
     //  client.executeDelayed(5 * 1000, []() {
-    //    client.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
+    //    WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
     //  });
 
     //wait for time to sync from servers
@@ -78,6 +77,7 @@ void onConnectionEstablished() {
     //  update WiFi and MQTT connection status bar
     UpdateWiFiConnectionStatus();     //update WiFi status bar
     UpdateMQTTConnectionStatus();     //update MQTT status bar
+
   }
 
 
@@ -130,6 +130,7 @@ void clearMainScreen() {
 void InitStatusBar() {
   tft.fillRect(0, 265 - 20, 240, 55 + 20, BLACK); //clear the status bar area + powered by ark.io text above it
   tft.setTextColor(ArkRed);
+  tft.setFont(&FreeSans9pt7b);
   tft.setCursor(45, 260);
   tft.print("Powered by Ark.io");
   tft.setTextColor(WHITE);
@@ -192,9 +193,9 @@ void setup()
 
   //--------------------------------------------
   // Optional Features of EspMQTTClient
-  client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
-  client.enableLastWillMessage("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
+  WiFiMQTTclient.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  WiFiMQTTclient.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
+  WiFiMQTTclient.enableLastWillMessage("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
 
   //--------------------------------------------
   //configure the 2.4" TFT display and the touchscreen controller
@@ -219,6 +220,7 @@ void setup()
   delay(500);
 
   tft.setTextColor(WHITE);
+  tft.setFont(&FreeSans9pt7b);
   tft.setCursor(50, 280);
   tft.println("Connecting to WiFi");
   tft.setCursor(70, 300);
@@ -255,12 +257,12 @@ void setup()
 
 
 void updateSpeedometer() {
-  char previousSpeed_char[5];
-  snprintf(&previousSpeed_char[0], 5, "%.1f", previousSpeed);        //create string with 1 decimal point.
+  char previousSpeed_char[6];
+  snprintf(&previousSpeed_char[0], 6, "%.1f", previousSpeed);        //create string with 1 decimal point.
 
   float speedkmh = GPS.speed * 1.852;     //get current speed with full precision
-  char currentSpeed_char[5];
-  snprintf(&currentSpeed_char[0], 5, "%.1f", speedkmh);             //create string with 1 decimal point.
+  char currentSpeed_char[6];
+  snprintf(&currentSpeed_char[0], 6, "%.1f", speedkmh);             //create string with 1 decimal point.
 
   if  (strcmp(currentSpeed_char, previousSpeed_char) == 0) {
     return;
@@ -283,7 +285,7 @@ void updateSpeedometer() {
 
 
 void updateCountdownTimer() {
- 
+
   uint32_t remainingRentalTime = rideTime_length_ms - (millis() - rideTime_start_ms);   //calculate remaining ride time in ms
   remainingRentalTime = remainingRentalTime / 1000;   //# of minutes
   if (remainingRentalTime != remainingRentalTime_previous) {
@@ -294,9 +296,10 @@ void updateCountdownTimer() {
     char currentTimer_char[10];
     snprintf(&currentTimer_char[0], 10, "%u", remainingRentalTime);             //create string from unsigned int
 
-    if  (strcmp(currentTimer_char, previousTimer_char) == 0) {
-      return;     //do nothing if the # of seconds is the same.
-    }
+//Dec 3. removed the following 3 lines. This seems redundant.
+//    if  (strcmp(currentTimer_char, previousTimer_char) == 0) {
+//      return;     //do nothing if the # of seconds is the same.
+//    }
 
     remainingRentalTime_previous = remainingRentalTime;               //update previous timer
     //update countdown timer display

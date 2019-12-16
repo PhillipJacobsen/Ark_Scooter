@@ -68,29 +68,32 @@ void StateMachine() {
         }
         else if (GPS_status) {  //wait for GPS fix
 
-          //QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
 
           //this is pseudorandom when the wifi or bluetooth does not have a connection. It can be considered "random" when the radios have a connection
           //arduino random function is overloaded on to esp_random();
           int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
+          char QRcodeText[256 + 1];       // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
+         //NOTE!  I wonder if sprintf() is better to use here
+      //sprintf, strcpy, strcat (and also strlen function) are all considered dangerous - the all use pointer to buffers -
+//there are no checks to see if the destination buffer is large enough to hold the resulting string -
+//so can easily lead to buffer overflow.
 
-          //char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
-          char QRcodeText[256];
+
+          
           strcpy(QRcodeText, "rad:");
           strcat(QRcodeText, ArkAddress);
           strcat(QRcodeText, "?hash=");
 
           char esprandom_char[10];
           itoa(esprandom, esprandom_char, 10);    //convert int to string(base 10 representation).
-          //QRcodeHash = esprandom_char;            //store the hash in a global to be used later.
+          //QRcodeHash is 16 characters
           strcpy(QRcodeHash, esprandom_char);      //copy into global character array
           Serial.print("QRcodeHash ");
           Serial.println(QRcodeHash);
-
           strcat(QRcodeText, esprandom_char);
-          strcat(QRcodeText, "&rate=370000000");
-
-          //QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=4897212321343433&rate=370000000";  //Public Key, Latitude, Longitude, Rate
+          strcat(QRcodeText, "&rate=");
+          strcat(QRcodeText, RENTAL_RATE_STR);
+          //Example: QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=4897212321343433&rate=370000000";  //Scooter Address, Hash, Rental Rate
           displayQRcode(QRcodeText);
 
           previousUpdateTime_RentalStartSearch = millis();    //reset transaction search counter
@@ -98,7 +101,6 @@ void StateMachine() {
           state = STATE_4;
           Serial.print("State: ");
           Serial.println(state);
-
         }
         else {
           state = STATE_3;
@@ -128,7 +130,7 @@ void StateMachine() {
           if (search_RentalStartTx()) {
             Serial.println("Start Ride Timer");
             rideTime_start_ms = millis();
-            rideTime_length_ms = 60000;
+            rideTime_length_ms = 10000;
             remainingRentalTime_previous = rideTime_length_ms;
 
             clearMainScreen();
@@ -163,18 +165,42 @@ void StateMachine() {
           //timer has expired
           //use difftime
           //http://www.cplusplus.com/reference/ctime/difftime/
+
+          scooterRental.endLatitude = convertDegMinToDecDeg(GPS.latitude);
+          if ( GPS.lat == 'S') {
+            scooterRental.endLatitude = (0 - scooterRental.endLatitude);
+          }
+          scooterRental.endLongitude = convertDegMinToDecDeg(GPS.longitude);
+          if ( GPS.lon == 'W') {
+            scooterRental.endLongitude = (0 - scooterRental.endLongitude);
+          }
+          getWallet();                  // Retrieve Wallet Nonce before you send a transaction
+          sendBridgechainTransaction();
+
+          Serial.println("");
+          Serial.println("=================================");
+          Serial.println("Rental Structure: ");
+          Serial.println(scooterRental.senderAddress);
+          Serial.println(scooterRental.payment);
+          Serial.printf("%" PRIu64 "\n", scooterRental.payment_Uint64);   //PRIx64 to print in hexadecimal
+          Serial.println(scooterRental.rentalRate);
+          Serial.println(scooterRental.startLatitude);      //this prints out only 2 decimal places.  It has 7 decimals
+          Serial.println(scooterRental.startLongitude);
+          Serial.println(scooterRental.endLatitude);
+          Serial.println(scooterRental.endLongitude);    
+          Serial.println(scooterRental.vendorField);    
+          Serial.println("=================================");
+          Serial.println("");
+                
           state = STATE_6;
           Serial.print("State: ");
           Serial.println(state);
-          getWallet();                  // Retrieve Wallet Nonce and Balance
-          sendBridgechainTransaction();
           // proceed to next state
         }
         else {
           //timer has not expired
           updateSpeedometer();
           updateCountdownTimer();
-
           state = STATE_5;
         }
         break;
@@ -189,8 +215,6 @@ void StateMachine() {
         break;
       }
 
-
-
   }
 }
 
@@ -200,8 +224,15 @@ int search_RentalStartTx() {
   if (millis() - previousUpdateTime_RentalStartSearch > UpdateInterval_RentalStartSearch)  {    //poll Ark node every 8 seconds for a new transaction
     previousUpdateTime_RentalStartSearch += UpdateInterval_RentalStartSearch;
 
-    //check to see if new new transaction has been received in wallet
-    searchRXpage = lastRXpage + 1;
+    //  check to see if new new transaction has been received in wallet
+    // lastRXpage is the page# of the last received transaction
+    int searchRXpage = lastRXpage + 1;
+    const char* id;              //transaction ID
+    const char* amount;           //transactions amount
+    const char* senderAddress;    //transaction address of sender
+    const char* senderPublicKey;  //transaction address of sender
+    const char* vendorField;      //vendor field
+
     if ( GetReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField) ) {
       lastRXpage++;
       Serial.print("Received vendorField: ");
@@ -211,6 +242,21 @@ int search_RentalStartTx() {
 
       //check to see if vendorField of new transaction matches the field in QRcode that we displayed
       if  (strcmp(vendorField, QRcodeHash) == 0) {
+
+        strcpy(scooterRental.senderAddress, senderAddress);           //copy into global character array
+        strcpy(scooterRental.payment, amount);                        //copy into global character array
+        scooterRental.payment_Uint64 = strtoull(amount, NULL, 10);    //convert string to unsigned long long global
+        strcpy(scooterRental.vendorField, vendorField);               //copy into global character array
+
+        scooterRental.startLatitude = convertDegMinToDecDeg(GPS.latitude);
+        if ( GPS.lat == 'S') {
+          scooterRental.startLatitude = (0 - scooterRental.startLatitude);
+        }
+        scooterRental.startLongitude = convertDegMinToDecDeg(GPS.longitude);
+        if ( GPS.lon == 'W') {
+          scooterRental.startLongitude = (0 - scooterRental.startLongitude);
+        }
+
         return 1;
       }
       else {        //we received a transaction that did not match. We should issue refund.
