@@ -6,7 +6,7 @@
   All communication between the App and the IOT device will be on chain through the use of custom transactions.
 
     Ark_Scooter.ino
-    2019 @phillipjacobsen
+    2020 @phillipjacobsen
 
     Program Features:
     This program is designed to run on ESP32 Adafruit Huzzah.
@@ -20,6 +20,12 @@
     Optional: GPS external antenna. https://www.adafruit.com/product/960
     Optional(Required when using external antenna): SMA to uFL cable: https://www.adafruit.com/product/851
     Adafruit FeatherWing Doubler: https://www.adafruit.com/product/2890
+
+
+    Ark Library Verions
+    Tested with:
+    Ark-CPP-client v1.3.0-arduino
+    Ark-CPP-crypto v0.7.0
 ********************************************************************************/
 
 /********************************************************************************
@@ -219,7 +225,6 @@ uint32_t rideTime_start_ms;
 uint32_t rideTime_length_ms;     //milliseconds
 
 time_t rideTime_start_seconds = 0;
-//time_t rideTime_start_seconds = 0;
 
 //use these if you want to use time for measuring elapsed time for the ride timer.
 time_t prevDisplayTime = 0; // this is used if you want to update clock every second
