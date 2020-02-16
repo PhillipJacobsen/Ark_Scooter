@@ -10,7 +10,7 @@
 
     Program Features:
     This program is designed to run on ESP32 Adafruit Huzzah.
-    This sketch uses the ARK Cpp-Client API to interact with an Ark V2.6 Devnet node.
+    This sketch uses the ARK Cpp-Client API to interact with a custom Ark V2.6 bridgechain.
     Ark Cpp Client available from Ark Ecosystem <info@ark.io>
     Ark API documentation:  https://docs.ark.io/sdk/clients/usage.html
 
@@ -24,8 +24,20 @@
 
     Ark Library Verions
     Tested with:
-    Ark-CPP-client v1.3.0-arduino
-    Ark-CPP-crypto v0.7.0
+    Ark-CPP-client v1.4.0-arduino
+    change from v1.3->v1.4: added 2.6 endpoint
+    https://github.com/ArkEcosystem/cpp-client/pull/159
+    
+    Ark-CPP-crypto v1.0.0
+    bipp66 0.3.2
+    https://github.com/sleepdefic1t/bip66
+See this file for library dependencies
+https://github.com/ArkEcosystem/cpp-crypto/blob/master/library.json#L23
+
+https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
+
+
+    
 ********************************************************************************/
 
 /********************************************************************************
