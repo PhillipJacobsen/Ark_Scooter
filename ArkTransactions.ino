@@ -2,6 +2,35 @@
   This file contains functions that interact with Ark client C++ API
 ********************************************************************************/
 
+void encode_sha256() {
+
+//int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
+
+
+//char *payload = "Hello SHA 256!";
+char *payload = "9299610";
+
+byte shaResult[32];
+
+  const size_t payloadLength = strlen(payload);       //holds length of payload
+
+  mbedtls_md_init(&ctx);
+  mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
+  mbedtls_md_starts(&ctx);
+  mbedtls_md_update(&ctx, (const unsigned char *) payload, payloadLength);
+  mbedtls_md_finish(&ctx, shaResult);
+  mbedtls_md_free(&ctx);
+  
+  Serial.print("Hash: ");
+
+  for (int i = 0; i < sizeof(shaResult); i++) {
+    char str[3];
+
+    sprintf(str, "%02x", (int)shaResult[i]);
+    Serial.print(str);
+  }
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -14,14 +43,14 @@
 //
 // ---
 void signMessage() {
-    Message message;
-    message.sign(MessageText, PASSPHRASE);
+  Message message;
+  message.sign(MessageText, PASSPHRASE);
 
-    const auto signatureString = BytesToHex(message.signature);
-    printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
+  const auto signatureString = BytesToHex(message.signature);
+  printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
 
-    const bool isValid = message.verify();
-    printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
+  const bool isValid = message.verify();
+  printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
 }
 
 
@@ -210,18 +239,18 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
 
   JsonObject data_0 = doc["data"][0];
   const char* data_0_id = data_0["id"]; // "c45656ae40a6de17dea7694826f2bbb00d115130fbcaba257feaa820886acac3"
-//  const char* data_0_blockId = data_0["blockId"]; // "4937253598533919154"
-//  int data_0_version = data_0["version"]; // 2
-//  int data_0_type = data_0["type"]; // 0
-//  int data_0_typeGroup = data_0["typeGroup"]; // 1
+  //  const char* data_0_blockId = data_0["blockId"]; // "4937253598533919154"
+  //  int data_0_version = data_0["version"]; // 2
+  //  int data_0_type = data_0["type"]; // 0
+  //  int data_0_typeGroup = data_0["typeGroup"]; // 1
   const char* data_0_amount = data_0["amount"]; // "100000000000"
-//  const char* data_0_fee = data_0["fee"]; // "9613248"
+  //  const char* data_0_fee = data_0["fee"]; // "9613248"
   const char* data_0_sender = data_0["sender"]; // "TEf7p5jf1LReywuits5orBsmpkMe8fLTkk"
   const char* data_0_senderPublicKey = data_0["senderPublicKey"]; // "02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a"
-//  const char* data_0_recipient = data_0["recipient"]; // "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1"
-//  const char* data_0_signature = data_0["signature"]; // "57d78bc151d6b41d013e528966aee161c7fbc6f4d598774f33ac30f796c4b1ab7e2b2ce5f96612aebfe120a2956ce482515f99c73b3f52d7486a29ed8391295b"
+  //  const char* data_0_recipient = data_0["recipient"]; // "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1"
+  //  const char* data_0_signature = data_0["signature"]; // "57d78bc151d6b41d013e528966aee161c7fbc6f4d598774f33ac30f796c4b1ab7e2b2ce5f96612aebfe120a2956ce482515f99c73b3f52d7486a29ed8391295b"
   const char* data_0_vendorField = data_0["vendorField"];
-//  long data_0_confirmations = data_0["confirmations"]; // 125462
+  //  long data_0_confirmations = data_0["confirmations"]; // 125462
 
   /*
     JsonObject data_0_timestamp = data_0["timestamp"];

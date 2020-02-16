@@ -71,28 +71,66 @@ void StateMachine() {
 
           //this is pseudorandom when the wifi or bluetooth does not have a connection. It can be considered "random" when the radios have a connection
           //arduino random function is overloaded on to esp_random();
-          int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
-          char QRcodeText[256 + 1];       // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
-         //NOTE!  I wonder if sprintf() is better to use here
-      //sprintf, strcpy, strcat (and also strlen function) are all considered dangerous - the all use pointer to buffers -
-//there are no checks to see if the destination buffer is large enough to hold the resulting string -
-//so can easily lead to buffer overflow.
+          // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/system.html 
 
-
+          uint32_t esprandom = (esp_random());    //generate 32 bit random number with a lower and upper bound using ESP32 RNG.      
+          //int esprandom = (random(16384, 16777216));    //This uses Arduino PRNG that is overloaded. Provide it with a lower and upper bound
           
+          char QRcodeText[256 + 1];       // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
+          //NOTE!  I wonder if sprintf() is better to use here
+          //sprintf, strcpy, strcat (and also strlen function) are all considered dangerous - the all use pointer to buffers -
+          //there are no checks to see if the destination buffer is large enough to hold the resulting string -
+          //so can easily lead to buffer overflow.
+
           strcpy(QRcodeText, "rad:");
           strcat(QRcodeText, ArkAddress);
-          strcat(QRcodeText, "?hash=");
 
-          char esprandom_char[10];
-          itoa(esprandom, esprandom_char, 10);    //convert int to string(base 10 representation).
-          //QRcodeHash is 16 characters
-          strcpy(QRcodeHash, esprandom_char);      //copy into global character array
-          Serial.print("QRcodeHash ");
-          Serial.println(QRcodeHash);
-          strcat(QRcodeText, esprandom_char);
+          //  value to be Hashed: -320614559
+          //  QRcode SHA256: a32efe8953742b2ac2943cbf7d9d3ed3f79fb099a50f0cbfb80d6513cad11b90
+
+        byte shaResult[32];
+
+          //start sha256
+          //char *payload = "Hello SHA 256!";
+          char SHApayload[10+1];   //max number is 4294967295
+          //itoa(esprandom, SHApayload, 10);        //I believe this will interpret numbers as signed.
+          utoa(esprandom, SHApayload, 10);        //I believe this will interpret numbers as signed.
+          const size_t payloadLength = strlen(SHApayload);       //holds length of payload
+          mbedtls_md_init(&ctx);
+          mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
+          mbedtls_md_starts(&ctx);
+          mbedtls_md_update(&ctx, (const unsigned char *) SHApayload, payloadLength);
+          mbedtls_md_finish(&ctx, shaResult);
+          mbedtls_md_free(&ctx);
+
+          Serial.print("value to be Hashed: ");
+          Serial.println(SHApayload);
+
+          char shaResult_char[64 + 1];
+          shaResult_char[0] = '\0';
+
+          for (int i = 0; i < sizeof(shaResult); i++) {
+            char str[3];
+            sprintf(str, "%02x", (int)shaResult[i]);
+            //           Serial.print(str);
+            strcat(shaResult_char, str);
+          }
+          Serial.print("QRcode SHA256: ");
+          Serial.println(shaResult_char);
+
+          //end sha256
+       
+          strcat(QRcodeText, "?hash=");
+          strcat(QRcodeText, shaResult_char);     //append hash
+          //use this if you want to use random number instead of hash
+          //strcat(QRcodeText, SHApayload);
+
           strcat(QRcodeText, "&rate=");
           strcat(QRcodeText, RENTAL_RATE_STR);
+
+          Serial.print("QR text: ");
+          Serial.println(QRcodeText);
+
           //Example: QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=4897212321343433&rate=370000000";  //Scooter Address, Hash, Rental Rate
           displayQRcode(QRcodeText);
 
@@ -187,11 +225,11 @@ void StateMachine() {
           Serial.println(scooterRental.startLatitude);      //this prints out only 2 decimal places.  It has 7 decimals
           Serial.println(scooterRental.startLongitude);
           Serial.println(scooterRental.endLatitude);
-          Serial.println(scooterRental.endLongitude);    
-          Serial.println(scooterRental.vendorField);    
+          Serial.println(scooterRental.endLongitude);
+          Serial.println(scooterRental.vendorField);
           Serial.println("=================================");
           Serial.println("");
-                
+
           state = STATE_6;
           Serial.print("State: ");
           Serial.println(state);

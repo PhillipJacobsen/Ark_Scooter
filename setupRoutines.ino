@@ -191,6 +191,8 @@ void setup()
   pinMode(LED_PIN, OUTPUT);      // initialize on board LED control pin as an output.
   digitalWrite(LED_PIN, LOW);    // Turn LED off
 
+encode_sha256();
+
   //--------------------------------------------
   // Optional Features of EspMQTTClient
   WiFiMQTTclient.enableDebuggingMessages(); // Enable debugging messages sent to serial output

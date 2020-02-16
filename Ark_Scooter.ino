@@ -27,17 +27,17 @@
     Ark-CPP-client v1.4.0-arduino
     change from v1.3->v1.4: added 2.6 endpoint
     https://github.com/ArkEcosystem/cpp-client/pull/159
-    
+
     Ark-CPP-crypto v1.0.0
     bipp66 0.3.2
     https://github.com/sleepdefic1t/bip66
-See this file for library dependencies
-https://github.com/ArkEcosystem/cpp-crypto/blob/master/library.json#L23
+  See this file for library dependencies
+  https://github.com/ArkEcosystem/cpp-crypto/blob/master/library.json#L23
 
-https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
+  https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
 
 
-    
+
 ********************************************************************************/
 
 /********************************************************************************
@@ -45,6 +45,7 @@ https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
 ********************************************************************************/
 #define RADIANS   //this configures system for my custom bridgechain. If undefined then system will be configured for Ark Devnet.
 //#define ARDUINOJSON_USE_LONG_LONG 1   //this may not be required. Was used previously for compatibility with Telegram which used JSON v5 library
+
 
 
 //#include <Arduino.h>
@@ -96,7 +97,6 @@ int batteryPercent = 0;
   EEPROM library on the ESP32\allows using at most 1 sector (4kB) of flash.
 ********************************************************************************/
 #include <EEPROM.h>
-
 
 /********************************************************************************
     EspMQTTClient Library by @plapointe6 Version 1.6.2
@@ -219,12 +219,12 @@ float previousSpeed = 0;
 ********************************************************************************/
 #include "qrcode.h"
 const int QRcode_Version = 10;  // set the version (range 1->40)
-const int QRcode_ECC = 2;       // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
+const int QRcode_ECC = 1;       // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
 QRCode qrcode;                  // Create the QR code object
 
 //char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
 char* QRcodeHash_pntr;               // QRcodeHash. This is
-char QRcodeHash[16];
+char QRcodeHash[64+1];
 
 /********************************************************************************
   Time Library
@@ -273,15 +273,35 @@ unsigned long timeNow;  //variable used to hold current millis() time.
 unsigned long timeAPIfinish;  //variable used to measure API access time
 unsigned long timeAPIstart;  //variable used to measure API access time
 
+
+
 /********************************************************************************
+  https://techtutorialsx.com/2018/05/10/esp32-arduino-mbed-tls-using-the-sha-256-algorithm/#more-25918
+  support for sha256
 
-    Ark Crypto Library (version 0.7.0)
-      https://github.com/ArkEcosystem/Cpp-Crypto
-
-    Bip66 Library (version 0.2.0)
-      https://github.com/sleepdefic1t/bip66
-
+  hash generator to check results of library.
+  https://passwordsgenerator.net/sha256-hash-generator/
 ********************************************************************************/
+#include "mbedtls/md.h"
+
+
+
+mbedtls_md_context_t ctx;
+mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;      //select algorithm
+
+
+
+/********************************************************************************
+    Ark Crypto Library (version 1.0.0)
+      https://github.com/ArkEcosystem/Cpp-Crypto
+  // NOTE:
+  // If this Repo was Cloned from github, run the 'ARDUINO_IDE.sh' script first.
+  // It's in the 'extras/' folder and extends compatability to the Arduino IDE.
+
+    Bip66 Library (version 0.3.2)
+      https://github.com/sleepdefic1t/bip66
+********************************************************************************/
+
 #include <arkCrypto.h>
 #include "arkCrypto_esp32.h"  // This is a helper header that includes all the Misc ARK C++ Crypto headers required for this sketch
 
@@ -308,10 +328,8 @@ const Network BridgechainNetwork = {
 const Configuration cfg(BridgechainNetwork);
 
 
-
-
 /********************************************************************************
-  Ark Client Library (version 1.3.0)
+  Ark Client Library (version 1.4.0)
   https://github.com/ArkEcosystem/cpp-client
 
   https://docs.ark.io/iot/#which-sdk-supports-iot
