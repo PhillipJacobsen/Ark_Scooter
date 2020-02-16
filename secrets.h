@@ -1,15 +1,3 @@
-/*
-  #define MQTT_SERVER_IP		"*****"
-  #define MQTT_USERNAME		  "*****"
-  #define MQTT_PASSWORD		  "*****"
-  #define MQTT_CLIENT_NAME	"*****"
-  #define	MQTT_SERVER_PORT 	*****
-
-  #define WIFI_SSID         "*****"
-  #define WIFI_PASS         "*****"
-*/
-
-
 #define MQTT_SERVER_IP    "40.85.223.207"
 #define MQTT_USERNAME     "esp32"
 #define MQTT_PASSWORD     "compost2"
