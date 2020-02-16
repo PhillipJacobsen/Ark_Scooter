@@ -4,23 +4,29 @@
 
 /********************************************************************************
   This routine will display a large QRcode on a 240x320 TFT display
- ********************************************************************************/
-
+********************************************************************************/
 void displayQRcode(char *const QRcodeText) {
+
+  clearMainScreen();
+  tft.setFont(&FreeSansBold18pt7b);
+  tft.setTextColor(ArkRed);
+  tft.setCursor(12, 30);        //12,45
+  tft.print("Scan to Ride");
+  tft.setFont(&FreeSans9pt7b);
+  tft.setTextColor(WHITE);
 
   //--------------------------------------------
   // Allocate memory to store the QR code.
   // memory size depends on version number
   uint8_t qrcodeData[qrcode_getBufferSize(QRcode_Version)];
 
-  //qrcode_initText(&qrcode, qrcodeData, QRcode_Version, QRcode_ECC, "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3");
   qrcode_initText(&qrcode, qrcodeData, QRcode_Version, QRcode_ECC, QRcodeText);
 
-  tft.fillRoundRect(27, 77, 186, 186, 4, ILI9341_WHITE);   //white background with a few pixels of guard around the code
+  tft.fillRoundRect(27, 77 - 30, 186, 186, 4, WHITE); //white background with a few pixels of guard around the code
 
-  //this will put the QRcode on the top left corner
+  // position the code.
   uint8_t x0 = 35;
-  uint8_t y0 =  85;   //
+  uint8_t y0 =  85 - 30; //
   //--------------------------------------------
   //display QRcode
   for (uint8_t y = 0; y < qrcode.size; y++) {
@@ -44,21 +50,18 @@ void displayQRcode(char *const QRcodeText) {
       } else {
 
         //uncomment to double the QRcode. Comment to display normal code size
-        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y, QRcodeDarkPixelColor);
+        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y, QRCODE_DARK_PIXEL_COLOR);
 
-        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y + 1, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y + 1, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y + 1, QRcodeDarkPixelColor);
+        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y + 1, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y + 1, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y + 1, QRCODE_DARK_PIXEL_COLOR);
 
-        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y + 2, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y + 2, QRcodeDarkPixelColor);
-        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y + 2, QRcodeDarkPixelColor);
-
+        tft.drawPixel(x0 + 3 * x,     y0 + 3 * y + 2, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 1, y0 + 3 * y + 2, QRCODE_DARK_PIXEL_COLOR);
+        tft.drawPixel(x0 + 3 * x + 2, y0 + 3 * y + 2, QRCODE_DARK_PIXEL_COLOR);
       }
     }
   }
-
-
 }

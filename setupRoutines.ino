@@ -2,23 +2,109 @@
   This file contains functions used to configure hardware peripherals and various libraries.
 ********************************************************************************/
 
+
+
+
 /********************************************************************************
-  This routine configures the display and touchscreen
+  This function is called once everything is connected (Wifi and MQTT)
+********************************************************************************/
+void onConnectionEstablished() {
+
+  if (!initialConnectionEstablished_Flag) {     //execute this the first time we have established a WiFi and MQTT connection after powerup
+    initialConnectionEstablished_Flag = true;
+    //--------------------------------------------
+    //  sync local time to NTP server
+    // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
+    configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
+
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+
+    //--------------------------------------------
+    //  update WiFi and MQTT connection status bar
+    UpdateWiFiConnectionStatus();     //update WiFi status bar
+    UpdateMQTTConnectionStatus();     //update MQTT status bar
+
+    //--------------------------------------------
+    //  query Ark Node to see if it is synced
+    //  we need some error handling here!!!!!!  What do we do if there is no ark node connected?
+    //  if (checkArkNodeStatus()) {
+
+
+    //--------------------------------------------
+    //  Retrieve Wallet Nonce and Balance
+    getWallet();
+
+    // sendBridgechainTransaction();
+
+    lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+
+    //--------------------------------------------
+    //  query Ark Node to see if it is synced and update status bar
+    UpdateArkNodeConnectionStatus();
+
+    scooterRental.rentalRate_Uint64 = RENTAL_RATE_UINT64;
+    strcpy(scooterRental.rentalRate, RENTAL_RATE_STR);
+
+    // Subscribe to "mytopic/test" and display received message to Serial
+    //  WiFiMQTTclient.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", [](const String & payload) {
+    //    Serial.println(payload);
+    //  });
+
+    // Subscribe to "mytopic/test2"
+    //  WiFiMQTTclient.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", test2Func);
+
+
+    // Publish a message to "mytopic/test"
+    //  WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
+
+    // Execute delayed instructions
+    //  client.executeDelayed(5 * 1000, []() {
+    //    WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
+    //  });
+
+    //wait for time to sync from servers
+    while (time(nullptr) <= 100000) {
+      delay(50);
+    }
+    //--------------------------------------------
+    //  get time synced from NTP server
+    UpdateDisplayTime();
+  }
+
+  else {
+    //--------------------------------------------
+    //  update WiFi and MQTT connection status bar
+    UpdateWiFiConnectionStatus();     //update WiFi status bar
+    UpdateMQTTConnectionStatus();     //update MQTT status bar
+
+  }
+
+
+}
+
+
+
+/********************************************************************************
+  Configures the TFT display and resistive touchscreen
   There is also LITE pin which is not connected to any pads but you can use to control the backlight. Pull low to turn off the backlight. You can connect it to a PWM output pin.
   There is also an IRQ pin which is not connected to any pads but you can use to detect when touch events have occured.
   There is also an Card Detect (CD) pin which is not connected to any pads but you can use to detect when a microSD card has been inserted have occured. It will be shorted to ground when a card is not inserted.
 ********************************************************************************/
 void setupDisplayTouchscreen() {
 
+  //To replace previously-drawn text when using a custom font, use the getTextBounds() function to determine the smallest rectangle encompassing a string,
+  //erase the area using fillRect(), then draw new text.
+  // https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
+
   //--------------------------------------------
   // setup 240x320 TFT display with custom font and clear screen
   // tft.setFont();    //configure standard adafruit font
   tft.begin();
-  tft.fillScreen(ILI9341_BLACK);  //clear screen
-//  tft.setFont(&FreeSansBold9pt7b);
+  tft.fillScreen(BLACK);  //clear screen
   tft.setFont(&FreeSans9pt7b);    //9pt = 12pixel height(I think)  https://reeddesign.co.uk/test/points-pixels.html
-
-
+  tft.setTextColor(WHITE);
+  // we currently are not using the touchscreen so don't bother initializing it.
   /*
     //--------------------------------------------
     // setup touchscreencontroller.
@@ -34,121 +120,55 @@ void setupDisplayTouchscreen() {
 }
 
 
-
-void getTime() {
-  time_t now = time(nullptr);   //get current time
-  Serial.print("time is: ");
-  Serial.println(ctime(&now));
-
-  tft.setTextColor(ILI9341_WHITE);
-  tft.print(ctime(&now));      //dislay the current time
+void clearMainScreen() {
+  tft.fillRect(0, 0, 240, 265 - 20, BLACK);   //clear the screen except for the status bar
 }
-
-
 
 /********************************************************************************
-  This routine configures the ESP32 internal clock to syncronize with NTP server.
-
-  apparently this will enable the core to periodically sync the time with the NTP server. I don't really know how often this happens
-  I am not sure if daylight savings mode works correctly. Previously it seems like this was not working on ESP2866
+  Draw the status bar at the bottom of the screen
 ********************************************************************************/
-void setupTime() {
+void InitStatusBar() {
+  tft.fillRect(0, 265 - 20, 240, 55 + 20, BLACK); //clear the status bar area + powered by ark.io text above it
+  tft.setTextColor(ArkRed);
+  tft.setFont(&FreeSans9pt7b);
+  tft.setCursor(45, 260);
+  tft.print("Powered by Ark.io");
+  tft.setTextColor(WHITE);
 
-  configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
-  // printLocalTime();
-  //  delay(100);
+  tft.setCursor(60 - 21, 283);
+  tft.print("kmh");
 
-  //wait for time to sync from servers
-  while (time(nullptr) <= 100000) {
-    delay(100);
-  }
+  tft.setCursor(0, 301);
+  tft.print("WiFi");
+  tft.setCursor(70, 301);
+  tft.print("MQTT");
+  tft.setCursor(0, 319);
+  tft.print("GPS");
+  tft.setCursor(70, 319);
+  tft.print("ARK");
 
-  time_t now = time(nullptr);   //get current time
-  Serial.print("time is: ");
-  Serial.println(ctime(&now));
+  tft.setCursor(150, 283);
+  tft.print("RSSI");
+  tft.setCursor(150, 301);
+  tft.print("BAT");
+  tft.setCursor(150, 319);
+  tft.print("SAT");
 
-  tft.setTextColor(ILI9341_WHITE);
-  //  tft.setTextSize(1);
-  tft.print(ctime(&now));      //dislay the current time
-
-  //  struct tm * timeinfo;
-  //  time(&now);
-  //  timeinfo = localtime(&now);
-  //  Serial.println(timeinfo->tm_hour);
+  tft.fillCircle(50, 301 - 6, 6, RED); //x,y,radius,color     //WiFi Status
+  tft.fillCircle(130, 301 - 6, 6, RED); //x,y,radius,color    //MQTT Status
+  tft.fillCircle(50, 319 - 6, 6, RED); //x,y,radius,color     //GPS Status
+  tft.fillCircle(130, 319 - 6, 6, RED); //x,y,radius,color    //ARK Status
 }
 
 
-void ConfigureNeoPixels(RgbColor color) {
-  strip.SetPixelColor(0, color);
-  strip.SetPixelColor(1, color);
-  strip.SetPixelColor(2, color);
-  strip.SetPixelColor(3, color);
-  strip.SetPixelColor(4, color);
-  strip.SetPixelColor(5, color);
-  strip.SetPixelColor(6, color);
-  strip.SetPixelColor(7, color);
-  strip.Show();
-  Serial.print("writing new color to neopixels:");
-}
 
 
 
 
 //display received message to Serial
 void test2Func (const String & payload) {
+  Serial.print("Received MQTT message: ");
   Serial.println(payload);
-}
-
-
-// This function is called once everything is connected (Wifi and MQTT)
-// WARNING : YOU MUST IMPLEMENT IT IF YOU USE EspMQTTClient
-void onConnectionEstablished()
-{
-  //--------------------------------------------
-  //  sync local time to NTP server
-  // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
-  configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
-
-
-  // Subscribe to "mytopic/test" and display received message to Serial
-  client.subscribe("mytopic/test", [](const String & payload) {
-    Serial.println(payload);
-  });
-
-  // Subscribe to "mytopic/test2"
-  client.subscribe("mytopic/test2", test2Func);
-
-
-  // Publish a message to "mytopic/test"
-  client.publish("mytopic/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
-
-  // Execute delayed instructions
-  client.executeDelayed(5 * 1000, []() {
-    client.publish("mytopic/test", "This is a message sent 5 seconds later");
-  });
-
-  //  tft.fillScreen(ILI9341_BLACK);  //clear screen
-  tft.fillRect(0, 0, 240, 42, ILI9341_BLACK);     //clear the first 2 lines of text
-
-  tft.setCursor(0, 20);
-  tft.print("IP address: ");
-  tft.println(WiFi.localIP());
-  tft.setCursor(0, 40);
-  tft.println("Connected to MQTT broker");
-
-
-  //wait for time to sync from servers
-  while (time(nullptr) <= 100000) {
-    delay(50);
-  }
-  //--------------------------------------------
-  //  get time synced from NTP server
-  getTime();
-
-
-
-
-
 }
 
 
@@ -160,74 +180,222 @@ void onConnectionEstablished()
 ********************************************************************************/
 void setup()
 {
+  //--------------------------------------------
+  // test the integrated DAC
+  dacWrite(DAC1, 50);           //range 0>255, pin25 / A1
+  //dacWrite(DAC2, 255);      //range 0>255, pin26 / A0
 
-  dacWrite(DAC1, 50);      //range 0>255, pin25 / A1
-  //  dacWrite(DAC2, 255);      //range 0>255, pin26 / A0
-
-  Serial.begin(115200);         // Initialize Serial Connection for debug / display
+  Serial.begin(115200);         // Initialize Serial Connection for debug
   while ( !Serial && millis() < 20 );
 
-  pinMode(ledPin, OUTPUT);      // initialize digital ledPin as an output.
-  digitalWrite(ledPin, LOW);    // initialize pin as off    //Adafruit HUZZAH32
+  pinMode(LED_PIN, OUTPUT);      // initialize on board LED control pin as an output.
+  digitalWrite(LED_PIN, LOW);    // Turn LED off
 
   //--------------------------------------------
   // Optional Features of EspMQTTClient
-  client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
-  client.enableLastWillMessage("TestClient/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
+  WiFiMQTTclient.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  WiFiMQTTclient.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
+  WiFiMQTTclient.enableLastWillMessage("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
 
   //--------------------------------------------
   //configure the 2.4" TFT display and the touchscreen controller
   setupDisplayTouchscreen();
 
   // Bootup Screen
-  // Display Ark bitmap on middle  portion of screen
-  tft.drawBitmap(56, 120,  myBitmap, 128, 128, ArkRed);
-
-
+  // Display Ark bitmap on middle portion of screen
+  DisplayArkBitmap();
 
   //--------------------------------------------
-  // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
+  // 9600 NMEA is the default baud rate for Adafruit MTK GPS
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);   // turn on RMC (recommended minimum) and GGA (fix data) including altitude
-  //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);  //use this for just the minimum recommended data
+  // GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);  //use this for just the minimum recommended data
 
   // For the parsing code to work nicely and have time to sort thru the data, and
   // print it out we don't suggest using anything higher than 1 Hz
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
-
   GPS.sendCommand(PGCMD_ANTENNA);  // Request updates on antenna status, comment out to keep quiet
 
-
-  //
+  //show bootup screen for 500ms
   delay(500);
 
-  tft.setTextColor(ILI9341_WHITE);
-  tft.setCursor(0, 20);
+  tft.setTextColor(WHITE);
+  tft.setFont(&FreeSans9pt7b);
+  tft.setCursor(50, 280);
   tft.println("Connecting to WiFi");
-  tft.setCursor(0, 40);
+  tft.setCursor(70, 300);
   tft.println(WIFI_SSID);
 
-  // Delay for Bootup Screen to finish
+  // show bootup screen for additional 1200ms
   delay(1200);
 
-  DisplayStatusPanel();
+  InitStatusBar();        //display the status bar on the bottom of the screen
   UpdateBatteryStatus();
-
-
-
-  //--------------------------------------------
-  //  Configure NeoPixels.
-  //  NOTE! If using the ESP8266 Make sure to call strip.Begin() after you call Serial.Begin because
-  //    Din pin of NeoPixel is also connected to Serial RX pin(on ESP8266) and will configure the pin for usage by the DMA interface.
-  //  strip.Begin();
-  //  strip.ClearTo(RgbColor(0, 0, 0)); // Initialize all pixels to 'off'
-
 
   GPSSerial.println(PMTK_Q_RELEASE);// request firmware version
 
-  //display QR code;
-  QRcodeText = "ark:AUjnVRstxXV4qP3wgKvBgv1yiApvbmcHhx?amount=0.3";
-  displayQRcode(QRcodeText);
+
+  //  clearMainScreen();
+  //display initial speed
+  //  float speedkmh = 12.34543;      //current speed
+  //  previousSpeed = speedkmh;       //store as previous speed in full precision
+  //  tft.setFont(&Lato_Black_96);
+  //  tft.setTextColor(SpeedGreenDarker);
+  //  tft.setCursor(60, 105);
+  //  tft.print(speedkmh, 0);         //display speed with 0 decimal point
+
+  //  delay(2000);
+
+  //  updateSpeedometer();
+  //breakpoint
+  //  while (1) {
+  //  }
 
 }
+
+
+
+
+void updateSpeedometer() {
+  char previousSpeed_char[6];
+  snprintf(&previousSpeed_char[0], 6, "%.1f", previousSpeed);        //create string with 1 decimal point.
+
+  float speedkmh = GPS.speed * 1.852;     //get current speed with full precision
+  char currentSpeed_char[6];
+  snprintf(&currentSpeed_char[0], 6, "%.1f", speedkmh);             //create string with 1 decimal point.
+
+  if  (strcmp(currentSpeed_char, previousSpeed_char) == 0) {
+    return;
+  }
+
+  int16_t  x1, y1;
+  uint16_t w, h;
+  tft.setFont(&Lato_Black_96);
+  tft.getTextBounds(previousSpeed_char, 30, 105, &x1, &y1, &w, &h);   //get bounds of the previous speed text
+  tft.fillRect(x1, y1, w, h, BLACK);                                  //clear the last speed reading
+
+  //display updated speed
+  previousSpeed = speedkmh;               //update previous speed
+  //tft.setFont(&Lato_Black_96);
+  tft.setTextColor(SpeedGreenDarker);
+  tft.setCursor(30, 105);
+  tft.print(speedkmh, 1);
+}
+
+
+
+void updateCountdownTimer() {
+
+  uint32_t remainingRentalTime = rideTime_length_ms - (millis() - rideTime_start_ms);   //calculate remaining ride time in ms
+  remainingRentalTime = remainingRentalTime / 1000;   //# of minutes
+  if (remainingRentalTime != remainingRentalTime_previous) {
+    //update display every second
+    char previousTimer_char[10];
+    snprintf(&previousTimer_char[0], 10, "%u", remainingRentalTime_previous);        //create string from unsigned int
+
+    char currentTimer_char[10];
+    snprintf(&currentTimer_char[0], 10, "%u", remainingRentalTime);             //create string from unsigned int
+
+//Dec 3. removed the following 3 lines. This seems redundant.
+//    if  (strcmp(currentTimer_char, previousTimer_char) == 0) {
+//      return;     //do nothing if the # of seconds is the same.
+//    }
+
+    remainingRentalTime_previous = remainingRentalTime;               //update previous timer
+    //update countdown timer display
+    int16_t  x1, y1;
+    uint16_t w, h;
+    tft.setFont(&Lato_Semibold_48);
+    tft.setTextColor(OffWhite);
+    tft.getTextBounds(previousTimer_char, 55, 230, &x1, &y1, &w, &h);   //get bounds of the previous speed text
+    tft.fillRect(x1, y1, w, h, BLACK);                                  //clear the last speed reading
+
+    //display updated countdowntimer
+    tft.setCursor(55, 230);
+    tft.print(remainingRentalTime);
+  }
+
+
+}
+
+
+
+void displaySpeedScreen() {
+
+  // https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
+  // https://www.youtube.com/watch?v=L8MmTISmwZ8
+  // http://oleddisplay.squix.ch/#/home     awesome tool for generating custom font.
+  clearMainScreen();
+  //speedometer
+  tft.setFont(&Lato_Black_96);
+  tft.setTextColor(SpeedGreenDarker);
+  tft.setCursor(60, 105);
+  tft.print("12");
+
+  tft.setFont(&Lato_Medium_36);
+  tft.setTextColor(SpeedGreen);     // http://www.barth-dev.de/online/rgb565-color-picker/
+  tft.setCursor(75, 150);
+  tft.print("km/h");
+
+  //countdown timer
+  tft.setFont(&Lato_Semibold_48);
+  tft.setTextColor(OffWhite);
+  tft.setCursor(55, 230);
+  tft.print("10:32");
+
+  //breakpoint
+  //  while (1) {
+  //  }
+}
+
+
+
+
+
+
+
+
+
+
+
+// Load WLAN credentials from EEPROM
+// You need to call EEPROM.begin(size) before you start reading or writing, size being the number of bytes you want to use.
+// Size can be anywhere between 4 and 4096 bytes.
+//EEPROM.write does not write to flash immediately, instead you must call EEPROM.commit() whenever you wish to save changes to flash. EEPROM.end() will also commit, and will release the RAM copy of EEPROM contents.
+/*
+  void loadCredentials() {
+  EEPROM.begin(512);
+  EEPROM.get(0, ssid);
+  EEPROM.get(0 + sizeof(ssid), password);
+  EEPROM.get(0 + sizeof(ssid) + sizeof(password), coinname);
+  char ok[2 + 1];
+  //EEPROM.get(0+sizeof(ssid)+sizeof(password), ok);
+  EEPROM.get(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
+  EEPROM.end();
+  if (String(ok) != String("OK")) {
+    ssid[0] = 0;
+    password[0] = 0;
+  }
+  Serial.println("Recovered credentials:");
+  //Serial.println(ssid);
+  Serial.println(strlen(ssid) > 0 ? ssid : "<no ssid>");
+  Serial.println(strlen(password) > 0 ? "********" : "<no password>");
+  Serial.println(strlen(coinname) > 0 ? coinname : "<no coinname>");
+  }
+  /*
+
+
+  /** Store WLAN credentials to EEPROM */
+/*
+  void saveCredentials() {
+  EEPROM.begin(512);
+  EEPROM.put(0, ssid);
+  EEPROM.put(0 + sizeof(ssid), password);
+  EEPROM.put(0 + sizeof(ssid) + sizeof(password), coinname);
+  char ok[2 + 1] = "OK";
+  //EEPROM.put(0+sizeof(ssid)+sizeof(password), ok);
+  EEPROM.put(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
+  EEPROM.commit();
+  EEPROM.end();
+  }
+*/

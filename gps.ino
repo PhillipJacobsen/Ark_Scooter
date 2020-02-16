@@ -1,19 +1,8 @@
 
-float conv_coords(float in_coords)
-{
-  //Initialize the location.
-  float f = in_coords;
-  // Get the first two digits by turning f into an integer, then doing an integer divide by 100;
-  // firsttowdigits should be 77 at this point.
-  int firsttwodigits = ((int)f) / 100; //This assumes that f < 10000.
-  float nexttwodigits = f - (float)(firsttwodigits * 100);
-  float theFinalAnswer = (float)(firsttwodigits + nexttwodigits / 60.0);
-  return theFinalAnswer;
-}
-
-
-// converts lat/long from Adafruit
-// degree-minute format to decimal-degrees
+/********************************************************************************
+  converts lat/long from Adafruit degree-minute format to decimal-degrees
+  http://arduinodev.woofex.net/2013/02/06/adafruit_gps_forma/
+********************************************************************************/
 double convertDegMinToDecDeg (float degMin) {
   double min = 0.0;
   double decDeg = 0.0;
@@ -30,95 +19,116 @@ double convertDegMinToDecDeg (float degMin) {
 
 
 /********************************************************************************
-  This will routine send GPS coordinates to MQTT broker if Fix is achieved.
-  GPS SAT # and Speed are also updated on the TFT display
+  Fill in the data structure to be sent via MQTT
+
+  const char* status;
+  int battery;
+  int fix;
+  int satellites;
+  float latitude;
+  float longitude;
+  float speedKPH;
+  char walletBalance[64];
 
  ********************************************************************************/
-void GPStoMQTT() {
-   Serial.print("\nTime: ");
-    if (GPS.hour < 10) {
-      Serial.print('0');
+void build_MQTTpacket() {
+  NodeRedMQTTpacket.battery = batteryPercent;
+  strcpy( NodeRedMQTTpacket.walletBalance, walletBalance);
+
+  NodeRedMQTTpacket.fix = int(GPS.fix);
+  if (NodeRedMQTTpacket.fix) {
+    NodeRedMQTTpacket.status = "Available";
+    NodeRedMQTTpacket.satellites = GPS.satellites;              //number of satellites
+    NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;  //convert knots to kph
+    //we need to do some fomatting of the GPS signal so it is suitable for mapping software on Thingsboard
+    NodeRedMQTTpacket.latitude = convertDegMinToDecDeg(GPS.latitude);
+    if ( GPS.lat == 'S') {
+      //   if (( GPS.lat == 'S') | ( GPS.lat == 'W')) {
+      NodeRedMQTTpacket.latitude = (0 - NodeRedMQTTpacket.latitude);
     }
-    Serial.print(GPS.hour, DEC); Serial.print(':');
-    if (GPS.minute < 10) {
-      Serial.print('0');
+    NodeRedMQTTpacket.longitude = convertDegMinToDecDeg(GPS.longitude);
+    //if (( GPS.lon == 'S') | ( GPS.lon == 'W')) {
+    if ( GPS.lon == 'W') {
+      NodeRedMQTTpacket.longitude = (0 - NodeRedMQTTpacket.longitude);
     }
-    Serial.print(GPS.minute, DEC); Serial.print(':');
-    if (GPS.seconds < 10) {
-      Serial.print('0');
-    }
-    Serial.print(GPS.seconds, DEC); Serial.print('.');
-    if (GPS.milliseconds < 10) {
-      Serial.print("00");
-    } else if (GPS.milliseconds > 9 && GPS.milliseconds < 100) {
-      Serial.print("0");
-    }
-    Serial.println(GPS.milliseconds);
-    Serial.print("Date: ");
-    Serial.print(GPS.day, DEC); Serial.print('/');
-    Serial.print(GPS.month, DEC); Serial.print("/20");
-    Serial.println(GPS.year, DEC);
-    Serial.print("Fix: "); Serial.print((int)GPS.fix);
-    Serial.print(" quality: "); Serial.println((int)GPS.fixquality);
-    if (GPS.fix) {
-      Serial.print("Location: ");
-      Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
-      Serial.print(", ");
-      Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
+  }
+  else {        //we do not have a GPS fix. What should the GPS location be?
+    NodeRedMQTTpacket.status = "Broken";
+    NodeRedMQTTpacket.latitude = 53.53583908;
+    NodeRedMQTTpacket.longitude = -113.27674103;
+  }
+}
 
- //     Serial.print("Location Converted: ");
- //     Serial.print(conv_coords(GPS.latitude), 8); Serial.print(GPS.lat);
- //     Serial.print(", ");
- //     Serial.print(conv_coords(GPS.longitude), 8); Serial.println(GPS.lon);
+/********************************************************************************
+  send structure to NodeRed MQTT broker
+********************************************************************************/
+void send_MQTTpacket() {
 
-      float convertedLat = convertDegMinToDecDeg(GPS.latitude);
-      if (( GPS.lat == 'S') | ( GPS.lat == 'W')) {
-        convertedLat = (0 - convertedLat);
-      }
-      float convertedLon = convertDegMinToDecDeg(GPS.longitude);
-      if (( GPS.lon == 'S') | ( GPS.lon == 'W')) {
-        convertedLon = (0 - convertedLon);
-      }
+  if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
+    previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
 
-      Serial.print("Location Converted2: ");
-      Serial.print(convertedLat, 8);
-      Serial.print(", ");
-      Serial.println(convertedLon, 8);
+    if (WiFiMQTTclient.isWifiConnected()) {
 
-      Serial.print("Speed (knots): "); Serial.println(GPS.speed);
-      float indicatedSpeed = GPS.speed*1.852;
-      Serial.print("Speed (km/h): "); Serial.println(indicatedSpeed);
-      
-      
-//      Serial.print("Angle: "); Serial.println(GPS.angle);
-      Serial.print("Altitude: "); Serial.println(GPS.altitude);
-      Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
+      build_MQTTpacket();
 
-//      msg = "{\"name\":\"where PJ should be fishing\",\"Fix\":false,\"lat\":53.53583908,\"lon\":-113.27674103,\"alt\":0,\"speed\":0,\"sat\":0}";
-//      Serial.print("Publish message: ");
- //     Serial.println(msg);
-  //    client.publish("test/GPS2", msg);
 
-      // https://arduino.stackexchange.com/questions/20911/how-to-append-float-value-of-into-a-string
 
-      //const char* buf;
+      //NOTE!  I think sprintf() is better to use here
+      // example: {"status":"Rented","fix":1,"lat":53.53849358,"lon":-113.27589669,"speed":0.74,"sat":5,"bal":99990386752,"bat":96}
       String  buf;
-      buf += F("{\"name\":\"where PJ should be fishing\",\"Fix\":true,\"lat\":");
-      buf += String(convertedLat, 8);
+      buf += F("{");
+      buf += F("\"status\":");
+      buf += String(NodeRedMQTTpacket.status);
+      buf += F(",\"fix\":");
+      buf += String(NodeRedMQTTpacket.fix);
+      buf += F(",\"lat\":");
+      buf += String(NodeRedMQTTpacket.latitude + 0.0032, 8);    //add noise to gps signal
       buf += F(",\"lon\":");
-      buf += String(convertedLon, 8);
-       buf += F(",\"alt\":0,\"speed\":0,\"sat\":0}");
+      buf += String(NodeRedMQTTpacket.longitude + 0.00221, 8);
+      buf += F(",\"speed\":");
+      buf += String(NodeRedMQTTpacket.speedKPH);
+      buf += F(",\"sat\":");
+      buf += String(NodeRedMQTTpacket.satellites);
+      buf += F(",\"bal\":");
+      buf += String(NodeRedMQTTpacket.walletBalance);
+      buf += F(",\"bat\":");
+      buf += String(NodeRedMQTTpacket.battery);
+
+      //These are pointers! They are not copying
+      const char * msg = buf.substring(1).c_str();    //get string without leading {
+
+      char msgbackup[700 + 1];
+      strcpy(msgbackup, msg);
+
+      Message message;
+      message.sign(msg, PASSPHRASE);
+      const auto signatureString = BytesToHex(message.signature);
+
+      buf += F(",\"sig\":");
+      buf += signatureString.c_str();
+      buf += F("}");
+
+
+      //we need to sign the buffer without the leading and ending {}.
+      // buf substring( 1,buf.length() )      //start index is inclusive. Ending index is exclusive.
+
+      //const char * msg = buf.substring( 1, buf.length() ).c_str();
+
+      //     const char * msg = buf.c_str();
+
+
+
+      printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
+      const bool isValid = message.verify();
+      printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
+      Serial.println("message that was signed: ");
+      Serial.println(msgbackup);
+
+
+      Serial.println();
+      Serial.print("send_MQTTpacket: ");
       Serial.println(buf);
-      Serial.print("Publish message: ");
-      client.publish("test/GPS", buf.c_str());
-
-      tft.fillRect(190, 319 - 17, 40, 18, ILI9341_BLACK); //clear the last voltage reading
-      tft.setCursor(190, 319);
-      tft.print(GPS.satellites);
-
-      tft.fillRect(0, 283 - 17, 50, 18, ILI9341_BLACK);   //clear the last speed reading
-      tft.setCursor(0, 283);
-      float speedkmh = GPS.speed*1.852;
-      tft.print(speedkmh);        
+      WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data", buf.c_str());
     }
-	}
+  }
+}

@@ -1,4 +1,3 @@
-
 #define MQTT_SERVER_IP    "40.85.223.207"
 #define MQTT_USERNAME     "esp32"
 #define MQTT_PASSWORD     "compost2"

@@ -1,135 +1,230 @@
-// Color definitions
-//#define ILI9341_BLACK       0x0000  ///<   0,   0,   0
-//#define ILI9341_NAVY        0x000F  ///<   0,   0, 123
-//#define ILI9341_GREEN   0x03E0  ///<   0, 125,   0
-//#define ILI9341_DARKCYAN    0x03EF  ///<   0, 125, 123
-//#define ILI9341_MAROON      0x7800  ///< 123,   0,   0
-//#define ILI9341_PURPLE      0x780F  ///< 123,   0, 123
-//#define ILI9341_OLIVE       0x7BE0  ///< 123, 125,   0
-//#define ILI9341_LIGHTGREY   0xC618  ///< 198, 195, 198
-//#define ILI9341_DARKGREY    0x7BEF  ///< 123, 125, 123
-//#define ILI9341_BLUE        0x001F  ///<   0,   0, 255
-//#define ILI9341_GREEN       0x07E0  ///<   0, 255,   0
-//#define ILI9341_CYAN        0x07FF  ///<   0, 255, 255
-//#define ILI9341_RED         0xF800  ///< 255,   0,   0
-//#define ILI9341_MAGENTA     0xF81F  ///< 255,   0, 255
-//#define ILI9341_YELLOW      0xFFE0  ///< 255, 255,   0
-//#define ILI9341_WHITE       0xFFFF  ///< 255, 255, 255
-//#define ILI9341_ORANGE      0xFD20  ///< 255, 165,   0
-//#define ILI9341_GREENYELLOW 0xAFE5  ///< 173, 255,  41
-//#define ILI9341_PINK        0xFC18  ///< 255, 130, 198
 
+/********************************************************************************
+  update the clock on the status bar
+********************************************************************************/
+//https://github.com/esp8266/Arduino/issues/4749
+void UpdateDisplayTime() {
+  time_t now = time(nullptr);   //get current time
 
-//screen is 240 x 320
-//graphics primitives documentation  https://learn.adafruit.com/adafruit-gfx-graphics-library/graphics-primitives
+  if (now > 1500000000) {       //this is a check to see if NTP time has been synced. (this is a time equal to approximatly the current time)
+    struct tm * timeinfo;
+    time(&now);
+    timeinfo = localtime(&now);
 
-//top left corner is (0,0)
-//void drawRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t color);
-//void fillRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t color);
-//void drawRoundRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t radius, uint16_t color);
-//void fillRoundRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t radius, uint16_t color);
-//X, Y pair for the top-left corner of the rectangle, a width and height (in pixels), and a color
+    if ((timeinfo->tm_min) != prevDisplayMinute) { //update the display only if time has changed (updates every minute)
+      prevDisplayMinute = timeinfo->tm_min;
+      //   if (now != prevDisplayTime) { //update the display only if time has changed (updates every second)
+      //     prevDisplayTime = now;
 
+      Serial.print("time is: ");
+      Serial.println(now);
+      //      Serial.println(ctime(&now));
 
-void DisplayStatusPanel() {
+      char formattedTime [30];
+      strftime (formattedTime, 30, "%R", timeinfo); // http://www.cplusplus.com/reference/ctime/strftime/
+      Serial.println(formattedTime);
 
-  tft.setCursor(60-6, 283);
-  tft.print("km/h");
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
+      //      tft.fillRect(0, 60 - 18, 65, 20, BLACK); //clear the previous time
+      //      tft.setCursor(0, 60);
+      tft.fillRect(70 + 13, 283 - 17, 65, 18, BLACK); //clear the previous time
+      tft.setCursor(70 + 13, 283);
 
-  tft.setCursor(0, 301);
-  tft.print("WiFI");
-  tft.setCursor(70, 301);
-  tft.print("MQTT");
-  tft.setCursor(0, 319);
-  tft.print("GPS");
-  tft.setCursor(70, 319);
-  tft.print("ARK");
-
-  tft.setCursor(150, 301);
-  tft.print("BAT");
-  tft.setCursor(150, 319);
-  tft.print("SAT");
-
-
-  tft.fillCircle(50, 301 - 6, 6, ILI9341_RED); //x,y,radius,color     //WiFi Status
-  tft.fillCircle(130, 301 - 6, 6, ILI9341_RED); //x,y,radius,color    //MQTT Status
-  tft.fillCircle(50, 319 - 6, 6, ILI9341_RED); //x,y,radius,color     //GPS Status
-  tft.fillCircle(130, 319 - 6, 6, ILI9341_RED); //x,y,radius,color    //ARK Status
-}
-
-
-void UpdateBatteryStatus() {
-  // batteryFloat = battery / 620.6; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
-  //  batteryFloat = battery / 560; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)  adjust with fudge factor
-  //4.1 real v was reading 3.7V
-
-  battery = analogRead(35);
-  Serial.println(battery);
-  batteryFloat = battery / 559.5; //we needed to add fudge factor to calibrate readings. There Must not be a 50% voltage divider on the input.
-  //    battery = battery / 4096;   //battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
-  //    battery = battery /620.60606060606;
-  Serial.println(batteryFloat);
-  
-  tft.fillRect(190, 301 - 20, 40, 22, ILI9341_BLACK);   //clear the last voltage reading
-  tft.setCursor(190, 301);
-  tft.print(batteryFloat);
-  tft.print("V");
-}
-
-void UpdateWiFiConnectionStatus() {
-  if (client.isConnected()) {
-    if (!WiFI_status) {
-      tft.fillCircle(50, 301 - 6, 6, ILI9341_GREEN); //x,y,radius,color     //WiFi Status
-      tft.fillCircle(130, 301 - 6, 6, ILI9341_GREEN); //x,y,radius,color    //MQTT Status
-      WiFI_status = true;
-    }
-  }
-  else {
-    if (WiFI_status) {
-      tft.fillCircle(50, 301 - 6, 6, ILI9341_RED); //x,y,radius,color     //WiFi Status
-      tft.fillCircle(130, 301 - 6, 6, ILI9341_RED); //x,y,radius,color    //MQTT Status
-      WiFI_status = false;
+      //tft.print(ctime(&now));      //dislay the current time
+      tft.print(formattedTime);      //dislay the current time
     }
   }
 }
 
 /********************************************************************************
+  Update status bar with ARK node connection status.
+********************************************************************************/
+void UpdateArkNodeConnectionStatus() {
+  if (checkArkNodeStatus()) {
+    if (!ARK_status) {
+      tft.fillCircle(130, 319 - 6, 6, GREEN); //x,y,radius,color    //ARK Status
+      ARK_status = true;
+    }
+  }
+  else {
+    if (ARK_status) {
+      tft.fillCircle(130, 319 - 6, 6, RED); //x,y,radius,color    //ARK Status
+      ARK_status = false;
+    }
+  }
+}
+
+/********************************************************************************
+  read the WiFi RSSI and update status bar
+  I don't know if the value can actually be measured as actual dBm or just some other relative measurement
+********************************************************************************/
+void UpdateRSSIStatus() {
+
+  if (millis() - previousUpdateTime_RSSI > UpdateInterval_RSSI)  {
+    previousUpdateTime_RSSI += UpdateInterval_RSSI;
+    if (WiFiMQTTclient.isWifiConnected()) {
+      long rssi = WiFi.RSSI();
+      tft.fillRect(195, 283 - 18, 40, 20, BLACK);   //clear the last voltage reading
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
+      tft.setCursor(195, 283);
+      tft.print(rssi);
+
+      //      Serial.print("RSSI:");
+      //      Serial.println(rssi);
+    }
+  }
+}
+
+/********************************************************************************
+  read the battery voltage and update status bar
+  the ESP32 ADC should really be calibrated so these readings are good for relative measurements.
+********************************************************************************/
+void UpdateBatteryStatus() {
+  if (millis() - previousUpdateTime_Battery > UpdateInterval_Battery)  {
+    previousUpdateTime_Battery += UpdateInterval_Battery;
+    // batteryFloat = battery / 620.6; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
+    //  batteryFloat = battery / 560; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)  adjust with fudge factor
+    //4.1 real v was reading 3.7V
+
+    //full power = approximate range: 1945 -> 2355
+
+    int battery = analogRead(BAT_PIN);
+    batteryPercent = map(battery, 1945, 2348, 0, 100);
+    batteryPercent = constrain(batteryPercent, 0, 100);
+
+    //    Serial.print("battery: ");
+    //    Serial.print(battery);
+    //    Serial.print("  ");
+    //    Serial.print(batteryPercent);
+    //    Serial.print("%  ");
+
+    float batteryFloat = battery / 559.5; //we needed to add fudge factor to calibrate readings. There Must not be a 50% voltage divider on the input.
+    //    battery = battery / 4096;   //battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
+    //    battery = battery /620.60606060606;
+    //    Serial.print(batteryFloat);
+    //    Serial.println("V");
+
+    tft.setFont(&FreeSans9pt7b);
+    tft.setTextColor(WHITE);
+    tft.fillRect(190, 301 - 17, 40, 19, BLACK);   //clear the last voltage reading
+    tft.setCursor(190, 301);
+    tft.print(batteryFloat);
+    tft.print("V");
+
+  }
+}
+
+
+/********************************************************************************
+  Update status bar with WifI connection status
+  Display updates only when connection status change
+********************************************************************************/
+void UpdateWiFiConnectionStatus() {
+  if (WiFiMQTTclient.isWifiConnected()) {
+    if (!WiFi_status) {
+      tft.fillCircle(50, 301 - 6, 6, GREEN); //x,y,radius,color     //WiFi Status
+      WiFi_status = true;
+    }
+  }
+  else {
+    if (WiFi_status) {
+      tft.fillCircle(50, 301 - 6, 6, RED); //x,y,radius,color     //WiFi Status
+      WiFi_status = false;
+    }
+  }
+}
+
+/********************************************************************************
+  Update status bar with MQTT connection status.
+  Display only updates on connection status change
+********************************************************************************/
+void UpdateMQTTConnectionStatus() {
+  if (WiFiMQTTclient.isMqttConnected()) {
+    if (!MQTT_status) {
+      tft.fillCircle(130, 301 - 6, 6, GREEN); //x,y,radius,color    //MQTT Status
+      MQTT_status = true;
+    }
+  }
+  else {
+    if (MQTT_status) {
+      tft.fillCircle(130, 301 - 6, 6, RED); //x,y,radius,color      //MQTT Status
+      MQTT_status = false;
+    }
+  }
+}
+
+/********************************************************************************
+  if GPS fix then update display with GPS Speed and GPS Sat
+********************************************************************************/
+void UpdateGPSDataStatus() {
+  if (GPS.fix) {
+    if (millis() - previousUpdateTime_GPS > UpdateInterval_GPS)  {
+      previousUpdateTime_GPS += UpdateInterval_GPS;
+
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
+      tft.fillRect(190, 319 - 17, 40, 18, ILI9341_BLACK); //clear the last GPS Sat reading
+      tft.setCursor(190, 319);
+      tft.print(GPS.satellites);
+
+      tft.fillRect(0, 283 - 17, 35, 18, ILI9341_BLACK);   //clear the last speed reading
+      tft.setCursor(0, 283);
+      float speedkmh = GPS.speed * 1.852;
+      tft.print(speedkmh, 1);
+
+    }
+  }
+}
+/********************************************************************************
   This routine will update the GPS Network Connection Icon on the TFT display
-  Screen updates only occur when there is a change in connection status
+  Display only updates on connection status change
   When losing fix: Clear # satellites display. Clear Speed display
   When obtaining fix: Show # satellites. Show Speed
     Green Circle = GPS Fix achieved
-    Red Circle = GPS Fix not available  
+    Red Circle = GPS Fix not available
  ********************************************************************************/
 void UpdateGPSConnectionStatus() {
   if (GPS.fix) {
     if (!GPS_status) {
-      tft.fillCircle(50, 319 - 6, 6, ILI9341_GREEN); //x,y,radius,color     //GPS Status
+      tft.fillCircle(50, 319 - 6, 6, GREEN); //x,y,radius,color     //GPS Status
 
-      tft.fillRect(190, 319 - 17, 40, 18, ILI9341_BLACK);   //clear the last # of satellite reading
+      tft.fillRect(190, 319 - 17, 40, 18, BLACK);   //clear the last # of satellite reading
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
       tft.setCursor(190, 319);
       tft.print(GPS.satellites);
 
-      tft.fillRect(0, 283 - 17, 50, 18, ILI9341_BLACK);   //clear the last speed reading
+      tft.fillRect(0, 283 - 17, 35, 18, BLACK);   //clear the last speed reading
       tft.setCursor(0, 283);
-      float speedkmh = GPS.speed*1.852;
-      tft.print(speedkmh);
+      float speedkmh = GPS.speed * 1.852;
+      tft.print(speedkmh, 1);
 
       GPS_status = true;
     }
   }
   else {
     if (GPS_status) {
-      tft.fillCircle(50, 319 - 6, 6, ILI9341_RED); //x,y,radius,color     //GPS Status
-      tft.fillRect(190, 319 - 17, 40, 18, ILI9341_BLACK);  //clear the last # of satellite reading
+      tft.fillCircle(50, 319 - 6, 6, RED); //x,y,radius,color     //GPS Status
+      tft.fillRect(190, 319 - 17, 40, 18, BLACK);  //clear the last # of satellite reading
+      tft.setFont(&FreeSans9pt7b);
+      tft.setTextColor(WHITE);
       tft.setCursor(190, 319);
       tft.print('0');
 
-      tft.fillRect(0, 283 - 17, 50, 18, ILI9341_BLACK);   //clear the last speed reading
-      tft.setCursor(0, 283);      
-//      tft.print('0');
-      
+      tft.fillRect(0, 283 - 17, 35, 18, BLACK);   //clear the last speed reading
+      tft.setCursor(0, 283);
+      tft.print('0');
+
       GPS_status = false;
     }
   }
+}
+
+
+
+void DisplayArkBitmap() {
+  clearMainScreen();
+  tft.drawBitmap(56, 100, ArkBitmap, 128, 128, ArkRed);   // Display Ark bitmap on middle portion of screen
 }
