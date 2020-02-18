@@ -1,7 +1,7 @@
 /********************************************************************************
   This file contains functions that interact with Ark client C++ API
 ********************************************************************************/
-
+//  http://www.fileformat.info/tool/hash.htm
 void encode_sha256() {
 
 //int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound

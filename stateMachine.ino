@@ -71,11 +71,11 @@ void StateMachine() {
 
           //this is pseudorandom when the wifi or bluetooth does not have a connection. It can be considered "random" when the radios have a connection
           //arduino random function is overloaded on to esp_random();
-          // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/system.html 
+          // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/system.html
 
-          uint32_t esprandom = (esp_random());    //generate 32 bit random number with a lower and upper bound using ESP32 RNG.      
+          uint32_t esprandom = (esp_random());    //generate 32 bit random number with a lower and upper bound using ESP32 RNG.
           //int esprandom = (random(16384, 16777216));    //This uses Arduino PRNG that is overloaded. Provide it with a lower and upper bound
-          
+
           char QRcodeText[256 + 1];       // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
           //NOTE!  I wonder if sprintf() is better to use here
           //sprintf, strcpy, strcat (and also strlen function) are all considered dangerous - the all use pointer to buffers -
@@ -85,16 +85,14 @@ void StateMachine() {
           strcpy(QRcodeText, "rad:");
           strcat(QRcodeText, ArkAddress);
 
-          //  value to be Hashed: -320614559
-          //  QRcode SHA256: a32efe8953742b2ac2943cbf7d9d3ed3f79fb099a50f0cbfb80d6513cad11b90
-
-        byte shaResult[32];
-
-          //start sha256
-          //char *payload = "Hello SHA 256!";
-          char SHApayload[10+1];   //max number is 4294967295
-          //itoa(esprandom, SHApayload, 10);        //I believe this will interpret numbers as signed.
-          utoa(esprandom, SHApayload, 10);        //I believe this will interpret numbers as signed.
+          //   start sha256
+          // use this to check result of SHA256 https://passwordsgenerator.net/sha256-hash-generator/
+          // http://www.fileformat.info/tool/hash.htm
+          
+          byte shaResult[32];
+          char SHApayload[10 + 1]; //max number is 4294967295
+          //itoa(esprandom, SHApayload, 10);      //this will interpret numbers as signed
+          utoa(esprandom, SHApayload, 10);        //use this instead for unsigned conversion
           const size_t payloadLength = strlen(SHApayload);       //holds length of payload
           mbedtls_md_init(&ctx);
           mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
@@ -117,13 +115,11 @@ void StateMachine() {
           }
           Serial.print("QRcode SHA256: ");
           Serial.println(shaResult_char);
-
           //end sha256
-       
+
           strcat(QRcodeText, "?hash=");
-          strcat(QRcodeText, shaResult_char);     //append hash
-          //use this if you want to use random number instead of hash
-          //strcat(QRcodeText, SHApayload);
+          strcat(QRcodeText, shaResult_char);     //append hash        
+          //strcat(QRcodeText, SHApayload);  //use this if you want to use random number instead of SHA256
 
           strcat(QRcodeText, "&rate=");
           strcat(QRcodeText, RENTAL_RATE_STR);
