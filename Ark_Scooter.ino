@@ -28,6 +28,9 @@
     change from v1.3->v1.4: added 2.6 endpoint
     https://github.com/ArkEcosystem/cpp-client/pull/159
 
+    *****************  this is Simons version with Radians transaction support. *******************8
+    https://github.com/sleepdefic1t/cpp-crypto/tree/chains/radians
+
     Ark-CPP-crypto v1.0.0
     bipp66 0.3.2
     https://github.com/sleepdefic1t/bip66
@@ -36,7 +39,13 @@
 
   https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
 
+  //see this library file for the radians specific transactions
 
+  D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\transactions\types\radians
+  D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\test\transactions\types\radians
+
+
+see this file for some string to nubmer conversion helpers D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\utils\str.hpp
 
 ********************************************************************************/
 
@@ -76,17 +85,17 @@ bool ARK_status = false;
 bool MQTT_status = false;
 
 
-
 int batteryPercent = 0;
 //float batteryFloat;
 
 
 /********************************************************************************
-   Arduino Json Libary -
+   Arduino Json Libary - Tested with version 6.13
     Data returned from Ark API is in JSON format.
     This libary is used to parse and deserialize the reponse
 
     This library is added by Ark crypto library so you do not need to include it here.
+    
 ********************************************************************************/
 //#include <ArduinoJson.h>
 
@@ -276,6 +285,8 @@ unsigned long timeAPIstart;  //variable used to measure API access time
 
 
 /********************************************************************************
+ *   mbed TLS Library for SHA256 function
+  
   https://techtutorialsx.com/2018/05/10/esp32-arduino-mbed-tls-using-the-sha-256-algorithm/#more-25918
   support for sha256
 
@@ -283,9 +294,6 @@ unsigned long timeAPIstart;  //variable used to measure API access time
   https://passwordsgenerator.net/sha256-hash-generator/
 ********************************************************************************/
 #include "mbedtls/md.h"
-
-
-
 mbedtls_md_context_t ctx;
 mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;      //select algorithm
 
@@ -317,7 +325,7 @@ using namespace Ark::Crypto::transactions;
 
 //BridgeChain Network Structure Model.  see Ark-Cpp-Crypto\src\common\network.hpp
 const Network BridgechainNetwork = {
-  BRIDGECHAIN_NETHASH,
+  BRIDGECHAIN_NETHASH,        //defined in secrets.h
   BRIDGECHAIN_SLIP44,
   BRIDGECHAIN_WIF,
   BRIDGECHAIN_VERSION,
@@ -440,7 +448,7 @@ void loop() {
   //--------------------------------------------
   // Parse GPS data if available
   // We need to call GPS.read() constantly in the main loop to watch for data arriving on the serial port
-  // The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set he buffer size???: Serial1.setRxBufferSize(1024);
+  // The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set the buffer size???: Serial1.setRxBufferSize(1024);
   // I need to learn more about the hardware buffer available on the ESP32 serial port.
   char c = GPS.read();
 
@@ -452,7 +460,7 @@ void loop() {
 
 
   //--------------------------------------------
-  // Update all the data displayed on the Status Bar
+  // Update all the data displayed on the OLED Status Bar
   UpdateWiFiConnectionStatus();     //update WiFi status bar
   UpdateMQTTConnectionStatus();     //update MQTT status bar
   UpdateGPSConnectionStatus();      //update GPS status bar
@@ -474,8 +482,7 @@ void loop() {
   // }
 
   //--------------------------------------------
-  // Publish MQTT data every UpdateInterval_MQTT_Publish (3 seconds)
-
+  // Publish MQTT data every UpdateInterval_MQTT_Publish (15 seconds)
   send_MQTTpacket();
 
   //  if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {

@@ -316,8 +316,6 @@ void updateCountdownTimer() {
     tft.setCursor(55, 230);
     tft.print(remainingRentalTime);
   }
-
-
 }
 
 

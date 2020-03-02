@@ -68,12 +68,9 @@ void send_MQTTpacket() {
     previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
 
     if (WiFiMQTTclient.isWifiConnected()) {
-
       build_MQTTpacket();
 
-
-
-      //NOTE!  I think sprintf() is better to use here
+      //NOTE!  I think sprintf() is better to use here. update when you have a chance
       // example: {"status":"Rented","fix":1,"lat":53.53849358,"lon":-113.27589669,"speed":0.74,"sat":5,"bal":99990386752,"bat":96}
       String  buf;
       buf += F("{");
@@ -97,6 +94,12 @@ void send_MQTTpacket() {
       //These are pointers! They are not copying
       const char * msg = buf.substring(1).c_str();    //get string without leading {
 
+      //alternate method
+      //we need to sign the buffer without the leading and ending {}.
+      // buf substring( 1,buf.length() )      //start index is inclusive. Ending index is exclusive.
+      //const char * msg = buf.substring( 1, buf.length() ).c_str();
+      //     const char * msg = buf.c_str();
+      
       char msgbackup[700 + 1];
       strcpy(msgbackup, msg);
 
@@ -107,16 +110,6 @@ void send_MQTTpacket() {
       buf += F(",\"sig\":");
       buf += signatureString.c_str();
       buf += F("}");
-
-
-      //we need to sign the buffer without the leading and ending {}.
-      // buf substring( 1,buf.length() )      //start index is inclusive. Ending index is exclusive.
-
-      //const char * msg = buf.substring( 1, buf.length() ).c_str();
-
-      //     const char * msg = buf.c_str();
-
-
 
       printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
       const bool isValid = message.verify();
