@@ -379,6 +379,7 @@ struct rental {
   float endLatitude;
   float endLongitude;
   char vendorField[256 + 1];
+  char sessionID[64 + 1];
 };
 struct rental scooterRental;
 

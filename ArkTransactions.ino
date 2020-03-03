@@ -4,13 +4,13 @@
 //  http://www.fileformat.info/tool/hash.htm
 void encode_sha256() {
 
-//int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
+  //int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
 
 
-//char *payload = "Hello SHA 256!";
-char *payload = "9299610";
+  //char *payload = "Hello SHA 256!";
+  char *payload = "9299610";
 
-byte shaResult[32];
+  byte shaResult[32];
 
   const size_t payloadLength = strlen(payload);       //holds length of payload
 
@@ -20,7 +20,7 @@ byte shaResult[32];
   mbedtls_md_update(&ctx, (const unsigned char *) payload, payloadLength);
   mbedtls_md_finish(&ctx, shaResult);
   mbedtls_md_free(&ctx);
-  
+
   Serial.print("Hash: ");
 
   for (int i = 0; i < sizeof(shaResult); i++) {
@@ -65,9 +65,9 @@ void sendBridgechainTransaction() {
   strcpy(tempVendorField, "Ride End: ");
   strcat(tempVendorField, QRcodeHash);
 
-  auto bridgechainTransaction = builder::Transfer()
-                                .type(TYPE_0_TYPE)
-                                .senderPublicKey(identities::Keys::fromPassphrase(PASSPHRASE).publicKey.data())
+  auto bridgechainTransaction = builder::Transfer(cfg)
+                                // .type(TYPE_0_TYPE)
+                                // .senderPublicKey(identities::Keys::fromPassphrase(PASSPHRASE).publicKey.data())
                                 //.recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
                                 .recipientId(scooterRental.senderAddress)        //genesis_2
                                 .vendorField(tempVendorField)
@@ -77,7 +77,7 @@ void sendBridgechainTransaction() {
                                 .amount(10000ULL)
                                 .expiration(0UL)
                                 //  .secondSign(SecondPassphrase)
-                                .build(cfg);
+                                .build();
 
   const auto transactionJson = bridgechainTransaction.toJson();
   printf("\n\nBridgechain Transaction: %s\n\n", transactionJson.c_str());
@@ -325,4 +325,108 @@ int getMostRecentReceivedTransaction() {
   Serial.print("\nThe most recent transaction was page #: ");
   Serial.println(page - 1);
   return page - 1;
+}
+
+
+
+
+
+/********************************************************************************
+  This routine retrieves 1 RentalStart transaction if available in wallet
+  Returns '0' if no transaction exists or if other transaction type exists
+  Pass wallet address and page to function
+
+  returns parameters:
+  id -> transaction ID
+  amount -> amount of Arktoshi
+  senderAddress -> transaction sender address
+  senderPublicKey -> transaction sender public key
+  vendorField -> 255(or 256??? check this) Byte vendor field
+  asset_gps_latitude
+  asset_gps_longitude
+  asset_sessionId
+  asset_rate
+
+
+
+********************************************************************************/
+int GetTransaction_RentalStart(const char *const address, int page, const char* &id, const char* &amount, const char* &senderAddress, const char* &senderPublicKey, const char* &vendorField, const char* &asset_gps_latitude, const char* &asset_gps_longitude, const char* &asset_sessionId, const char* &asset_rate ) {
+
+  //this is what we need to assemble:  https://radians.nl/api/v2/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=41&limit=1&orderBy=timestamp:asc
+  //query = "?page=1&limit=1&orderBy=timestamp:asc"
+
+  Serial.print("Page: ");
+  Serial.println(page);
+
+  char query[50];
+  strcpy(query, "?page=");
+  char page_char[8];
+  itoa(page, page_char, 10);    //convert int to string
+  strcat(query, page_char);
+  strcat(query, "&limit=1&orderBy=timestamp:asc");
+
+  //--------------------------------------------
+  //peform the API
+  //sort by oldest transactions first.  For simplicity set limit = 1 so we only get 1 transaction returned
+  const auto walletGetResponse = connection.api.wallets.transactionsReceived(address, query);
+
+  const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 2 * JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(15) + 1580;
+  DynamicJsonDocument doc(capacity);
+  //const char* json = "{\"meta\":{\"totalCountIsEstimate\":true,\"count\":1,\"pageCount\":72,\"totalCount\":72,\"next\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=42&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"previous\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=40&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"self\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=41&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"first\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"last\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=72&limit=1&orderBy=timestamp%3Aasc&transform=true\"},\"data\":[{\"id\":\"2238687a95688eb434953ac6548ade4648a3963a8158c036b65ee8e434e17230\",\"blockId\":\"10300106383332556177\",\"version\":2,\"type\":500,\"typeGroup\":4000,\"amount\":\"1\",\"fee\":\"10000000\",\"sender\":\"TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT\",\"senderPublicKey\":\"02cbe4667ab08693cbb3c248b96635f84b5412a99b49237f059a724f2cfe2b733f\",\"recipient\":\"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1\",\"signature\":\"cc5b22000e267dad4ac52a319120fe3dd022ba6fcb102f635ffe66fc2ec1f6ae6b2491c53eb88352aadddab68d18dc6ce6ef4cba12bd84e53be1c28364350566\",\"asset\":{\"gps\":{\"timestamp\":1583125216,\"latitude\":\"1.111111\",\"longitude\":\"-180.222222\",\"human\":\"2020-03-02T05:00:16.000Z\"},\"sessionId\":\"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\",\"rate\":\"5\",\"gpsCount\":1},\"confirmations\":10618,\"timestamp\":{\"epoch\":11130880,\"unix\":1583125220,\"human\":\"2020-03-02T05:00:20.856Z\"},\"nonce\":\"40\"}]}";
+  deserializeJson(doc, walletGetResponse.c_str());
+
+  //--------------------------------------------
+  //  Print the entire returned response string
+  Serial.print("Get Wallet Received Transaction: ");
+  Serial.println(walletGetResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
+
+  //--------------------------------------------
+  //  The meta parameters that are returned are currently not reliable and are "estimates". Apparently this is due to lower performance nodes
+  //  For this reason I will not use any of the meta parameters
+
+  JsonObject data_0 = doc["data"][0];
+  const char* data_0_id = data_0["id"]; // "c45656ae40a6de17dea7694826f2bbb00d115130fbcaba257feaa820886acac3"
+
+  //--------------------------------------------
+  //  the data_0_id parameter will be used to determine if a valid transaction was found.
+  if (data_0_id == nullptr) {
+    Serial.println("No Transaction. data_0_id is null");
+    return 0;           //no transaction found
+  }
+  else {
+    Serial.println("transaction was received");
+    int data_0_type = data_0["type"]; // 500
+    int data_0_typeGroup = data_0["typeGroup"]; // 4000
+
+    //--------------------------------------------
+    //  check for valid transaction type.
+    if (!((data_0_type == 500) && (data_0_typeGroup == 4000))) {
+      Serial.println("transaction I don't care about was received");
+      lastRXpage++;   //increment global receiver counter.
+      return 0;           
+    }
+    //--------------------------------------------
+    //  Rental Start transaction was received
+
+    JsonObject data_0_asset = data_0["asset"];
+    JsonObject data_0_asset_gps = data_0_asset["gps"];
+
+    //    const char* data_0_asset_gps_latitude = data_0_asset_gps["latitude"]; // "1.111111"
+    //    const char* data_0_asset_gps_longitude = data_0_asset_gps["longitude"]; // "-180.222222"
+    //    const char* data_0_asset_sessionId = data_0_asset["sessionId"]; // "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    //    const char* data_0_asset_rate = data_0_asset["rate"]; // "5"
+
+    asset_gps_latitude = data_0_asset_gps["latitude"]; // "1.111111"
+    asset_gps_longitude = data_0_asset_gps["longitude"]; // "-180.222222"
+    asset_sessionId = data_0_asset["sessionId"]; // "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    asset_rate = data_0_asset["rate"]; // "5"
+
+    id = data_0["id"]; // "2238687a95688eb434953ac6548ade4648a3963a8158c036b65ee8e434e17230"
+    amount = data_0["amount"]; // "100000000000"
+    senderAddress = data_0["sender"]; // "TEf7p5jf1LReywuits5orBsmpkMe8fLTkk"
+    senderPublicKey = data_0["senderPublicKey"]; // "02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a"
+    vendorField = data_0["vendorField"];
+
+    return 1;           //transaction found
+  }
 }

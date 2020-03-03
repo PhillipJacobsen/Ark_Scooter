@@ -88,7 +88,7 @@ void StateMachine() {
           //   start sha256
           // use this to check result of SHA256 https://passwordsgenerator.net/sha256-hash-generator/
           // http://www.fileformat.info/tool/hash.htm
-          
+
           byte shaResult[32];
           char SHApayload[10 + 1]; //max number is 4294967295
           //itoa(esprandom, SHApayload, 10);      //this will interpret numbers as signed
@@ -118,7 +118,13 @@ void StateMachine() {
           //end sha256
 
           strcat(QRcodeText, "?hash=");
-          strcat(QRcodeText, shaResult_char);     //append hash        
+          //hardcode Hash for testing
+          strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
+          strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
+
+         // strcat(QRcodeText, shaResult_char);     //append hash
+        //  strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction
+
           //strcat(QRcodeText, SHApayload);  //use this if you want to use random number instead of SHA256
 
           strcat(QRcodeText, "&rate=");
@@ -161,7 +167,7 @@ void StateMachine() {
           state = STATE_3;
         }
         else {                  //we are looking for a Rental Start Tx
-          if (search_RentalStartTx()) {
+          if (search_RentalStartTx()) {       //
             Serial.println("Start Ride Timer");
             rideTime_start_ms = millis();
             rideTime_length_ms = 10000;
@@ -267,21 +273,36 @@ int search_RentalStartTx() {
     const char* senderPublicKey;  //transaction address of sender
     const char* vendorField;      //vendor field
 
-    if ( GetReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField) ) {
-      lastRXpage++;
-      Serial.print("Received vendorField: ");
-      Serial.println(vendorField);
+    const char* asset_gps_latitude;
+    const char* asset_gps_longitude;
+    const char* asset_sessionId;
+    const char* asset_rate;
+
+    //if ( GetReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField) ) {
+    if ( GetTransaction_RentalStart(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField, asset_gps_latitude, asset_gps_longitude, asset_sessionId, asset_rate) ) {
+      lastRXpage++;   //increment received counter if rental start was received.  If
+      Serial.print("Received sessionId: ");
+      Serial.println(asset_sessionId);
       Serial.print("QRcodeHash: ");
+      //Serial.println(QRcodeHash);shaResult_char
       Serial.println(QRcodeHash);
 
       //check to see if vendorField of new transaction matches the field in QRcode that we displayed
-      if  (strcmp(vendorField, QRcodeHash) == 0) {
+      //if  (strcmp(vendorField, QRcodeHash) == 0) {
+      if  (strcmp(asset_sessionId, QRcodeHash) == 0) {
 
         strcpy(scooterRental.senderAddress, senderAddress);           //copy into global character array
         strcpy(scooterRental.payment, amount);                        //copy into global character array
+ Serial.print("debug 1");
+ delay (20);
         scooterRental.payment_Uint64 = strtoull(amount, NULL, 10);    //convert string to unsigned long long global
-        strcpy(scooterRental.vendorField, vendorField);               //copy into global character array
-
+ Serial.print("debug 2");
+  delay (20);  
+     //   strcpy(scooterRental.vendorField, vendorField);               //copy into global character array
+        strcpy(scooterRental.sessionID, asset_sessionId);               //copy into global character array
+ Serial.print("debug 3");
+  delay (20);  
+   
         scooterRental.startLatitude = convertDegMinToDecDeg(GPS.latitude);
         if ( GPS.lat == 'S') {
           scooterRental.startLatitude = (0 - scooterRental.startLatitude);
@@ -291,9 +312,11 @@ int search_RentalStartTx() {
           scooterRental.startLongitude = (0 - scooterRental.startLongitude);
         }
 
+Serial.print("debug 3");
         return 1;
       }
       else {        //we received a transaction that did not match. We should issue refund.
+        Serial.print("session id did not match hash embedded in QRcode");
         // issueRefund();
         return 0;
       }

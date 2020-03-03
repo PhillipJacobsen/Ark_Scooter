@@ -17,12 +17,12 @@
 #define MQTT_SERVER_PORT  1883
 
 //h
-//#define WIFI_SSID         "TELUS0183"
-//#define WIFI_PASS         "6z5g4hbdxi"
+#define WIFI_SSID         "TELUS0183"
+#define WIFI_PASS         "6z5g4hbdxi"
 
 //w
-#define WIFI_SSID         "TELUS6428"
-#define WIFI_PASS         "3mmkgc9gn2"
+//#define WIFI_SSID         "TELUS6428"
+//#define WIFI_PASS         "3mmkgc9gn2"
 
 //pj
 //#define WIFI_SSID         "hppj"
@@ -36,18 +36,13 @@ int8_t TIME_ZONE = -7;        //set timezone:  MST (works in winter)
 int16_t DST = 0;            //To enable Daylight saving time set it to 3600. Otherwise, set it to 0. Not sure if this works.
 
 
-#ifdef RADIANS
 const char* ARK_PEER = "37.34.60.90";  //RADIANS Testnet Peer
 int ARK_PORT = 4040;
 
-#else
-const char* peer = "159.203.42.124";  //Nybble Testnet Peer
 
-//const char* ARK_PEER = "167.114.29.55";  //Ark Devnet Peer
-////const char* ARK_PEER = "173.230.133.235";  //Ark Devnet Peer SPECIAL!
-int ARK_PORT = 4003;
-#endif
-
+//Wallet Address on bridgechain
+const char* ArkAddress = "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1";   //RADIANS testnet address  - nickname pjtest
+//const char* ArkPublicKey = "03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2";       
 
 static const auto PASSPHRASE        = "afford thumb forward wall salad diet title patch holiday metal cement wisdom";  //TRXA2NUACckkYwWnS9JRkATQA453ukAcD1
 static const auto SecondPassphrase  = "this is a top secret passphrase too";
@@ -70,14 +65,3 @@ constexpr uint8_t TYPE_0_TYPE               = 0U;
 
 const char* RENTAL_RATE_STR = "370000000";                //rate per minute
 constexpr uint64_t RENTAL_RATE_UINT64 = 370000000ULL;    
-
-//Wallet Address on bridgechain
-#ifdef RADIANS
-const char* ArkAddress = "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1";   //RADIANS testnet address  - nickname pjtest
-//const char* ArkPublicKey = "03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2";       
-
-#else
-const char* ArkAddress = "TYWtGL6m9g3E7QrhuDfNQ7XqHnVEnwLswG";   //NYBBLE testnet address  
-//  http://159.203.42.124:4200/#/wallets/TYWtGL6m9g3E7QrhuDfNQ7XqHnVEnwLswG
-
-#endif
