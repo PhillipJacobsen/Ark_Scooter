@@ -291,7 +291,9 @@ int search_RentalStartTx() {
 
     //if ( GetReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField) ) {
     if ( GetTransaction_RentalStart(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField, asset_gps_latitude, asset_gps_longitude, asset_sessionId, asset_rate) ) {
-      lastRXpage++;   //increment received counter if rental start was received.  If
+      lastRXpage++;   //increment received counter if rental start was received.
+      lastRXpage_eeprom = lastRXpage;
+      saveCredentials();
       Serial.print("Received sessionId: ");
       Serial.println(asset_sessionId);
       Serial.print("QRcodeHash: ");

@@ -403,6 +403,8 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
     if (!((data_0_type == 500) && (data_0_typeGroup == 4000))) {
       Serial.println("transaction I don't care about was received");
       lastRXpage++;   //increment global receiver counter.
+      lastRXpage_eeprom = lastRXpage;
+      saveCredentials();
       return 0;           
     }
     //--------------------------------------------
