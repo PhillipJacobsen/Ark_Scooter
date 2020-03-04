@@ -54,8 +54,10 @@ void build_MQTTpacket() {
   }
   else {        //we do not have a GPS fix. What should the GPS location be?
     NodeRedMQTTpacket.status = "Broken";
-    NodeRedMQTTpacket.latitude = 53.53583908;
-    NodeRedMQTTpacket.longitude = -113.27674103;
+    NodeRedMQTTpacket.latitude = 53.53583908;       //default location
+    NodeRedMQTTpacket.longitude = -113.27674103;    //default location
+    NodeRedMQTTpacket.satellites = 0;               //number of satellites
+    NodeRedMQTTpacket.speedKPH = 0;
   }
 }
 

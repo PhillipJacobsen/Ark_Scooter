@@ -35,9 +35,23 @@ void onConnectionEstablished() {
     //  Retrieve Wallet Nonce and Balance
     getWallet();
 
-    // sendBridgechainTransaction();
+    loadCredentials(); //load page number from eeprom
+    if (lastRXpage_eeprom < 1) {
+      lastRXpage_eeprom = 0;
+    }
 
-    lastRXpage = getMostRecentReceivedTransaction();  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+    lastRXpage = getMostRecentReceivedTransaction(lastRXpage_eeprom + 1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+
+    lastRXpage_eeprom = lastRXpage;
+    saveCredentials();
+
+
+    //    Serial.print("try scanning wallet a second time ");
+    //    lastRXpage = getMostRecentReceivedTransaction(lastRXpage+1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+    //    Serial.print("try scanning wallet a third time ");
+    //    lastRXpage = getMostRecentReceivedTransaction(lastRXpage+1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+    //    Serial.print("try scanning wallet a forth time ");
+    //    lastRXpage = getMostRecentReceivedTransaction(lastRXpage+1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 
     //--------------------------------------------
     //  query Ark Node to see if it is synced and update status bar
@@ -191,12 +205,12 @@ void setup()
   pinMode(LED_PIN, OUTPUT);      // initialize on board LED control pin as an output.
   digitalWrite(LED_PIN, LOW);    // Turn LED off
 
-// encode_sha256();
+  // encode_sha256();
 
   //--------------------------------------------
   // Optional Features of EspMQTTClient
   WiFiMQTTclient.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  WiFiMQTTclient.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
+  // WiFiMQTTclient.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
   WiFiMQTTclient.enableLastWillMessage("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
 
   //--------------------------------------------
@@ -298,10 +312,10 @@ void updateCountdownTimer() {
     char currentTimer_char[10];
     snprintf(&currentTimer_char[0], 10, "%u", remainingRentalTime);             //create string from unsigned int
 
-//Dec 3. removed the following 3 lines. This seems redundant.
-//    if  (strcmp(currentTimer_char, previousTimer_char) == 0) {
-//      return;     //do nothing if the # of seconds is the same.
-//    }
+    //Dec 3. removed the following 3 lines. This seems redundant.
+    //    if  (strcmp(currentTimer_char, previousTimer_char) == 0) {
+    //      return;     //do nothing if the # of seconds is the same.
+    //    }
 
     remainingRentalTime_previous = remainingRentalTime;               //update previous timer
     //update countdown timer display
@@ -362,40 +376,42 @@ void displaySpeedScreen() {
 // You need to call EEPROM.begin(size) before you start reading or writing, size being the number of bytes you want to use.
 // Size can be anywhere between 4 and 4096 bytes.
 //EEPROM.write does not write to flash immediately, instead you must call EEPROM.commit() whenever you wish to save changes to flash. EEPROM.end() will also commit, and will release the RAM copy of EEPROM contents.
-/*
-  void loadCredentials() {
+
+void loadCredentials() {
   EEPROM.begin(512);
-  EEPROM.get(0, ssid);
-  EEPROM.get(0 + sizeof(ssid), password);
-  EEPROM.get(0 + sizeof(ssid) + sizeof(password), coinname);
+  EEPROM.get(0, lastRXpage_eeprom);
+  // EEPROM.get(0 + sizeof(ssid), password);
+  // EEPROM.get(0 + sizeof(ssid) + sizeof(password), coinname);
   char ok[2 + 1];
   //EEPROM.get(0+sizeof(ssid)+sizeof(password), ok);
-  EEPROM.get(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
+  //EEPROM.get(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
+  EEPROM.get(0 + sizeof(lastRXpage_eeprom), ok);
   EEPROM.end();
   if (String(ok) != String("OK")) {
-    ssid[0] = 0;
-    password[0] = 0;
+    lastRXpage_eeprom = 0;
   }
-  Serial.println("Recovered credentials:");
-  //Serial.println(ssid);
-  Serial.println(strlen(ssid) > 0 ? ssid : "<no ssid>");
-  Serial.println(strlen(password) > 0 ? "********" : "<no password>");
-  Serial.println(strlen(coinname) > 0 ? coinname : "<no coinname>");
-  }
-  /*
+  Serial.println("Recovered credentials from FLASH");
+  Serial.println(ok);
+  Serial.println(lastRXpage_eeprom);
+  // Serial.println(strlen(ssid) > 0 ? ssid : "<no ssid>");
+  // Serial.println(strlen(password) > 0 ? "********" : "<no password>");
+  //Serial.println(strlen(coinname) > 0 ? coinname : "<no coinname>");
+}
 
 
-  /** Store WLAN credentials to EEPROM */
-/*
-  void saveCredentials() {
+
+/** Store WLAN credentials to EEPROM */
+
+void saveCredentials() {
   EEPROM.begin(512);
-  EEPROM.put(0, ssid);
-  EEPROM.put(0 + sizeof(ssid), password);
-  EEPROM.put(0 + sizeof(ssid) + sizeof(password), coinname);
+  EEPROM.put(0, lastRXpage_eeprom);
+  // EEPROM.put(0 + sizeof(ssid), password);
+  // EEPROM.put(0 + sizeof(ssid) + sizeof(password), coinname);
   char ok[2 + 1] = "OK";
   //EEPROM.put(0+sizeof(ssid)+sizeof(password), ok);
-  EEPROM.put(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
+  //EEPROM.put(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
+  EEPROM.put(0 + sizeof(lastRXpage_eeprom), ok);
   EEPROM.commit();
   EEPROM.end();
-  }
-*/
+  Serial.println("Saved credentials to FLASH");
+}

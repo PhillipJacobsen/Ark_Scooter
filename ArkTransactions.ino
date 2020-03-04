@@ -304,9 +304,9 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
 
 ********************************************************************************/
 
-int getMostRecentReceivedTransaction() {
+int getMostRecentReceivedTransaction(int page = 1) {
   Serial.println("\n\nHere are all the transactions in a wallet");
-  int page = 1;
+ // int page = 1;
   const char* id;               //transaction ID
   const char* amount;           //transactions amount
   const char* senderAddress;    //transaction address of sender

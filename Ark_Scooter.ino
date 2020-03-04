@@ -115,7 +115,7 @@ int batteryPercent = 0;
     EspMQTTClient is a wrapper around the MQTT PubSubClient Library Version 2.7 by @knolleary
 ********************************************************************************/
 //You need to update this in PubSubClient.h. Setting it here does nothing.
-//#define MQTT_MAX_PACKET_SIZE 512  // the maximum message size, including header, is 128 bytes by default. Configurable in PubSubClient.h.
+//#define MQTT_MAX_PACKET_SIZE 512  // the maximum message size, including header, is 128 bytes by default. Configurable in \Arduino\libraries\PubSubClient\src\PubSubClient.h.
 
 #include "EspMQTTClient.h"
 
@@ -395,7 +395,7 @@ struct rental scooterRental;
 
 
 int lastRXpage = 0;             //page number of the last received transaction in wallet
-
+int lastRXpage_eeprom = 0;             //page number of the last received transaction in wallet(mirror of eeprom value)
 
 char walletBalance[64 + 1];
 uint64_t walletNonce_Uint64 = 1ULL;

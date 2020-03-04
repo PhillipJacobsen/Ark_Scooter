@@ -122,8 +122,8 @@ void StateMachine() {
           strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
           strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
 
-         // strcat(QRcodeText, shaResult_char);     //append hash
-        //  strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction
+          // strcat(QRcodeText, shaResult_char);     //append hash
+          //  strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction
 
           //strcat(QRcodeText, SHApayload);  //use this if you want to use random number instead of SHA256
 
@@ -170,7 +170,17 @@ void StateMachine() {
           if (search_RentalStartTx()) {       //
             Serial.println("Start Ride Timer");
             rideTime_start_ms = millis();
-            rideTime_length_ms = 10000;
+
+
+            //rideTime_length_ms
+            uint64_t rideTime_length_min = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;     //# of minutes    rate = .037RAD per minute
+            rideTime_length_ms = rideTime_length_min * 60000;
+            Serial.print("ride time length: ");
+            Serial.println(rideTime_length_ms);
+
+            //uint32_t rideTime_length_ms
+
+            //rideTime_length_ms = 10000;
             remainingRentalTime_previous = rideTime_length_ms;
 
             clearMainScreen();
@@ -215,7 +225,8 @@ void StateMachine() {
             scooterRental.endLongitude = (0 - scooterRental.endLongitude);
           }
           getWallet();                  // Retrieve Wallet Nonce before you send a transaction
-          sendBridgechainTransaction();
+          //sendBridgechainTransaction();    //this sends a standard transaction
+          //sendTransaction_RentalFinish();
 
           Serial.println("");
           Serial.println("=================================");
@@ -293,16 +304,10 @@ int search_RentalStartTx() {
 
         strcpy(scooterRental.senderAddress, senderAddress);           //copy into global character array
         strcpy(scooterRental.payment, amount);                        //copy into global character array
- Serial.print("debug 1");
- delay (20);
         scooterRental.payment_Uint64 = strtoull(amount, NULL, 10);    //convert string to unsigned long long global
- Serial.print("debug 2");
-  delay (20);  
-     //   strcpy(scooterRental.vendorField, vendorField);               //copy into global character array
+        //   strcpy(scooterRental.vendorField, vendorField);               //copy into global character array
         strcpy(scooterRental.sessionID, asset_sessionId);               //copy into global character array
- Serial.print("debug 3");
-  delay (20);  
-   
+
         scooterRental.startLatitude = convertDegMinToDecDeg(GPS.latitude);
         if ( GPS.lat == 'S') {
           scooterRental.startLatitude = (0 - scooterRental.startLatitude);
@@ -312,7 +317,6 @@ int search_RentalStartTx() {
           scooterRental.startLongitude = (0 - scooterRental.startLongitude);
         }
 
-Serial.print("debug 3");
         return 1;
       }
       else {        //we received a transaction that did not match. We should issue refund.
