@@ -2,6 +2,7 @@
   This file contains functions that interact with Ark client C++ API
 ********************************************************************************/
 //  http://www.fileformat.info/tool/hash.htm
+/*
 void encode_sha256() {
 
   //int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
@@ -10,7 +11,7 @@ void encode_sha256() {
   //char *payload = "Hello SHA 256!";
   char *payload = "9299610";
 
-  byte shaResult[32];
+  byte shaResult[32]; 
 
   const size_t payloadLength = strlen(payload);       //holds length of payload
 
@@ -31,7 +32,7 @@ void encode_sha256() {
   }
 }
 
-
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sign a Message using a 12-word Passphrase and Verify it.
@@ -306,7 +307,7 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
 
 int getMostRecentReceivedTransaction(int page = 1) {
   Serial.println("\n\nHere are all the transactions in a wallet");
- // int page = 1;
+  // int page = 1;
   const char* id;               //transaction ID
   const char* amount;           //transactions amount
   const char* senderAddress;    //transaction address of sender
@@ -405,7 +406,7 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
       lastRXpage++;   //increment global receiver counter.
       lastRXpage_eeprom = lastRXpage;
       saveCredentials();
-      return 0;           
+      return 0;
     }
     //--------------------------------------------
     //  Rental Start transaction was received
@@ -431,4 +432,55 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
 
     return 1;           //transaction found
   }
+}
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Send a standard BridgeChain transaction, tailored for a custom network.
+void SendTransaction_RentalFinish() {
+
+  walletNonce_Uint64 = walletNonce_Uint64 + 1;      //If the send fails then we need to unwind this increment.
+
+  static const uint8_t session_SHA256[32] = {1, 2, 3, 4, 5, 6, 5, 6, 5, 4, 5, 6, 5, 4, 5, 6, 7, 8, 9, 8, 7, 4, 5, 6, 7, 2, 1, 3, 4, 5, 6, 5};
+
+  // Use the Transaction Builder to make a transaction.
+  auto bridgechainTransaction = builder::radians::ScooterRentalFinish(cfg)
+                                //.type(RADIANS_SCOOTER_RENTAL_FINISH_TYPE)
+                                //.senderPublicKey(identities::Keys::fromPassphrase(Passphrase).publicKey.data())
+                                .recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
+                                .timestamp(2, 0)
+                                .latitude(10111111, 0)
+                                .longitude(-20222222, 0)
+                                .timestamp(0 + 90 * 1000, 1)
+                                .latitude(15111111, 1)
+                                .longitude(-25222222, 1)
+                                .sessionId(shaResult)       //QRcodeHash_Byte is type byte. I think this is the same as uint8_t
+                                //bug: session id is 0000000
+                                //.sessionId(session_SHA256)       //QRcodeHash_Byte is type byte. I think this is the same as uint8_t
+                                
+                                .containsRefund(true)             //there seems to be a problem with this is false
+                                .fee(10000000)
+
+                                .nonce(walletNonce_Uint64)
+                                .amount(1)                        // bignumber error when amount = 0(regardless of the state of contains refund).  validation error when containsRefund = false.
+                                //.expiration(0)
+                                //  .secondSign(SecondPassphrase)
+                                .sign(PASSPHRASE)
+                                .build();
+
+  // Create and Print the Json representation of the Transaction.
+  const auto transactionJson = bridgechainTransaction.toJson();
+  printf("\n\nBridgechain Transaction: %s\n\n", transactionJson.c_str());
+
+  bridgechainTransaction.sign(PASSPHRASE);      //Is this required????????
+
+  char transactionsBuffer[1500];
+  snprintf(&transactionsBuffer[0], 1500, "{\"transactions\":[%s]}", bridgechainTransaction.toJson().c_str());
+  std::string jsonStr = transactionsBuffer;
+  std::string sendResponse = connection.api.transactions.send(jsonStr);
+  Serial.println(sendResponse.c_str());
 }

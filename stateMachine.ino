@@ -89,7 +89,7 @@ void StateMachine() {
           // use this to check result of SHA256 https://passwordsgenerator.net/sha256-hash-generator/
           // http://www.fileformat.info/tool/hash.htm
 
-          byte shaResult[32];
+          //byte shaResult[32];
           char SHApayload[10 + 1]; //max number is 4294967295
           //itoa(esprandom, SHApayload, 10);      //this will interpret numbers as signed
           utoa(esprandom, SHApayload, 10);        //use this instead for unsigned conversion
@@ -121,7 +121,8 @@ void StateMachine() {
           //hardcode Hash for testing
           strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
           strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
-
+          //QRcodeHash_Byte = shaResult;      //stash away so we can send in Rental Finish Transaction
+          
           // strcat(QRcodeText, shaResult_char);     //append hash
           //  strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction
 
@@ -226,7 +227,7 @@ void StateMachine() {
           }
           getWallet();                  // Retrieve Wallet Nonce before you send a transaction
           //sendBridgechainTransaction();    //this sends a standard transaction
-          //sendTransaction_RentalFinish();
+          SendTransaction_RentalFinish();
 
           Serial.println("");
           Serial.println("=================================");

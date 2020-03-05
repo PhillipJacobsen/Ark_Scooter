@@ -234,6 +234,8 @@ QRCode qrcode;                  // Create the QR code object
 //char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
 char* QRcodeHash_pntr;               // QRcodeHash. This is
 char QRcodeHash[64+1];
+//byte QRcodeHash_Byte[32];
+byte shaResult[32];
 
 /********************************************************************************
   Time Library
@@ -312,6 +314,7 @@ mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;      //select algorithm
 
 #include <arkCrypto.h>
 #include "arkCrypto_esp32.h"  // This is a helper header that includes all the Misc ARK C++ Crypto headers required for this sketch
+#include "transactions/builders/radians/radians.hpp"
 
 // Namespaces
 using namespace Ark::Crypto;
