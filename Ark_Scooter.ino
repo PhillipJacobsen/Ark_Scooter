@@ -231,7 +231,7 @@ const int QRcode_Version = 10;  // set the version (range 1->40)
 const int QRcode_ECC = 1;       // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
 QRCode qrcode;                  // Create the QR code object
 
-//char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
+//char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters).  ECC=1 = 213 characters
 char* QRcodeHash_pntr;               // QRcodeHash. This is
 char QRcodeHash[64+1];
 //byte QRcodeHash_Byte[32];
@@ -377,8 +377,12 @@ struct rental {
   // char rentalRate[64+1] = RENTAL_RATE_STR;
   char rentalRate[64 + 1];
   uint64_t rentalRate_Uint64;
+  float QRLatitude;
+  float QRLongitude;
+  uint32_t startTime;
   float startLatitude;
   float startLongitude;
+  uint32_t endTime;
   float endLatitude;
   float endLongitude;
   char vendorField[256 + 1];

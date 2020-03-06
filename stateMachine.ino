@@ -125,7 +125,7 @@ void StateMachine() {
           strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
           strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
           //QRcodeHash_Byte = shaResult;      //stash away so we can send in Rental Finish Transaction
-          
+
           // strcat(QRcodeText, shaResult_char);     //append hash
           //  strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction
 
@@ -134,11 +134,35 @@ void StateMachine() {
           strcat(QRcodeText, "&rate=");
           strcat(QRcodeText, RENTAL_RATE_STR);
 
+
+          scooterRental.QRLatitude = convertDegMinToDecDeg(GPS.latitude);
+          if ( GPS.lat == 'S') {
+            scooterRental.QRLatitude = (0 - scooterRental.QRLatitude);
+          }
+
+          scooterRental.QRLongitude = convertDegMinToDecDeg(GPS.longitude);
+          if ( GPS.lon == 'W') {
+            scooterRental.QRLongitude = (0 - scooterRental.QRLongitude);
+          }
+
+          //buf += String(scooterRental.QRLatitude, 4);    // use 6 decimal point precision. alternate method
+          char QRLatitude[13];
+          snprintf(&QRLatitude[0], 13, "%.6f", scooterRental.QRLatitude);             //create string with 6 decimal point.
+
+          char QRLongitude[13];
+          snprintf(&QRLongitude[0], 13, "%.6f", scooterRental.QRLongitude);             //create string with 6 decimal point.
+
+          strcat(QRcodeText, "&lat=");
+          strcat(QRcodeText, QRLatitude);
+
+          strcat(QRcodeText, "&lon=");
+          strcat(QRcodeText, QRLongitude);
+
           Serial.print("QR text: ");
           Serial.println(QRcodeText);
 
           //Example: QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=4897212321343433&rate=370000000";  //Scooter Address, Hash, Rental Rate
-          //Example "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=1234300000000000000000000000000000000000000000000000000000000000&rate=370000000"
+          //Example "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=1234300000000000000000000000000000000000000000000000000000000000&rate=370000000&lat=-180.222222&lon=1.111111"
 
           displayQRcode(QRcodeText);
 
@@ -179,7 +203,8 @@ void StateMachine() {
           if (search_RentalStartTx()) {       //
             Serial.println("Start Ride Timer");
             rideTime_start_ms = millis();
-
+            
+            scooterRental.startTime = time(nullptr);
 
             //rideTime_length_ms
             uint64_t rideTime_length_min = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;     //# of minutes    rate = .037RAD per minute
@@ -227,6 +252,8 @@ void StateMachine() {
           //use difftime
           //http://www.cplusplus.com/reference/ctime/difftime/
 
+          scooterRental.endTime = time(nullptr);
+
           scooterRental.endLatitude = convertDegMinToDecDeg(GPS.latitude);
           if ( GPS.lat == 'S') {
             scooterRental.endLatitude = (0 - scooterRental.endLatitude);
@@ -235,11 +262,13 @@ void StateMachine() {
           if ( GPS.lon == 'W') {
             scooterRental.endLongitude = (0 - scooterRental.endLongitude);
           }
+
+
           getWallet();                  // Retrieve Wallet Nonce before you send a transaction
           //sendBridgechainTransaction();    //this sends a standard transaction
           SendTransaction_RentalFinish();
-          
-          
+
+
 
           Serial.println("");
           Serial.println("=================================");
@@ -248,10 +277,10 @@ void StateMachine() {
           Serial.println(scooterRental.payment);
           Serial.printf("%" PRIu64 "\n", scooterRental.payment_Uint64);   //PRIx64 to print in hexadecimal
           Serial.println(scooterRental.rentalRate);
-          Serial.println(scooterRental.startLatitude,6);      //this prints out only 6 decimal places.  It has 8 decimals
-          Serial.println(scooterRental.startLongitude,6);
-          Serial.println(scooterRental.endLatitude,6);
-          Serial.println(scooterRental.endLongitude,6);
+          Serial.println(scooterRental.startLatitude, 6);     //this prints out only 6 decimal places.  It has 8 decimals
+          Serial.println(scooterRental.startLongitude, 6);
+          Serial.println(scooterRental.endLatitude, 6);
+          Serial.println(scooterRental.endLongitude, 6);
           Serial.println(scooterRental.vendorField);
           Serial.println("=================================");
           Serial.println("");
@@ -264,7 +293,7 @@ void StateMachine() {
         }
         else {
           //timer has not expired
-          updateSpeedometer();
+          updateSpeedometer();      // no speed is shown initially if there is no change.
           updateCountdownTimer();
           state = STATE_5;
         }
@@ -316,6 +345,7 @@ int search_RentalStartTx() {
 
       //check to see if vendorField of new transaction matches the field in QRcode that we displayed
       //if  (strcmp(vendorField, QRcodeHash) == 0) {
+
       if  (strcmp(asset_sessionId, QRcodeHash) == 0) {
 
         strcpy(scooterRental.senderAddress, senderAddress);           //copy into global character array

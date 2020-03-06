@@ -1,3 +1,6 @@
+//   measuring accuracy of GPS
+//   https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674
+  
 
 /********************************************************************************
   converts lat/long from Adafruit degree-minute format to decimal-degrees
