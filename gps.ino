@@ -34,10 +34,14 @@ double convertDegMinToDecDeg (float degMin) {
 void build_MQTTpacket() {
   NodeRedMQTTpacket.battery = batteryPercent;
   strcpy( NodeRedMQTTpacket.walletBalance, walletBalance);
-
+  
+  NodeRedMQTTpacket.status = rentalStatus;
+  
   NodeRedMQTTpacket.fix = int(GPS.fix);
   if (NodeRedMQTTpacket.fix) {
-    NodeRedMQTTpacket.status = "Available";
+    //NodeRedMQTTpacket.status = "Available";
+    //NodeRedMQTTpacket.status = rentalStatus;
+
     NodeRedMQTTpacket.satellites = GPS.satellites;              //number of satellites
     NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;  //convert knots to kph
     //we need to do some fomatting of the GPS signal so it is suitable for mapping software on Thingsboard
@@ -53,7 +57,7 @@ void build_MQTTpacket() {
     }
   }
   else {        //we do not have a GPS fix. What should the GPS location be?
-    NodeRedMQTTpacket.status = "Broken";
+    //  NodeRedMQTTpacket.status = "Broken";
     NodeRedMQTTpacket.latitude = 53.53583908;       //default location
     NodeRedMQTTpacket.longitude = -113.27674103;    //default location
     NodeRedMQTTpacket.satellites = 0;               //number of satellites
@@ -81,7 +85,7 @@ void send_MQTTpacket() {
       buf += F(",\"fix\":");
       buf += String(NodeRedMQTTpacket.fix);
       buf += F(",\"lat\":");
-      buf += String(NodeRedMQTTpacket.latitude + 0.0032, 8);    //add noise to gps signal
+      buf += String(NodeRedMQTTpacket.latitude + 0.0032, 8);    //add noise to gps signal.  use 8 decimal point precision.
       buf += F(",\"lon\":");
       buf += String(NodeRedMQTTpacket.longitude + 0.00221, 8);
       buf += F(",\"speed\":");
@@ -101,7 +105,7 @@ void send_MQTTpacket() {
       // buf substring( 1,buf.length() )      //start index is inclusive. Ending index is exclusive.
       //const char * msg = buf.substring( 1, buf.length() ).c_str();
       //     const char * msg = buf.c_str();
-      
+
       char msgbackup[700 + 1];
       strcpy(msgbackup, msg);
 

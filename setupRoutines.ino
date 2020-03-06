@@ -245,6 +245,9 @@ void setup()
   // show bootup screen for additional 1200ms
   delay(1200);
 
+  rentalStatus = "Broken";
+
+  
   InitStatusBar();        //display the status bar on the bottom of the screen
   UpdateBatteryStatus();
 

@@ -387,6 +387,7 @@ struct rental {
 struct rental scooterRental;
 
 
+const char* rentalStatus;     // Available, Broken, Rented, Charging
 
 //NOTES!!!!!!!!!!!!!!
 //const char* is a pointer to memory that hopefully contains a null-terminated string.

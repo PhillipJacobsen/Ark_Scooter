@@ -3,7 +3,7 @@
 ********************************************************************************/
 //  http://www.fileformat.info/tool/hash.htm
 /*
-void encode_sha256() {
+  void encode_sha256() {
 
   //int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
 
@@ -11,7 +11,7 @@ void encode_sha256() {
   //char *payload = "Hello SHA 256!";
   char *payload = "9299610";
 
-  byte shaResult[32]; 
+  byte shaResult[32];
 
   const size_t payloadLength = strlen(payload);       //holds length of payload
 
@@ -30,7 +30,7 @@ void encode_sha256() {
     sprintf(str, "%02x", (int)shaResult[i]);
     Serial.print(str);
   }
-}
+  }
 
 */
 
@@ -447,21 +447,58 @@ void SendTransaction_RentalFinish() {
 
   static const uint8_t session_SHA256[32] = {1, 2, 3, 4, 5, 6, 5, 6, 5, 4, 5, 6, 5, 4, 5, 6, 7, 8, 9, 8, 7, 4, 5, 6, 7, 2, 1, 3, 4, 5, 6, 5};
 
+  scooterRental.endLatitude = convertDegMinToDecDeg(GPS.latitude);
+  if ( GPS.lat == 'S') {
+    scooterRental.endLatitude = (0 - scooterRental.endLatitude);
+  }
+
+  scooterRental.endLongitude = convertDegMinToDecDeg(GPS.longitude);
+  if ( GPS.lon == 'W') {
+    scooterRental.endLongitude = (0 - scooterRental.endLongitude);
+  }
+
+uint64_t endlat = (uint64_t) (scooterRental.endLatitude * 1000000);
+uint64_t endlon = (uint64_t) (scooterRental.endLongitude * 1000000);
+
+      Serial.println("Scooter Rental Finish GPS");
+      Serial.print("scooterRental.endLatitude ");
+      Serial.println(scooterRental.endLatitude,6);        //type = real
+      Serial.print("scooterRental.endLongitude ");
+      Serial.println(scooterRental.endLongitude,6);        //type = real
+           
+      Serial.print("endlat ");
+      Serial.printf("%" PRIu64 "\n", endlat);   //PRIx64 to print in hexadecimal     
+      Serial.println("");
+      Serial.print("endlon ");
+      Serial.printf("%" PRIu64 "\n", endlon);   //PRIx64 to print in hexadecimal     
+      Serial.println("");
+/*
+  strcpy(walletNonce, data["nonce"]);          //copy into global character array
+  walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);   //string to unsigned long long
+
+  Serial.print("Nonce: ");
+  Serial.println(walletNonce);
+  Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal      
+*/      
+
   // Use the Transaction Builder to make a transaction.
   auto bridgechainTransaction = builder::radians::ScooterRentalFinish(cfg)
                                 //.type(RADIANS_SCOOTER_RENTAL_FINISH_TYPE)
                                 //.senderPublicKey(identities::Keys::fromPassphrase(Passphrase).publicKey.data())
                                 .recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
-                                .timestamp(2, 0)
-                                .latitude(10111111, 0)
-                                .longitude(-20222222, 0)
-                                .timestamp(0 + 90 * 1000, 1)
-                                .latitude(15111111, 1)
-                                .longitude(-25222222, 1)
+                                .timestamp(2, 0)                //uint32_t
+                                .latitude(10111111, 0)          //uint64_t
+                                .longitude(-20222222, 0)        //uint64_t
+                                .timestamp(0 + 90 * 1000, 1)    //uint32_t
+                                //.latitude(15111111, 1)          //uint64_t
+                                //.longitude(-25222222, 1)        //uint64_t
+                                .latitude(endlat, 1)          //uint64_t
+                                .longitude(endlon, 1)        //uint64_t
+
                                 .sessionId(shaResult)       //QRcodeHash_Byte is type byte. I think this is the same as uint8_t
                                 //bug: session id is 0000000
                                 //.sessionId(session_SHA256)       //QRcodeHash_Byte is type byte. I think this is the same as uint8_t
-                                
+
                                 .containsRefund(true)             //there seems to be a problem with this is false
                                 .fee(10000000)
 

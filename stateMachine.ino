@@ -17,6 +17,7 @@ void StateMachine() {
           Serial.println(state);
         }
         else {
+          rentalStatus = "Broken";
           state = STATE_0;
         }
         break;
@@ -32,6 +33,7 @@ void StateMachine() {
           Serial.println(state);
         }
         else {
+          rentalStatus = "Broken";
           state = STATE_1;
         }
         break;
@@ -51,6 +53,7 @@ void StateMachine() {
           Serial.println(state);
         }
         else {
+          rentalStatus = "Broken";
           state = STATE_2;
         }
         break;
@@ -135,15 +138,20 @@ void StateMachine() {
           Serial.println(QRcodeText);
 
           //Example: QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=4897212321343433&rate=370000000";  //Scooter Address, Hash, Rental Rate
+          //Example "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=1234300000000000000000000000000000000000000000000000000000000000&rate=370000000"
+
           displayQRcode(QRcodeText);
 
           previousUpdateTime_RentalStartSearch = millis();    //reset transaction search counter
+
+          rentalStatus = "Available";
 
           state = STATE_4;
           Serial.print("State: ");
           Serial.println(state);
         }
         else {
+          rentalStatus = "Broken";
           state = STATE_3;
         }
         break;
@@ -197,6 +205,8 @@ void StateMachine() {
 
             //startRideTimer();
             //unlockScooter();
+
+            rentalStatus = "Rented";
             state = STATE_5;
             Serial.print("State: ");
             Serial.println(state);
@@ -228,6 +238,8 @@ void StateMachine() {
           getWallet();                  // Retrieve Wallet Nonce before you send a transaction
           //sendBridgechainTransaction();    //this sends a standard transaction
           SendTransaction_RentalFinish();
+          
+          
 
           Serial.println("");
           Serial.println("=================================");
@@ -236,14 +248,15 @@ void StateMachine() {
           Serial.println(scooterRental.payment);
           Serial.printf("%" PRIu64 "\n", scooterRental.payment_Uint64);   //PRIx64 to print in hexadecimal
           Serial.println(scooterRental.rentalRate);
-          Serial.println(scooterRental.startLatitude);      //this prints out only 2 decimal places.  It has 7 decimals
-          Serial.println(scooterRental.startLongitude);
-          Serial.println(scooterRental.endLatitude);
-          Serial.println(scooterRental.endLongitude);
+          Serial.println(scooterRental.startLatitude,6);      //this prints out only 6 decimal places.  It has 8 decimals
+          Serial.println(scooterRental.startLongitude,6);
+          Serial.println(scooterRental.endLatitude,6);
+          Serial.println(scooterRental.endLongitude,6);
           Serial.println(scooterRental.vendorField);
           Serial.println("=================================");
           Serial.println("");
 
+          rentalStatus = "Available";
           state = STATE_6;
           Serial.print("State: ");
           Serial.println(state);
