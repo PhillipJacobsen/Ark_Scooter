@@ -1,3 +1,6 @@
+//   measuring accuracy of GPS
+//   https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674
+  
 
 /********************************************************************************
   converts lat/long from Adafruit degree-minute format to decimal-degrees
@@ -34,10 +37,14 @@ double convertDegMinToDecDeg (float degMin) {
 void build_MQTTpacket() {
   NodeRedMQTTpacket.battery = batteryPercent;
   strcpy( NodeRedMQTTpacket.walletBalance, walletBalance);
-
+  
+  NodeRedMQTTpacket.status = rentalStatus;
+  
   NodeRedMQTTpacket.fix = int(GPS.fix);
   if (NodeRedMQTTpacket.fix) {
-    NodeRedMQTTpacket.status = "Available";
+    //NodeRedMQTTpacket.status = "Available";
+    //NodeRedMQTTpacket.status = rentalStatus;
+
     NodeRedMQTTpacket.satellites = GPS.satellites;              //number of satellites
     NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;  //convert knots to kph
     //we need to do some fomatting of the GPS signal so it is suitable for mapping software on Thingsboard
@@ -53,9 +60,11 @@ void build_MQTTpacket() {
     }
   }
   else {        //we do not have a GPS fix. What should the GPS location be?
-    NodeRedMQTTpacket.status = "Broken";
-    NodeRedMQTTpacket.latitude = 53.53583908;
-    NodeRedMQTTpacket.longitude = -113.27674103;
+    //  NodeRedMQTTpacket.status = "Broken";
+    NodeRedMQTTpacket.latitude = 53.53583908;       //default location
+    NodeRedMQTTpacket.longitude = -113.27674103;    //default location
+    NodeRedMQTTpacket.satellites = 0;               //number of satellites
+    NodeRedMQTTpacket.speedKPH = 0;
   }
 }
 
@@ -68,12 +77,9 @@ void send_MQTTpacket() {
     previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
 
     if (WiFiMQTTclient.isWifiConnected()) {
-
       build_MQTTpacket();
 
-
-
-      //NOTE!  I think sprintf() is better to use here
+      //NOTE!  I think sprintf() is better to use here. update when you have a chance
       // example: {"status":"Rented","fix":1,"lat":53.53849358,"lon":-113.27589669,"speed":0.74,"sat":5,"bal":99990386752,"bat":96}
       String  buf;
       buf += F("{");
@@ -82,7 +88,7 @@ void send_MQTTpacket() {
       buf += F(",\"fix\":");
       buf += String(NodeRedMQTTpacket.fix);
       buf += F(",\"lat\":");
-      buf += String(NodeRedMQTTpacket.latitude + 0.0032, 8);    //add noise to gps signal
+      buf += String(NodeRedMQTTpacket.latitude + 0.0032, 8);    //add noise to gps signal.  use 8 decimal point precision.
       buf += F(",\"lon\":");
       buf += String(NodeRedMQTTpacket.longitude + 0.00221, 8);
       buf += F(",\"speed\":");
@@ -97,6 +103,12 @@ void send_MQTTpacket() {
       //These are pointers! They are not copying
       const char * msg = buf.substring(1).c_str();    //get string without leading {
 
+      //alternate method
+      //we need to sign the buffer without the leading and ending {}.
+      // buf substring( 1,buf.length() )      //start index is inclusive. Ending index is exclusive.
+      //const char * msg = buf.substring( 1, buf.length() ).c_str();
+      //     const char * msg = buf.c_str();
+
       char msgbackup[700 + 1];
       strcpy(msgbackup, msg);
 
@@ -107,16 +119,6 @@ void send_MQTTpacket() {
       buf += F(",\"sig\":");
       buf += signatureString.c_str();
       buf += F("}");
-
-
-      //we need to sign the buffer without the leading and ending {}.
-      // buf substring( 1,buf.length() )      //start index is inclusive. Ending index is exclusive.
-
-      //const char * msg = buf.substring( 1, buf.length() ).c_str();
-
-      //     const char * msg = buf.c_str();
-
-
 
       printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
       const bool isValid = message.verify();

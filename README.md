@@ -1,5 +1,9 @@
 # Proof of Concept Scooter Rental
 
+Requires:
+Ark-Cpp-Crypto v0.7.0
+Ark-Cpp-Client v 1.4.0-arduino
+
 notes: 
 //IOT example projects   https://github.com/debsahu/ESP-MQTT-AWS-IoT-Core/issues
 //good example of good reconnect code for mqtt and wifi. also good ntp time sync

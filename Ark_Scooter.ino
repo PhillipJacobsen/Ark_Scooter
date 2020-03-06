@@ -10,7 +10,7 @@
 
     Program Features:
     This program is designed to run on ESP32 Adafruit Huzzah.
-    This sketch uses the ARK Cpp-Client API to interact with an Ark V2.6 Devnet node.
+    This sketch uses the ARK Cpp-Client API to interact with a custom Ark V2.6 bridgechain.
     Ark Cpp Client available from Ark Ecosystem <info@ark.io>
     Ark API documentation:  https://docs.ark.io/sdk/clients/usage.html
 
@@ -24,8 +24,29 @@
 
     Ark Library Verions
     Tested with:
-    Ark-CPP-client v1.3.0-arduino
-    Ark-CPP-crypto v0.7.0
+    Ark-CPP-client v1.4.0-arduino
+    change from v1.3->v1.4: added 2.6 endpoint
+    https://github.com/ArkEcosystem/cpp-client/pull/159
+
+    *****************  this is Simons version with Radians transaction support. *******************8
+    https://github.com/sleepdefic1t/cpp-crypto/tree/chains/radians
+
+    Ark-CPP-crypto v1.0.0
+    bipp66 0.3.2
+    https://github.com/sleepdefic1t/bip66
+  See this file for library dependencies
+  https://github.com/ArkEcosystem/cpp-crypto/blob/master/library.json#L23
+
+  https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
+
+  //see this library file for the radians specific transactions
+
+  D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\transactions\types\radians
+  D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\test\transactions\types\radians
+
+
+see this file for some string to nubmer conversion helpers D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\utils\str.hpp
+
 ********************************************************************************/
 
 /********************************************************************************
@@ -33,6 +54,7 @@
 ********************************************************************************/
 #define RADIANS   //this configures system for my custom bridgechain. If undefined then system will be configured for Ark Devnet.
 //#define ARDUINOJSON_USE_LONG_LONG 1   //this may not be required. Was used previously for compatibility with Telegram which used JSON v5 library
+
 
 
 //#include <Arduino.h>
@@ -63,17 +85,17 @@ bool ARK_status = false;
 bool MQTT_status = false;
 
 
-
 int batteryPercent = 0;
 //float batteryFloat;
 
 
 /********************************************************************************
-   Arduino Json Libary -
+   Arduino Json Libary - Tested with version 6.13
     Data returned from Ark API is in JSON format.
     This libary is used to parse and deserialize the reponse
 
     This library is added by Ark crypto library so you do not need to include it here.
+    
 ********************************************************************************/
 //#include <ArduinoJson.h>
 
@@ -85,7 +107,6 @@ int batteryPercent = 0;
 ********************************************************************************/
 #include <EEPROM.h>
 
-
 /********************************************************************************
     EspMQTTClient Library by @plapointe6 Version 1.6.2
     WiFi and MQTT connection handler for ESP32
@@ -94,7 +115,7 @@ int batteryPercent = 0;
     EspMQTTClient is a wrapper around the MQTT PubSubClient Library Version 2.7 by @knolleary
 ********************************************************************************/
 //You need to update this in PubSubClient.h. Setting it here does nothing.
-//#define MQTT_MAX_PACKET_SIZE 512  // the maximum message size, including header, is 128 bytes by default. Configurable in PubSubClient.h.
+//#define MQTT_MAX_PACKET_SIZE 512  // the maximum message size, including header, is 128 bytes by default. Configurable in \Arduino\libraries\PubSubClient\src\PubSubClient.h.
 
 #include "EspMQTTClient.h"
 
@@ -207,12 +228,14 @@ float previousSpeed = 0;
 ********************************************************************************/
 #include "qrcode.h"
 const int QRcode_Version = 10;  // set the version (range 1->40)
-const int QRcode_ECC = 2;       // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
+const int QRcode_ECC = 1;       // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
 QRCode qrcode;                  // Create the QR code object
 
-//char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
+//char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters).  ECC=1 = 213 characters
 char* QRcodeHash_pntr;               // QRcodeHash. This is
-char QRcodeHash[16];
+char QRcodeHash[64+1];
+//byte QRcodeHash_Byte[32];
+byte shaResult[32];
 
 /********************************************************************************
   Time Library
@@ -261,17 +284,37 @@ unsigned long timeNow;  //variable used to hold current millis() time.
 unsigned long timeAPIfinish;  //variable used to measure API access time
 unsigned long timeAPIstart;  //variable used to measure API access time
 
+
+
 /********************************************************************************
+ *   mbed TLS Library for SHA256 function
+  
+  https://techtutorialsx.com/2018/05/10/esp32-arduino-mbed-tls-using-the-sha-256-algorithm/#more-25918
+  support for sha256
 
-    Ark Crypto Library (version 0.7.0)
-      https://github.com/ArkEcosystem/Cpp-Crypto
-
-    Bip66 Library (version 0.2.0)
-      https://github.com/sleepdefic1t/bip66
-
+  hash generator to check results of library.
+  https://passwordsgenerator.net/sha256-hash-generator/
 ********************************************************************************/
+#include "mbedtls/md.h"
+mbedtls_md_context_t ctx;
+mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;      //select algorithm
+
+
+
+/********************************************************************************
+    Ark Crypto Library (version 1.0.0)
+      https://github.com/ArkEcosystem/Cpp-Crypto
+  // NOTE:
+  // If this Repo was Cloned from github, run the 'ARDUINO_IDE.sh' script first.
+  // It's in the 'extras/' folder and extends compatability to the Arduino IDE.
+
+    Bip66 Library (version 0.3.2)
+      https://github.com/sleepdefic1t/bip66
+********************************************************************************/
+
 #include <arkCrypto.h>
 #include "arkCrypto_esp32.h"  // This is a helper header that includes all the Misc ARK C++ Crypto headers required for this sketch
+#include "transactions/builders/radians/radians.hpp"
 
 // Namespaces
 using namespace Ark::Crypto;
@@ -285,7 +328,7 @@ using namespace Ark::Crypto::transactions;
 
 //BridgeChain Network Structure Model.  see Ark-Cpp-Crypto\src\common\network.hpp
 const Network BridgechainNetwork = {
-  BRIDGECHAIN_NETHASH,
+  BRIDGECHAIN_NETHASH,        //defined in secrets.h
   BRIDGECHAIN_SLIP44,
   BRIDGECHAIN_WIF,
   BRIDGECHAIN_VERSION,
@@ -296,10 +339,8 @@ const Network BridgechainNetwork = {
 const Configuration cfg(BridgechainNetwork);
 
 
-
-
 /********************************************************************************
-  Ark Client Library (version 1.3.0)
+  Ark Client Library (version 1.4.0)
   https://github.com/ArkEcosystem/cpp-client
 
   https://docs.ark.io/iot/#which-sdk-supports-iot
@@ -336,15 +377,21 @@ struct rental {
   // char rentalRate[64+1] = RENTAL_RATE_STR;
   char rentalRate[64 + 1];
   uint64_t rentalRate_Uint64;
+  float QRLatitude;
+  float QRLongitude;
+  uint32_t startTime;
   float startLatitude;
   float startLongitude;
+  uint32_t endTime;
   float endLatitude;
   float endLongitude;
   char vendorField[256 + 1];
+  char sessionID[64 + 1];
 };
 struct rental scooterRental;
 
 
+const char* rentalStatus;     // Available, Broken, Rented, Charging
 
 //NOTES!!!!!!!!!!!!!!
 //const char* is a pointer to memory that hopefully contains a null-terminated string.
@@ -356,7 +403,7 @@ struct rental scooterRental;
 
 
 int lastRXpage = 0;             //page number of the last received transaction in wallet
-
+int lastRXpage_eeprom = 0;             //page number of the last received transaction in wallet(mirror of eeprom value)
 
 char walletBalance[64 + 1];
 uint64_t walletNonce_Uint64 = 1ULL;
@@ -410,7 +457,7 @@ void loop() {
   //--------------------------------------------
   // Parse GPS data if available
   // We need to call GPS.read() constantly in the main loop to watch for data arriving on the serial port
-  // The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set he buffer size???: Serial1.setRxBufferSize(1024);
+  // The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set the buffer size???: Serial1.setRxBufferSize(1024);
   // I need to learn more about the hardware buffer available on the ESP32 serial port.
   char c = GPS.read();
 
@@ -422,7 +469,7 @@ void loop() {
 
 
   //--------------------------------------------
-  // Update all the data displayed on the Status Bar
+  // Update all the data displayed on the OLED Status Bar
   UpdateWiFiConnectionStatus();     //update WiFi status bar
   UpdateMQTTConnectionStatus();     //update MQTT status bar
   UpdateGPSConnectionStatus();      //update GPS status bar
@@ -444,8 +491,7 @@ void loop() {
   // }
 
   //--------------------------------------------
-  // Publish MQTT data every UpdateInterval_MQTT_Publish (3 seconds)
-
+  // Publish MQTT data every UpdateInterval_MQTT_Publish (15 seconds)
   send_MQTTpacket();
 
   //  if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
