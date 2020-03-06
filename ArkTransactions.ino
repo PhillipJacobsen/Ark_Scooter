@@ -441,6 +441,10 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Send a standard BridgeChain transaction, tailored for a custom network.
+
+// view rental finish transaction in explorer.
+// https://radians.nl/api/v2/transactions/61ebc45edcc87ca34a50b5e4590e5881dd4148c905bcf8208ad0afd2e7076348
+
 void SendTransaction_RentalFinish() {
 
   walletNonce_Uint64 = walletNonce_Uint64 + 1;      //If the send fails then we need to unwind this increment.
