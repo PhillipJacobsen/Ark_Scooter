@@ -63,5 +63,5 @@ constexpr uint8_t TYPE_0_TYPE               = 0U;
 //constexpr uint64_t TYPE_0_AMOUNT            = 1ULL;
 //constexpr uint32_t TYPE_0_EXPIRATION        = 0UL;
 
-const char* RENTAL_RATE_STR = "3700000";                //rate per minute
-constexpr uint64_t RENTAL_RATE_UINT64 = 3700000ULL;    //.037RAD
+const char* RENTAL_RATE_STR = "61667";                //rate per second
+constexpr uint64_t RENTAL_RATE_UINT64 = 61667ULL;    //.037RAD

@@ -207,8 +207,8 @@ void StateMachine() {
             scooterRental.startTime = time(nullptr);
 
             //rideTime_length_ms
-            uint64_t rideTime_length_min = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;     //# of minutes    rate = .037RAD per minute
-            rideTime_length_ms = rideTime_length_min * 60000;
+            uint64_t rideTime_length_sec = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;     //# of seconds    rate = .037RAD per minute
+            rideTime_length_ms = rideTime_length_sec * 1000;
             Serial.print("ride time length: ");
             Serial.println(rideTime_length_ms);
 
