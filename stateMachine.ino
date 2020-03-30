@@ -122,12 +122,13 @@ void StateMachine() {
 
           strcat(QRcodeText, "?hash=");
           //hardcode Hash for testing
-          strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
-          strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
-          //QRcodeHash_Byte = shaResult;      //stash away so we can send in Rental Finish Transaction
+          //strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
+          //strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
+          
+                    //QRcodeHash_Byte = shaResult;      //stash away so we can send in Rental Finish Transaction
 
-          // strcat(QRcodeText, shaResult_char);     //append hash
-          //  strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction
+           strcat(QRcodeText, shaResult_char);     //append hash
+            strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction
 
           //strcat(QRcodeText, SHApayload);  //use this if you want to use random number instead of SHA256
 
@@ -207,8 +208,8 @@ void StateMachine() {
             scooterRental.startTime = time(nullptr);
 
             //rideTime_length_ms
-            uint64_t rideTime_length_min = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;     //# of minutes    rate = .037RAD per minute
-            rideTime_length_ms = rideTime_length_min * 60000;
+            uint64_t rideTime_length_sec = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;     //# of seconds    rate = .037RAD per minute
+            rideTime_length_ms = rideTime_length_sec * 1000;
             Serial.print("ride time length: ");
             Serial.println(rideTime_length_ms);
 
