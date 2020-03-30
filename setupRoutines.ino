@@ -275,65 +275,9 @@ void setup()
 
 
 
-void updateSpeedometer() {
-  char previousSpeed_char[6];
-  snprintf(&previousSpeed_char[0], 6, "%.1f", previousSpeed);        //create string with 1 decimal point.
-
-  float speedkmh = GPS.speed * 1.852;     //get current speed with full precision
-  char currentSpeed_char[6];
-  snprintf(&currentSpeed_char[0], 6, "%.1f", speedkmh);             //create string with 1 decimal point.
-
-  if  (strcmp(currentSpeed_char, previousSpeed_char) == 0) {
-    return;
-  }
-
-  int16_t  x1, y1;
-  uint16_t w, h;
-  tft.setFont(&Lato_Black_96);
-  tft.getTextBounds(previousSpeed_char, 30, 105, &x1, &y1, &w, &h);   //get bounds of the previous speed text
-  tft.fillRect(x1, y1, w, h, BLACK);                                  //clear the last speed reading
-
-  //display updated speed
-  previousSpeed = speedkmh;               //update previous speed
-  //tft.setFont(&Lato_Black_96);
-  tft.setTextColor(SpeedGreenDarker);
-  tft.setCursor(30, 105);
-  tft.print(speedkmh, 1);
-}
 
 
 
-void updateCountdownTimer() {
-
-  uint32_t remainingRentalTime = rideTime_length_ms - (millis() - rideTime_start_ms);   //calculate remaining ride time in ms
-  remainingRentalTime = remainingRentalTime / 1000;   //# of minutes
-  if (remainingRentalTime != remainingRentalTime_previous) {
-    //update display every second
-    char previousTimer_char[10];
-    snprintf(&previousTimer_char[0], 10, "%u", remainingRentalTime_previous);        //create string from unsigned int
-
-    char currentTimer_char[10];
-    snprintf(&currentTimer_char[0], 10, "%u", remainingRentalTime);             //create string from unsigned int
-
-    //Dec 3. removed the following 3 lines. This seems redundant.
-    //    if  (strcmp(currentTimer_char, previousTimer_char) == 0) {
-    //      return;     //do nothing if the # of seconds is the same.
-    //    }
-
-    remainingRentalTime_previous = remainingRentalTime;               //update previous timer
-    //update countdown timer display
-    int16_t  x1, y1;
-    uint16_t w, h;
-    tft.setFont(&Lato_Semibold_48);
-    tft.setTextColor(OffWhite);
-    tft.getTextBounds(previousTimer_char, 55, 230, &x1, &y1, &w, &h);   //get bounds of the previous speed text
-    tft.fillRect(x1, y1, w, h, BLACK);                                  //clear the last speed reading
-
-    //display updated countdowntimer
-    tft.setCursor(55, 230);
-    tft.print(remainingRentalTime);
-  }
-}
 
 
 

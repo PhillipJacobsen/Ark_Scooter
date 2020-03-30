@@ -1,17 +1,29 @@
+/********************************************************************************
+  This file contains the main Finite State Machine logic for controlling the rental session
 
-
-
-//to do: Putting the transitional code in the state switch case makes your switch statement hard to alter (have to change transitional code in multiple spots).
+********************************************************************************/
+//--------------------------------------------
+//  Improvements that could be done:  Putting the transitional code in the state switch case makes your switch statement hard to alter
+//    (have to change transitional code in multiple spots).
 //  https://www.reddit.com/r/programming/comments/1vrhdq/tutorial_implementing_state_machines/
 //  https://pastebin.com/22s5khze
 
-// https://www.embeddedrelated.com/showarticle/723.php
+//  Nice little tutorial on state machines: https://www.embeddedrelated.com/showarticle/723.php
 
-//Finite State Machine
+
+//--------------------------------------------
+// Mealy Finite State Machine
+// The state machine logic is executed once each cycle of the Arduino "main" loop.
+//--------------------------------------------
 void StateMachine() {
   switch (state) {
+
+    //--------------------------------------------
+    // State 0
+    // Initial state after microcontroller powers up and initializes the various peripherals
+    // Transitions to State 1 once WiFi is connected
     case STATE_0: {
-        if (WiFi_status) {
+        if (WiFi_status) {          //wait for WiFi to connect
           state = STATE_1;
           Serial.print("State: ");
           Serial.println(state);
@@ -23,6 +35,10 @@ void StateMachine() {
         break;
       }
 
+    //--------------------------------------------
+    // State 1
+    // Transistions to state 2 once connected to MQTT broker
+    // Return to state 0 if WiFi disconnects
     case STATE_1: {
         if (!WiFi_status) {     //check for WiFi disconnect
           state = STATE_0;
@@ -39,7 +55,11 @@ void StateMachine() {
         break;
       }
 
-
+    //--------------------------------------------
+    // State 2
+    // Transistions to state 3 once connected to Ark Node
+    // Return to state 0 if WiFi disconnects
+    // Returns to state 1 if MQTT disconnects
     case STATE_2: {
         if (!WiFi_status) {     //check for WiFi disconnect
           state = STATE_0;
@@ -59,6 +79,17 @@ void StateMachine() {
         break;
       }
 
+
+    //--------------------------------------------
+    // State 3
+    // Transistions to state 4 once GPS gets a satellite lock.
+    // Transition Actions:
+    //  -rentalStatus = "Available"
+    //  -generate and display QR code
+    //
+    // Return to state 0 if WiFi disconnects
+    // Returns to state 1 if MQTT disconnects
+    // Returns to state 2 if Ark network disconnects
     case STATE_3: {
         if (!WiFi_status) {     //check for WiFi disconnect
           state = STATE_0;
@@ -71,12 +102,11 @@ void StateMachine() {
         }
         else if (GPS_status) {  //wait for GPS fix
 
-
           //this is pseudorandom when the wifi or bluetooth does not have a connection. It can be considered "random" when the radios have a connection
           //arduino random function is overloaded on to esp_random();
           // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/system.html
 
-          uint32_t esprandom = (esp_random());    //generate 32 bit random number with a lower and upper bound using ESP32 RNG.
+          uint32_t esprandom = (esp_random());            //generate 32 bit random number with a lower and upper bound using ESP32 RNG.
           //int esprandom = (random(16384, 16777216));    //This uses Arduino PRNG that is overloaded. Provide it with a lower and upper bound
 
           char QRcodeText[256 + 1];       // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
@@ -92,7 +122,6 @@ void StateMachine() {
           // use this to check result of SHA256 https://passwordsgenerator.net/sha256-hash-generator/
           // http://www.fileformat.info/tool/hash.htm
 
-          //byte shaResult[32];
           char SHApayload[10 + 1]; //max number is 4294967295
           //itoa(esprandom, SHApayload, 10);      //this will interpret numbers as signed
           utoa(esprandom, SHApayload, 10);        //use this instead for unsigned conversion
@@ -101,21 +130,23 @@ void StateMachine() {
           mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
           mbedtls_md_starts(&ctx);
           mbedtls_md_update(&ctx, (const unsigned char *) SHApayload, payloadLength);
-          mbedtls_md_finish(&ctx, shaResult);
+          mbedtls_md_finish(&ctx, shaResult);   //shaResult is global variable of type bytes
           mbedtls_md_free(&ctx);
 
+          //display the value to be hashed
           Serial.print("value to be Hashed: ");
           Serial.println(SHApayload);
 
+          //convert the SHAresult which is an array of bytes into an array of characters so we can send to terminal display
           char shaResult_char[64 + 1];
           shaResult_char[0] = '\0';
-
           for (int i = 0; i < sizeof(shaResult); i++) {
             char str[3];
             sprintf(str, "%02x", (int)shaResult[i]);
             //           Serial.print(str);
             strcat(shaResult_char, str);
           }
+          //display the resulting SHA256
           Serial.print("QRcode SHA256: ");
           Serial.println(shaResult_char);
           //end sha256
@@ -124,13 +155,9 @@ void StateMachine() {
           //hardcode Hash for testing
           //strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
           //strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
-          
-                    //QRcodeHash_Byte = shaResult;      //stash away so we can send in Rental Finish Transaction
 
-           strcat(QRcodeText, shaResult_char);     //append hash
-            strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction
-
-          //strcat(QRcodeText, SHApayload);  //use this if you want to use random number instead of SHA256
+          strcat(QRcodeText, shaResult_char);     //append hash to QRcode string
+          strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction handler
 
           strcat(QRcodeText, "&rate=");
           strcat(QRcodeText, RENTAL_RATE_STR);
@@ -161,16 +188,14 @@ void StateMachine() {
 
           Serial.print("QR text: ");
           Serial.println(QRcodeText);
+          
+          //Example QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=1234300000000000000000000000000000000000000000000000000000000000&rate=370000000&lat=-180.222222&lon=1.111111"
 
-          //Example: QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=4897212321343433&rate=370000000";  //Scooter Address, Hash, Rental Rate
-          //Example "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=1234300000000000000000000000000000000000000000000000000000000000&rate=370000000&lat=-180.222222&lon=1.111111"
-
-          displayQRcode(QRcodeText);
+          displayQRcode(QRcodeText);    //display on the screen
 
           previousUpdateTime_RentalStartSearch = millis();    //reset transaction search counter
 
           rentalStatus = "Available";
-
           state = STATE_4;
           Serial.print("State: ");
           Serial.println(state);
@@ -183,6 +208,21 @@ void StateMachine() {
 
       }
 
+
+
+    //--------------------------------------------
+    // State 4
+    // Transistions to state 5 once valid RentalStart blockchain transaction is received
+    // Transition Actions:
+    //  -unlock scooter
+    //  -rentalStatus = "Rented"
+    //  -Start Ride Timer
+    //  -Initialize display with speedometer and ride timer
+    //
+    // Return to state 0 if WiFi disconnects
+    // Returns to state 1 if MQTT disconnects
+    // Returns to state 2 if Ark network disconnects
+    // Returns to state 3 if GPS loses lock
     case STATE_4: {
         if (!WiFi_status) {     //check for WiFi disconnect
           DisplayArkBitmap();
@@ -201,22 +241,31 @@ void StateMachine() {
           state = STATE_3;
         }
         else {                  //we are looking for a Rental Start Tx
-          if (search_RentalStartTx()) {       //
+          if (search_RentalStartTx()) {
             Serial.println("Start Ride Timer");
-            rideTime_start_ms = millis();
-            
-            scooterRental.startTime = time(nullptr);
+            scooterRental.startTime = time(nullptr);      //record Unix timestamp of the Rental start
+            rideTime_start_ms = millis();                 //We are using the ms timer for the ride timer. This id probably redundant. We could use the previous unix timer
 
-            //rideTime_length_ms
-            uint64_t rideTime_length_sec = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;     //# of seconds    rate = .037RAD per minute
-            rideTime_length_ms = rideTime_length_sec * 1000;
+            //record GPS coordinates of the Rental Start
+            scooterRental.startLatitude = convertDegMinToDecDeg(GPS.latitude);
+            if ( GPS.lat == 'S') {
+              scooterRental.startLatitude = (0 - scooterRental.startLatitude);
+            }
+            scooterRental.startLongitude = convertDegMinToDecDeg(GPS.longitude);
+            if ( GPS.lon == 'W') {
+              scooterRental.startLongitude = (0 - scooterRental.startLongitude);
+            }
+
+            //calculate the ride length = received payment / Rental rate(RAD/seconds)
+            uint64_t rideTime_length_sec = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;     
+
+            rideTime_length_ms = rideTime_length_sec * 1000;      //convert to ms
             Serial.print("ride time length: ");
             Serial.println(rideTime_length_ms);
 
-            //uint32_t rideTime_length_ms
 
-            //rideTime_length_ms = 10000;
-            remainingRentalTime_previous = rideTime_length_ms;
+            remainingRentalTime_previous_s = rideTime_length_sec;    //this is used by the countdown timer to refresh the display only once each second.
+            // remainingRentalTime_previous_s = 0;   //Might need to use this to ensure that timer display shows the initial timer value.  Otherwise it might not show anything until the first second has elapsed.
 
             clearMainScreen();
             tft.setFont(&Lato_Medium_36);
@@ -246,6 +295,17 @@ void StateMachine() {
         break;
       }
 
+
+    //--------------------------------------------
+    // State 5
+    // Transistions to state 6 once ride timer expires.  Speedometer and Ride timer are regularly updated on the display
+    // Transition Actions:
+    //  -lock scooter
+    //  -rentalStatus = "Available"
+    //  -Send RentalFinish blockchan transaction (code currently does not check to make sure a WiFi connection is available prior to sending).
+    //  -Initialize display with speedometer and ride timer
+    //
+    // In this state the WiFi, MQTT, Ark, and GPS connections are ignored.
     case STATE_5: {   // rider is using scooter
         //wait for timer to expire and then lock scooter and send rental finish and go back to beginning
         if (millis() - rideTime_start_ms > rideTime_length_ms)  {
@@ -253,8 +313,9 @@ void StateMachine() {
           //use difftime
           //http://www.cplusplus.com/reference/ctime/difftime/
 
-          scooterRental.endTime = time(nullptr);
+          scooterRental.endTime = time(nullptr);  //record Unix timestamp of the Rental Finish
 
+          //record GPS coordinates of the Rental Finish
           scooterRental.endLatitude = convertDegMinToDecDeg(GPS.latitude);
           if ( GPS.lat == 'S') {
             scooterRental.endLatitude = (0 - scooterRental.endLatitude);
@@ -265,11 +326,8 @@ void StateMachine() {
           }
 
 
-          getWallet();                  // Retrieve Wallet Nonce before you send a transaction
-          //sendBridgechainTransaction();    //this sends a standard transaction
-          SendTransaction_RentalFinish();
-
-
+          getWallet();                    // We need to retrieve Wallet Nonce before you send a transaction
+          SendTransaction_RentalFinish(); // send Rental Finish transaction
 
           Serial.println("");
           Serial.println("=================================");
@@ -302,7 +360,10 @@ void StateMachine() {
       }
 
 
-
+    //--------------------------------------------
+    // State 6
+    // Currently nothing happens in this state.
+    // Go immediately back to state 3.
     case STATE_6: {
         state = STATE_3;
         Serial.print("State: ");
@@ -315,68 +376,74 @@ void StateMachine() {
 
 
 
-int search_RentalStartTx() {
-  if (millis() - previousUpdateTime_RentalStartSearch > UpdateInterval_RentalStartSearch)  {    //poll Ark node every 8 seconds for a new transaction
-    previousUpdateTime_RentalStartSearch += UpdateInterval_RentalStartSearch;
 
-    //  check to see if new new transaction has been received in wallet
-    // lastRXpage is the page# of the last received transaction
-    int searchRXpage = lastRXpage + 1;
-    const char* id;              //transaction ID
-    const char* amount;           //transactions amount
-    const char* senderAddress;    //transaction address of sender
-    const char* senderPublicKey;  //transaction address of sender
-    const char* vendorField;      //vendor field
+/********************************************************************************
+  updates the ride countdown timer Displayed on the screen.
+  It only refreshes the screen once per second
+********************************************************************************/
+void updateCountdownTimer() {
 
-    const char* asset_gps_latitude;
-    const char* asset_gps_longitude;
-    const char* asset_sessionId;
-    const char* asset_rate;
+  uint32_t remainingRentalTime_s = rideTime_length_ms - (millis() - rideTime_start_ms);   //calculate remaining ride time in ms
+  remainingRentalTime_s = remainingRentalTime_s / 1000;   //# of seconds
+  if (remainingRentalTime_s != remainingRentalTime_previous_s) {
+    //update display every second
 
-    //if ( GetReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField) ) {
-    if ( GetTransaction_RentalStart(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField, asset_gps_latitude, asset_gps_longitude, asset_sessionId, asset_rate) ) {
-      lastRXpage++;   //increment received counter if rental start was received.
-      lastRXpage_eeprom = lastRXpage;
-      saveCredentials();
-      Serial.print("Received sessionId: ");
-      Serial.println(asset_sessionId);
-      Serial.print("QRcodeHash: ");
-      //Serial.println(QRcodeHash);shaResult_char
-      Serial.println(QRcodeHash);
+    //create the string this is currently displayed on the screen.  We are going to use this to calculate how much of the screen to erase
+    char previousTimer_char[10];
+    snprintf(&previousTimer_char[0], 10, "%u", remainingRentalTime_previous_s);        //create string from unsigned int
 
-      //check to see if vendorField of new transaction matches the field in QRcode that we displayed
-      //if  (strcmp(vendorField, QRcodeHash) == 0) {
+    //create the string that we want to write to the display.
+    char currentTimer_char[10];
+    snprintf(&currentTimer_char[0], 10, "%u", remainingRentalTime_s);             //create string from unsigned int
 
-      if  (strcmp(asset_sessionId, QRcodeHash) == 0) {
+    //Dec 3. removed the following 3 lines. This seems redundant.
+    //    if  (strcmp(currentTimer_char, previousTimer_char) == 0) {
+    //      return;     //do nothing if the # of seconds is the same.
+    //    }
 
-        strcpy(scooterRental.senderAddress, senderAddress);           //copy into global character array
-        strcpy(scooterRental.payment, amount);                        //copy into global character array
-        scooterRental.payment_Uint64 = strtoull(amount, NULL, 10);    //convert string to unsigned long long global
-        //   strcpy(scooterRental.vendorField, vendorField);               //copy into global character array
-        strcpy(scooterRental.sessionID, asset_sessionId);               //copy into global character array
+    remainingRentalTime_previous_s = remainingRentalTime_s;               //update previous timer
+    //update countdown timer display
+    int16_t  x1, y1;
+    uint16_t w, h;
+    tft.setFont(&Lato_Semibold_48);
+    tft.setTextColor(OffWhite);
+    tft.getTextBounds(previousTimer_char, 55, 230, &x1, &y1, &w, &h);   //get bounds of the previous speed text
+    tft.fillRect(x1, y1, w, h, BLACK);                                  //erase the last speed reading
 
-        scooterRental.startLatitude = convertDegMinToDecDeg(GPS.latitude);
-        if ( GPS.lat == 'S') {
-          scooterRental.startLatitude = (0 - scooterRental.startLatitude);
-        }
-        scooterRental.startLongitude = convertDegMinToDecDeg(GPS.longitude);
-        if ( GPS.lon == 'W') {
-          scooterRental.startLongitude = (0 - scooterRental.startLongitude);
-        }
-
-        return 1;
-      }
-      else {        //we received a transaction that did not match. We should issue refund.
-        Serial.print("session id did not match hash embedded in QRcode");
-        // issueRefund();
-        return 0;
-      }
-    }
-    else {    //we did not receive a transaction
-      return 0;
-    }
+    //display the updated countdowntimer on the display
+    tft.setCursor(55, 230);
+    tft.print(remainingRentalTime_s);
   }
-  else {      //it was not time to poll Ark network for a new transaction
-    return 0;
+}
+
+
+/********************************************************************************
+  updates the speedometer displayed on the screen.
+  It only refreshes the screen if the speed changes
+********************************************************************************/
+void updateSpeedometer() {
+
+  char previousSpeed_char[6];
+  snprintf(&previousSpeed_char[0], 6, "%.1f", previousSpeed);   //create string of prevoius speed with 1 decimal point.
+
+  float speedkmh = GPS.speed * 1.852;                           //get current speed with full precision
+  char currentSpeed_char[6];
+  snprintf(&currentSpeed_char[0], 6, "%.1f", speedkmh);         //create string with 1 decimal point.
+
+  if  (strcmp(currentSpeed_char, previousSpeed_char) == 0) {
+    return;
   }
+
+  int16_t  x1, y1;
+  uint16_t w, h;
+  tft.setFont(&Lato_Black_96);
+  tft.getTextBounds(previousSpeed_char, 30, 105, &x1, &y1, &w, &h);   //get bounds of the previous speed text
+  tft.fillRect(x1, y1, w, h, BLACK);                                  //clear the last speed reading
+
+  //display updated speed
+  previousSpeed = speedkmh;               //update previous speed
+  //tft.setFont(&Lato_Black_96);
+  tft.setTextColor(SpeedGreenDarker);
+  tft.setCursor(30, 105);
+  tft.print(speedkmh, 1);
 }

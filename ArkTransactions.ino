@@ -190,6 +190,61 @@ void getWallet() {
 }
 
 
+int search_RentalStartTx() {
+  if (millis() - previousUpdateTime_RentalStartSearch > UpdateInterval_RentalStartSearch)  {    //poll Ark node every 8 seconds for a new transaction
+    previousUpdateTime_RentalStartSearch += UpdateInterval_RentalStartSearch;
+
+    //  check to see if new new transaction has been received in wallet
+    // lastRXpage is the page# of the last received transaction
+    int searchRXpage = lastRXpage + 1;
+    const char* id;              //transaction ID
+    const char* amount;           //transactions amount
+    const char* senderAddress;    //transaction address of sender
+    const char* senderPublicKey;  //transaction address of sender
+    const char* vendorField;      //vendor field
+
+    const char* asset_gps_latitude;
+    const char* asset_gps_longitude;
+    const char* asset_sessionId;
+    const char* asset_rate;
+
+    //if ( GetReceivedTransaction(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField) ) {
+    if ( GetTransaction_RentalStart(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField, asset_gps_latitude, asset_gps_longitude, asset_sessionId, asset_rate) ) {
+      lastRXpage++;   //increment received counter if rental start was received.
+      lastRXpage_eeprom = lastRXpage;
+      saveCredentials();
+      Serial.print("Received sessionId: ");
+      Serial.println(asset_sessionId);
+      Serial.print("QRcodeHash: ");
+      //Serial.println(QRcodeHash);shaResult_char
+      Serial.println(QRcodeHash);
+
+      //check to see if sessionID of new transaction matches the Hash field in QRcode that we displayed
+      if  (strcmp(asset_sessionId, QRcodeHash) == 0) {
+
+        strcpy(scooterRental.senderAddress, senderAddress);           //copy into global character array
+        strcpy(scooterRental.payment, amount);                        //copy into global character array
+        scooterRental.payment_Uint64 = strtoull(amount, NULL, 10);    //convert string to unsigned long long global
+        strcpy(scooterRental.sessionID, asset_sessionId);             //copy into global character array
+
+        return 1;
+      }
+
+      else {        //we received a transaction that did not match. We should issue refund.
+        Serial.print("session id did not match hash embedded in QRcode");
+        // issueRefund();
+        return 0;
+      }
+    }
+    else {    //we did not receive a transaction
+      return 0;
+    }
+  }
+  else {      //it was not time to poll Ark network for a new transaction
+    return 0;
+  }
+}
+
 
 /********************************************************************************
   This routine retrieves 1 received transaction in wallet if available

@@ -247,6 +247,8 @@ byte shaResult[32];
 uint32_t rideTime_start_ms;
 uint32_t rideTime_length_ms;     //milliseconds
 
+uint32_t remainingRentalTime_previous_s;  // seconds
+
 time_t rideTime_start_seconds = 0;
 
 //use these if you want to use time for measuring elapsed time for the ride timer.
@@ -273,7 +275,7 @@ uint32_t previousUpdateTime_RSSI = millis();
 uint32_t UpdateInterval_RentalStartSearch = 8000;
 uint32_t previousUpdateTime_RentalStartSearch = millis();
 
-uint32_t remainingRentalTime_previous;
+
 
 //Frequency at which the Speed and # Satellites is updated on the screen
 uint32_t UpdateInterval_GPS = 5000;
