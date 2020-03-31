@@ -188,7 +188,7 @@ void StateMachine() {
 
           Serial.print("QR text: ");
           Serial.println(QRcodeText);
-          
+
           //Example QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=1234300000000000000000000000000000000000000000000000000000000000&rate=370000000&lat=-180.222222&lon=1.111111"
 
           displayQRcode(QRcodeText);    //display on the screen
@@ -257,7 +257,7 @@ void StateMachine() {
             }
 
             //calculate the ride length = received payment / Rental rate(RAD/seconds)
-            uint64_t rideTime_length_sec = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;     
+            uint64_t rideTime_length_sec = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;
 
             rideTime_length_ms = rideTime_length_sec * 1000;      //convert to ms
             Serial.print("ride time length: ");
@@ -385,6 +385,11 @@ void updateCountdownTimer() {
 
   uint32_t remainingRentalTime_s = rideTime_length_ms - (millis() - rideTime_start_ms);   //calculate remaining ride time in ms
   remainingRentalTime_s = remainingRentalTime_s / 1000;   //# of seconds
+  //need to check for time < 0
+  if (remainingRentalTime_s < 0) {
+    remainingRentalTime_s = 0;
+  }
+
   if (remainingRentalTime_s != remainingRentalTime_previous_s) {
     //update display every second
 

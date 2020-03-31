@@ -212,7 +212,7 @@ int search_RentalStartTx() {
     if ( GetTransaction_RentalStart(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField, asset_gps_latitude, asset_gps_longitude, asset_sessionId, asset_rate) ) {
       lastRXpage++;   //increment received counter if rental start was received.
       lastRXpage_eeprom = lastRXpage;
-      saveCredentials();
+      saveEEPROM();
       Serial.print("Received sessionId: ");
       Serial.println(asset_sessionId);
       Serial.print("QRcodeHash: ");
@@ -460,7 +460,7 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
       Serial.println("transaction I don't care about was received");
       lastRXpage++;   //increment global receiver counter.
       lastRXpage_eeprom = lastRXpage;
-      saveCredentials();
+      saveEEPROM();
       return 0;
     }
     //--------------------------------------------
@@ -563,7 +563,7 @@ void SendTransaction_RentalFinish() {
                                 //bug: session id is 0000000
                                 //.sessionId(session_SHA256)       //QRcodeHash_Byte is type byte. I think this is the same as uint8_t
 
-                                .containsRefund(true)             //there seems to be a problem with this is false
+                                .containsRefund(false)             //there seems to be a problem with this is false
                                 .fee(10000000)
 
                                 .nonce(walletNonce_Uint64)

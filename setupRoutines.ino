@@ -2,9 +2,6 @@
   This file contains functions used to configure hardware peripherals and various libraries.
 ********************************************************************************/
 
-
-
-
 /********************************************************************************
   This function is called once everything is connected (Wifi and MQTT)
 ********************************************************************************/
@@ -35,7 +32,9 @@ void onConnectionEstablished() {
     //  Retrieve Wallet Nonce and Balance
     getWallet();
 
-    loadCredentials(); //load page number from eeprom
+    //--------------------------------------------
+    //  Copy data stored in Flash into RAM
+    loadEEPROM(); //load page number from eeprom
     if (lastRXpage_eeprom < 1) {
       lastRXpage_eeprom = 0;
     }
@@ -43,7 +42,7 @@ void onConnectionEstablished() {
     lastRXpage = getMostRecentReceivedTransaction(lastRXpage_eeprom + 1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 
     lastRXpage_eeprom = lastRXpage;
-    saveCredentials();
+    saveEEPROM();
 
 
     //    Serial.print("try scanning wallet a second time ");
@@ -247,7 +246,7 @@ void setup()
 
   rentalStatus = "Broken";
 
-  
+
   InitStatusBar();        //display the status bar on the bottom of the screen
   UpdateBatteryStatus();
 
@@ -318,13 +317,15 @@ void displaySpeedScreen() {
 
 
 
-
-// Load WLAN credentials from EEPROM
+/********************************************************************************
+  Copy data from nonvolatile memory into RAM.
+  Note. ESP32 has FLASH memory(not EEPROM) however the standard high level Arduino EEPROM arduino functions work.
+********************************************************************************/
+// Load data from EEPROM
 // You need to call EEPROM.begin(size) before you start reading or writing, size being the number of bytes you want to use.
 // Size can be anywhere between 4 and 4096 bytes.
-//EEPROM.write does not write to flash immediately, instead you must call EEPROM.commit() whenever you wish to save changes to flash. EEPROM.end() will also commit, and will release the RAM copy of EEPROM contents.
 
-void loadCredentials() {
+void loadEEPROM() {
   EEPROM.begin(512);
   EEPROM.get(0, lastRXpage_eeprom);
   // EEPROM.get(0 + sizeof(ssid), password);
@@ -347,9 +348,14 @@ void loadCredentials() {
 
 
 
-/** Store WLAN credentials to EEPROM */
 
-void saveCredentials() {
+/********************************************************************************
+  Store data in nonvolatile memory.
+  Note. ESP32 has FLASH memory(not EEPROM) however the standard high level Arduino EEPROM arduino functions work.
+  EEPROM.write does not write to flash immediately, instead you must call EEPROM.commit() whenever you wish to save changes to flash. EEPROM.end() will also commit, and will release the RAM copy of EEPROM contents.
+
+********************************************************************************/
+void saveEEPROM() {
   EEPROM.begin(512);
   EEPROM.put(0, lastRXpage_eeprom);
   // EEPROM.put(0 + sizeof(ssid), password);
