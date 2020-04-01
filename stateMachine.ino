@@ -384,11 +384,16 @@ void StateMachine() {
 void updateCountdownTimer() {
 
   uint32_t remainingRentalTime_s = rideTime_length_ms - (millis() - rideTime_start_ms);   //calculate remaining ride time in ms
-  remainingRentalTime_s = remainingRentalTime_s / 1000;   //# of seconds
   //need to check for time < 0
-  if (remainingRentalTime_s < 0) {
+  //  if (remainingRentalTime_s < 0) {  This won't work because of the unsigned type
+  if (remainingRentalTime_s > rideTime_length_ms) {  //checks for wrap of unsigned type
     remainingRentalTime_s = 0;
   }
+  else {
+    remainingRentalTime_s = remainingRentalTime_s / 1000;   //# of seconds
+
+  }
+
 
   if (remainingRentalTime_s != remainingRentalTime_previous_s) {
     //update display every second
@@ -412,11 +417,11 @@ void updateCountdownTimer() {
     uint16_t w, h;
     tft.setFont(&Lato_Semibold_48);
     tft.setTextColor(OffWhite);
-    tft.getTextBounds(previousTimer_char, 55, 230, &x1, &y1, &w, &h);   //get bounds of the previous speed text
+    tft.getTextBounds(previousTimer_char, 70, 230, &x1, &y1, &w, &h);   //get bounds of the previous speed text
     tft.fillRect(x1, y1, w, h, BLACK);                                  //erase the last speed reading
 
     //display the updated countdowntimer on the display
-    tft.setCursor(55, 230);
+    tft.setCursor(70, 230);
     tft.print(remainingRentalTime_s);
   }
 }
