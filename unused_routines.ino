@@ -1,3 +1,71 @@
+
+//just some temp MQTT stuff that is not being used.  put in onConnectionEstablished
+    // Subscribe to "mytopic/test" and display received message to Serial
+    //  WiFiMQTTclient.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", [](const String & payload) {
+    //    Serial.println(payload);
+    //  });
+
+    // Subscribe to "mytopic/test2"
+    //  WiFiMQTTclient.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", test2Func);
+
+
+    // Publish a message to "mytopic/test"
+    //  WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
+
+    // Execute delayed instructions
+    //  client.executeDelayed(5 * 1000, []() {
+    //    WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
+    //  });
+
+
+
+
+
+
+    
+void displaySpeedScreen() {
+
+  // https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
+  // https://www.youtube.com/watch?v=L8MmTISmwZ8
+  // http://oleddisplay.squix.ch/#/home     awesome tool for generating custom font.
+  clearMainScreen();
+  //speedometer
+  tft.setFont(&Lato_Black_96);
+  tft.setTextColor(SpeedGreenDarker);
+  tft.setCursor(60, 105);
+  tft.print("12");
+
+  tft.setFont(&Lato_Medium_36);
+  tft.setTextColor(SpeedGreen);     // http://www.barth-dev.de/online/rgb565-color-picker/
+  tft.setCursor(75, 150);
+  tft.print("km/h");
+
+  //countdown timer
+  tft.setFont(&Lato_Semibold_48);
+  tft.setTextColor(OffWhite);
+  tft.setCursor(55, 230);
+  tft.print("10:32");
+
+  //breakpoint
+  //  while (1) {
+  //  }
+}
+
+
+
+
+//display received message to Serial
+void test2Func (const String & payload) {
+  Serial.print("Received MQTT message: ");
+  Serial.println(payload);
+}
+
+
+
+
+
+
+
 //NOTES!!!!!!!!!!!!!!
 //const char* is a pointer to memory that hopefully contains a null-terminated string.
 //A char* points to the memory location of a sequence of multiple chars.
