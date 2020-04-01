@@ -1,4 +1,4 @@
-
+// Ark logo
 // 'ark', 128x128px
 //http://javl.github.io/image2cpp/
 const unsigned char ArkBitmap [] PROGMEM = {

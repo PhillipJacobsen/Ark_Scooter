@@ -1,100 +1,6 @@
 /********************************************************************************
   This file contains functions that interact with Ark client C++ API
 ********************************************************************************/
-//  http://www.fileformat.info/tool/hash.htm
-/*
-  void encode_sha256() {
-
-  //int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
-
-
-  //char *payload = "Hello SHA 256!";
-  char *payload = "9299610";
-
-  byte shaResult[32];
-
-  const size_t payloadLength = strlen(payload);       //holds length of payload
-
-  mbedtls_md_init(&ctx);
-  mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
-  mbedtls_md_starts(&ctx);
-  mbedtls_md_update(&ctx, (const unsigned char *) payload, payloadLength);
-  mbedtls_md_finish(&ctx, shaResult);
-  mbedtls_md_free(&ctx);
-
-  Serial.print("Hash: ");
-
-  for (int i = 0; i < sizeof(shaResult); i++) {
-    char str[3];
-
-    sprintf(str, "%02x", (int)shaResult[i]);
-    Serial.print(str);
-  }
-  }
-
-*/
-
-////////////////////////////////////////////////////////////////////////////////
-// Sign a Message using a 12-word Passphrase and Verify it.
-//
-// Given the text "Hello World",
-// and the passphrase "this is a top secret passphrase",
-// the computed 'Signature" is:
-// - "304402200fb4adddd1f1d652b544ea6ab62828a0a65b712ed447e2538db0caebfa68929e02205ecb2e1c63b29879c2ecf1255db506d671c8b3fa6017f67cfd1bf07e6edd1cc8".
-//
-// ---
-void signMessage() {
-  Message message;
-  message.sign(MessageText, PASSPHRASE);
-
-  const auto signatureString = BytesToHex(message.signature);
-  printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
-
-  const bool isValid = message.verify();
-  printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Send a BridgeChain transaction, tailored for a custom network.
-void sendBridgechainTransaction() {
-  // Use the Transaction Builder to make a transaction.
-  walletNonce_Uint64 = walletNonce_Uint64 + 1;
-
-  char tempVendorField[80];
-  strcpy(tempVendorField, "Ride End: ");
-  strcat(tempVendorField, QRcodeHash);
-
-  auto bridgechainTransaction = builder::Transfer(cfg)
-                                // .type(TYPE_0_TYPE)
-                                // .senderPublicKey(identities::Keys::fromPassphrase(PASSPHRASE).publicKey.data())
-                                //.recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
-                                .recipientId(scooterRental.senderAddress)        //genesis_2
-                                .vendorField(tempVendorField)
-                                .fee(TYPE_0_FEE)
-                                .sign(PASSPHRASE)
-                                .nonce(walletNonce_Uint64)
-                                .amount(10000ULL)
-                                .expiration(0UL)
-                                //  .secondSign(SecondPassphrase)
-                                .build();
-
-  const auto transactionJson = bridgechainTransaction.toJson();
-  printf("\n\nBridgechain Transaction: %s\n\n", transactionJson.c_str());
-
-  bridgechainTransaction.sign(PASSPHRASE);
-
-  char transactionsBuffer[600];
-  snprintf(&transactionsBuffer[0], 600, "{\"transactions\":[%s]}", bridgechainTransaction.toJson().c_str());
-  std::string jsonStr = transactionsBuffer;
-  std::string sendResponse = connection.api.transactions.send(jsonStr);
-  Serial.println(sendResponse.c_str());
-
-
-}
-
-
 
 
 /********************************************************************************
@@ -129,9 +35,6 @@ bool checkArkNodeStatus() {
   deserializeJson(doc, nodeStatus.c_str());
   JsonObject data = doc["data"];
   bool data_synced = data["synced"]; // true
-  // long data_now = data["now"]; // 4047140
-  // long data_blocksCount = data["blocksCount"]; // -4047140
-  // long data_timestamp = data["timestamp"]; // 82303508
   return data_synced;
 }
 
@@ -161,19 +64,15 @@ bool checkArkNodeStatus() {
   uint64_t walletBalance_Uint64 = 0ULL;
 
 ********************************************************************************/
-//void getWallet(const char* &nonce, const char* &balance) {
 void getWallet() {
-  //std::string walletGetResponse = connection.api.wallets.get(ArkAddress);
   const auto walletGetResponse = connection.api.wallets.get(ArkAddress);
 
   const size_t capacity = JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(6) + 200;
   DynamicJsonDocument doc(capacity);
 
-  //const char* json = "{\"data\":{\"address\":\"TKneFA9Rm6GrX9zVXhn6iGprnW2fEauouE\",\"publicKey\":\"039ae554142f4df0a22c5c25b182896e9b3a1c785c6a0b8d1581cade5936608452\",\"nonce\":\"2\",\"balance\":\"2099999480773504\",\"isDelegate\":false,\"isResigned\":false}}";
-
   deserializeJson(doc, walletGetResponse.c_str());
   JsonObject data = doc["data"];
-  strcpy(walletBalance, data["balance"]);      //copy into global character array
+  strcpy(walletBalance, data["balance"]);                       //copy into global character array
   walletBalance_Uint64 = strtoull(data["balance"], NULL, 10);   //string to unsigned long long
 
   strcpy(walletNonce, data["nonce"]);          //copy into global character array
@@ -186,9 +85,67 @@ void getWallet() {
   Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal
   Serial.print("Balance: ");
   Serial.println(walletBalance);
-
 }
 
+
+
+/********************************************************************************
+  This routine will poll the Ark node API searching for the RentalStart custom transaction
+  It polls once every 8 seconds
+  When polling the API we set the limit = 1 so we only retrieve 1 transaction at a time.
+********************************************************************************/
+int search_RentalStartTx() {
+  if (millis() - previousUpdateTime_RentalStartSearch > UpdateInterval_RentalStartSearch)  {    //poll Ark node every 8 seconds for a new transaction
+    previousUpdateTime_RentalStartSearch += UpdateInterval_RentalStartSearch;
+
+    //  check to see if new new transaction has been received in wallet
+    // lastRXpage is the page# of the last received transaction
+    int searchRXpage = lastRXpage + 1;
+    const char* id;               //transaction ID
+    const char* amount;           //transactions amount
+    const char* senderAddress;    //transaction address of sender
+    const char* senderPublicKey;  //transaction address of sender
+    const char* vendorField;      //vendor field
+
+    const char* asset_gps_latitude;
+    const char* asset_gps_longitude;
+    const char* asset_sessionId;
+    const char* asset_rate;
+
+    if ( GetTransaction_RentalStart(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField, asset_gps_latitude, asset_gps_longitude, asset_sessionId, asset_rate) ) {
+      lastRXpage++;         //increment received counter if rental start was received.
+      lastRXpage_eeprom = lastRXpage;
+      saveEEPROM();         //store the page in the Flash
+      Serial.print("Received sessionId: ");
+      Serial.println(asset_sessionId);
+      Serial.print("QRcodeHash: ");
+      Serial.println(QRcodeHash);
+
+      //check to see if sessionID of new transaction matches the Hash embedded in QRcode that was displayed
+      if  (strcmp(asset_sessionId, QRcodeHash) == 0) {
+
+        strcpy(scooterRental.senderAddress, senderAddress);           //copy into global character array
+        strcpy(scooterRental.payment, amount);                        //copy into global character array
+        scooterRental.payment_Uint64 = strtoull(amount, NULL, 10);    //convert string to unsigned long long global
+        strcpy(scooterRental.sessionID, asset_sessionId);             //copy into global character array
+
+        return 1;
+      }
+
+      else {        //we received a transaction that did not match. We should issue refund.
+        Serial.print("session id did not match hash embedded in QRcode");
+        // issueRefund();  TODO!!!!!!!!!!!!!!!!!!!!!!!
+        return 0;
+      }
+    }
+    else {    //we did not receive a transaction
+      return 0;
+    }
+  }
+  else {      //it was not time to poll Ark network for a new transaction
+    return 0;
+  }
+}
 
 
 /********************************************************************************
@@ -348,8 +305,6 @@ int getMostRecentReceivedTransaction(int page = 1) {
   asset_sessionId
   asset_rate
 
-
-
 ********************************************************************************/
 int GetTransaction_RentalStart(const char *const address, int page, const char* &id, const char* &amount, const char* &senderAddress, const char* &senderPublicKey, const char* &vendorField, const char* &asset_gps_latitude, const char* &asset_gps_longitude, const char* &asset_sessionId, const char* &asset_rate ) {
 
@@ -405,7 +360,7 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
       Serial.println("transaction I don't care about was received");
       lastRXpage++;   //increment global receiver counter.
       lastRXpage_eeprom = lastRXpage;
-      saveCredentials();
+      saveEEPROM();
       return 0;
     }
     //--------------------------------------------
@@ -438,9 +393,8 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
 
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
-// Send a standard BridgeChain transaction, tailored for a custom network.
+// Send a Rental Finish Custom BridgeChain transaction
 
 // view rental finish transaction in explorer.
 // https://radians.nl/api/v2/transactions/61ebc45edcc87ca34a50b5e4590e5881dd4148c905bcf8208ad0afd2e7076348
@@ -451,18 +405,7 @@ void SendTransaction_RentalFinish() {
 
   static const uint8_t session_SHA256[32] = {1, 2, 3, 4, 5, 6, 5, 6, 5, 4, 5, 6, 5, 4, 5, 6, 7, 8, 9, 8, 7, 4, 5, 6, 7, 2, 1, 3, 4, 5, 6, 5};
 
-  //  this has already been captured
-  //  scooterRental.endLatitude = convertDegMinToDecDeg(GPS.latitude);
-  //  if ( GPS.lat == 'S') {
-  //    scooterRental.endLatitude = (0 - scooterRental.endLatitude);
-  //  }
-  //
-  //  scooterRental.endLongitude = convertDegMinToDecDeg(GPS.longitude);
-  //  if ( GPS.lon == 'W') {
-  //    scooterRental.endLongitude = (0 - scooterRental.endLongitude);
-  //  }
-
-  uint64_t endlat = (uint64_t) (scooterRental.endLatitude * 1000000);
+  uint64_t endlat = (uint64_t) (scooterRental.endLatitude * 1000000);       
   uint64_t endlon = (uint64_t) (scooterRental.endLongitude * 1000000);
 
   uint64_t startlat = (uint64_t) (scooterRental.startLatitude * 1000000);
@@ -508,7 +451,7 @@ void SendTransaction_RentalFinish() {
                                 //bug: session id is 0000000
                                 //.sessionId(session_SHA256)       //QRcodeHash_Byte is type byte. I think this is the same as uint8_t
 
-                                .containsRefund(true)             //there seems to be a problem with this is false
+                                .containsRefund(false)             //there seems to be a problem with this is false
                                 .fee(10000000)
 
                                 .nonce(walletNonce_Uint64)
@@ -526,6 +469,45 @@ void SendTransaction_RentalFinish() {
 
   char transactionsBuffer[1500];
   snprintf(&transactionsBuffer[0], 1500, "{\"transactions\":[%s]}", bridgechainTransaction.toJson().c_str());
+  std::string jsonStr = transactionsBuffer;
+  std::string sendResponse = connection.api.transactions.send(jsonStr);
+  Serial.println(sendResponse.c_str());
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Send a BridgeChain transaction, tailored for a custom network.
+void sendBridgechainTransaction() {
+  // Use the Transaction Builder to make a transaction.
+  walletNonce_Uint64 = walletNonce_Uint64 + 1;
+
+  char tempVendorField[80];
+  strcpy(tempVendorField, "Ride End: ");
+  strcat(tempVendorField, QRcodeHash);
+
+  auto bridgechainTransaction = builder::Transfer(cfg)
+                                // .type(TYPE_0_TYPE)
+                                // .senderPublicKey(identities::Keys::fromPassphrase(PASSPHRASE).publicKey.data())
+                                //.recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
+                                .recipientId(scooterRental.senderAddress)        //genesis_2
+                                .vendorField(tempVendorField)
+                                .fee(TYPE_0_FEE)
+                                .sign(PASSPHRASE)
+                                .nonce(walletNonce_Uint64)
+                                .amount(10000ULL)
+                                .expiration(0UL)
+                                //  .secondSign(SecondPassphrase)
+                                .build();
+
+  const auto transactionJson = bridgechainTransaction.toJson();
+  printf("\n\nBridgechain Transaction: %s\n\n", transactionJson.c_str());
+
+  bridgechainTransaction.sign(PASSPHRASE);
+
+  char transactionsBuffer[600];
+  snprintf(&transactionsBuffer[0], 600, "{\"transactions\":[%s]}", bridgechainTransaction.toJson().c_str());
   std::string jsonStr = transactionsBuffer;
   std::string sendResponse = connection.api.transactions.send(jsonStr);
   Serial.println(sendResponse.c_str());

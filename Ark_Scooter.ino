@@ -40,54 +40,49 @@
   https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
 
   //see this library file for the radians specific transactions
-
   D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\transactions\types\radians
   D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\test\transactions\types\radians
 
 
-see this file for some string to nubmer conversion helpers D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\utils\str.hpp
+  see this file for some string to number conversion helpers D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\utils\str.hpp
 
 ********************************************************************************/
 
 /********************************************************************************
                               Conditional Assembly
 ********************************************************************************/
-#define RADIANS   //this configures system for my custom bridgechain. If undefined then system will be configured for Ark Devnet.
-//#define ARDUINOJSON_USE_LONG_LONG 1   //this may not be required. Was used previously for compatibility with Telegram which used JSON v5 library
 
 
-
-//#include <Arduino.h>
 /********************************************************************************
                               Private Data
-  IMPORTANT - Modify the secrets.h file with your network connection details
+  IMPORTANT - Modify the secrets.h file with your secure network connection details
 ********************************************************************************/
 #include "secrets.h"
 
-/********************************************************************************
-                              Library Requirements
-********************************************************************************/
-const int LED_PIN = 13;    //LED integrated in Adafruit HUZZAH32
-int ledStatus = 0;
 
-const int BAT_PIN = 35;    //ADC connected to Battery input pin (A13 = 35;)
+/********************************************************************************
+                            Misc I/O Definitions
+********************************************************************************/
+const int LED_PIN = 13;     //LED integrated on Adafruit HUZZAH32 module
+
+const int BAT_PIN = 35;     //ADC connected to Battery input pin (A13 = 35;)
 //const int DAC1 = 25;      //declared in \packages\esp32\hardware\esp32\1.0.4\variants\feather_esp32/pins_arduino.h
 //const int DAC2 = 26;
 
 
 /********************************************************************************
-                              Global Variables
+                              Various Global Variables
 ********************************************************************************/
-bool initialConnectionEstablished_Flag = false;
-bool WiFi_status = false;
-bool GPS_status = false;
-bool ARK_status = false;
-bool MQTT_status = false;
+bool initialConnectionEstablished_Flag = false;   //used to detect first run after power up
 
+bool WiFi_status = false;   // = true when connected to WiFi access point
+bool GPS_status = false;    // = true when GPS has signal lock
+bool ARK_status = false;    // = true when communication to Radians Bridgechain Node is working
+bool MQTT_status = false;   // = true when connected to MQTT broker
 
-int batteryPercent = 0;
-//float batteryFloat;
+int batteryPercent = 0;     // use to store battery level in percentage
 
+float previousSpeed = 0;
 
 /********************************************************************************
    Arduino Json Libary - Tested with version 6.13
@@ -95,27 +90,32 @@ int batteryPercent = 0;
     This libary is used to parse and deserialize the reponse
 
     This library is added by Ark crypto library so you do not need to include it here.
-    
+
 ********************************************************************************/
 //#include <ArduinoJson.h>
+
 
 /********************************************************************************
   Library for reading/writing to the ESP32 flash memory.
   ESP32 Arduino libraries emulate EEPROM using a sector (4 kilobytes) of flash memory.
-  The total flash memory size is The entire space is split between bootloader, application, OTA data, NVS, SPIFFS, and EEPROM.
-  EEPROM library on the ESP32\allows using at most 1 sector (4kB) of flash.
+  The total flash memory size is ???
+  The entire space is split between bootloader, application, OTA data, NVS, SPIFFS, and EEPROM.
+  EEPROM library on the ESP32 allows using at most 1 sector (4kB) of flash.
 ********************************************************************************/
 #include <EEPROM.h>
 
+
 /********************************************************************************
-    EspMQTTClient Library by @plapointe6 Version 1.6.2
+    EspMQTTClient Library by @plapointe6 Version 1.8.0
     WiFi and MQTT connection handler for ESP32
     This library does a nice job of encapsulating the handling of WiFi and MQTT connections.
     You just need to provide your credentials and it will manage the connection and reconnections to the Wifi and MQTT networks.
     EspMQTTClient is a wrapper around the MQTT PubSubClient Library Version 2.7 by @knolleary
 ********************************************************************************/
-//You need to update this in PubSubClient.h. Setting it here does nothing.
-//#define MQTT_MAX_PACKET_SIZE 512  // the maximum message size, including header, is 128 bytes by default. Configurable in \Arduino\libraries\PubSubClient\src\PubSubClient.h.
+// The MQTT packets are larger then the allowed for the default setting of the libary.
+// You need to update this line in PubSubClient.h. Setting it here does nothing.
+// If you update this library you will need to update this setting as it will be overwritten.
+// #define MQTT_MAX_PACKET_SIZE 512  // the maximum message size, including header, is 128 bytes by default. Configurable in \Arduino\libraries\PubSubClient\src\PubSubClient.h.
 
 #include "EspMQTTClient.h"
 
@@ -130,9 +130,8 @@ EspMQTTClient WiFiMQTTclient(
   MQTT_SERVER_PORT  // The MQTT port, default to 1883. this line can be omitted
 );
 
-
 /********************************************************************************
-  This is the data that is sent to the CloudMQTT broker and then red by NodeRed client
+  This is the data packet that is sent to the CloudMQTT broker and then read by NodeRed client
 *********************************************************************************/
 struct MQTTpacket {
   const char* status;
@@ -147,12 +146,13 @@ struct MQTTpacket {
 };
 struct MQTTpacket NodeRedMQTTpacket;
 
+
 /********************************************************************************
     Adafruit GPS Library
 ********************************************************************************/
 #include <Adafruit_GPS.h>
 #define GPSSerial Serial1
-Adafruit_GPS GPS(&GPSSerial);     // Connect to the GPS on the hardware serial port
+Adafruit_GPS GPS(&GPSSerial);     // Connect to the GPS module via the hardware serial port
 
 
 /********************************************************************************
@@ -162,7 +162,7 @@ Adafruit_GPS GPS(&GPSSerial);     // Connect to the GPS on the hardware serial p
     graphics primitives documentation:  https://learn.adafruit.com/adafruit-gfx-graphics-library/graphics-primitives
     top left corner is (0,0)
 
-    http://oleddisplay.squix.ch/#/home     awesome tool for generating custom font.
+    http://oleddisplay.squix.ch/#/home     great tool for generating custom fonts.
 ********************************************************************************/
 #include <SPI.h>
 #include <Adafruit_GFX.h>
@@ -171,12 +171,9 @@ Adafruit_GPS GPS(&GPSSerial);     // Connect to the GPS on the hardware serial p
 #include "bitmaps.h"                  //bitmaps stored in program memory
 #include <Fonts/FreeSans9pt7b.h>      //add custom fonts
 #include <Fonts/FreeSansBold18pt7b.h>  //add custom fonts
-//#include <Fonts/FreeSansBold24pt7b.h>  //add custom fonts
 
 #include <Fonts/Lato_Medium_36.h>  //add custom fonts
-//#include <Fonts/Lato_Black_56.h>  //add custom fonts
 #include <Fonts/Lato_Semibold_48.h>  //add custom fonts
-//#include <Fonts/Lato_Black_88.h>  //add custom fonts
 #include <Fonts/Lato_Black_96.h>  //add custom fonts
 
 // pin connections
@@ -185,10 +182,10 @@ Adafruit_GPS GPS(&GPSSerial);     // Connect to the GPS on the hardware serial p
 #define TFT_DC   33
 #define SD_CS    14
 
-#define Lcd_X  240       //configure your screen dimensions.  We aren't using an LCD for this project so I should rename to something more generic               
+#define Lcd_X  240       //configure your screen dimensions.         
 #define Lcd_Y  320       //configure your screen dimensions    
 
-// my calibrated touchscreen data
+// my calibrated touchscreen data. Note: Resistive touchscreen is currently not being used.
 #define TS_MINX 3800  //adjust left side of screen.  default: 3800 
 #define TS_MAXX 250   //adjust right side of screen.  default: 100 
 #define TS_MINY 205   //default: 100 
@@ -215,7 +212,8 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);         //create Touchscreen
 
 int CursorX = 0;         //used to store current cursor position of the display
 int CursorY = 0;         //used to store current cursor position of the display
-float previousSpeed = 0;
+
+
 
 /********************************************************************************
     QRCode by Richard Moore version 0.0.1
@@ -225,16 +223,14 @@ float previousSpeed = 0;
     Increasing the error correction level will decrease the storage capacity due to redundancy pixels being added.
 
     If you have a ? in your QR text then I think the QR code operates in "Byte" mode.
+    QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters).  ECC=1 = 213 characters
 ********************************************************************************/
 #include "qrcode.h"
-const int QRcode_Version = 10;  // set the version (range 1->40)
-const int QRcode_ECC = 1;       // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
-QRCode qrcode;                  // Create the QR code object
+const int QRcode_Version = 10;    // set the version (range 1->40)
+const int QRcode_ECC = 1;         // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
+QRCode qrcode;                    // Create the QR code object
 
-//char* QRcodeText;               // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters).  ECC=1 = 213 characters
-char* QRcodeHash_pntr;               // QRcodeHash. This is
-char QRcodeHash[64+1];
-//byte QRcodeHash_Byte[32];
+char QRcodeHash[64 + 1];
 byte shaResult[32];
 
 /********************************************************************************
@@ -245,41 +241,44 @@ byte shaResult[32];
 
 //use these if you want to use millis() for measuring elapsed time for the ride timer.
 uint32_t rideTime_start_ms;
-uint32_t rideTime_length_ms;     //milliseconds
+uint32_t rideTime_length_ms;              //milliseconds
+
+uint32_t remainingRentalTime_previous_s;  // seconds
 
 time_t rideTime_start_seconds = 0;
 
 //use these if you want to use time for measuring elapsed time for the ride timer.
-time_t prevDisplayTime = 0; // this is used if you want to update clock every second
-
+time_t prevDisplayTime = 0;           // this is used if you want to update clock every second
 
 //time variables use for clock on the display
-//time_t prevDisplayTime = 0; // this is used if you want to update clock every second
-int prevDisplayMinute = 0;  // this is used if you want to update clock every minute
+int prevDisplayMinute = 0;            // this is used if you want to update clock every minute
 
+
+
+/********************************************************************************
+  Update Intervals for various algorithms
+********************************************************************************/
 //Frequency at which the MQTT packets are published
-uint32_t UpdateInterval_MQTT_Publish = 15000;
+uint32_t UpdateInterval_MQTT_Publish = 15000;           // 15 seconds
 uint32_t previousUpdateTime_MQTT_Publish = millis();
 
 //Frequency at which the battery level is updated on the screen
-uint32_t UpdateInterval_Battery = 7000;
+uint32_t UpdateInterval_Battery = 7000;                 // 7 seconds
 uint32_t previousUpdateTime_Battery = millis();
 
 //Frequency at which the WiFi Receive Signal Level is updated on the screen
-uint32_t UpdateInterval_RSSI = 5000;
+uint32_t UpdateInterval_RSSI = 5000;                    // 5 seconds
 uint32_t previousUpdateTime_RSSI = millis();
 
 //Frequency at which the Ark Network is polled looking for a rental start transaction
-uint32_t UpdateInterval_RentalStartSearch = 8000;
+uint32_t UpdateInterval_RentalStartSearch = 8000;       // 8 seconds
 uint32_t previousUpdateTime_RentalStartSearch = millis();
 
-uint32_t remainingRentalTime_previous;
-
-//Frequency at which the Speed and # Satellites is updated on the screen
+//Frequency at which the Speed and # GPS Satellites are updated on the screen
 uint32_t UpdateInterval_GPS = 5000;
 uint32_t previousUpdateTime_GPS = millis();
 
-//These are some variables used to measure the access time when reading from the Ark network.
+//These are some variables used to measure the access time when reading from the Ark network. This is needed only for testing
 unsigned long timeNow;  //variable used to hold current millis() time.
 unsigned long timeAPIfinish;  //variable used to measure API access time
 unsigned long timeAPIstart;  //variable used to measure API access time
@@ -287,8 +286,8 @@ unsigned long timeAPIstart;  //variable used to measure API access time
 
 
 /********************************************************************************
- *   mbed TLS Library for SHA256 function
-  
+     mbed TLS Library for SHA256 function
+
   https://techtutorialsx.com/2018/05/10/esp32-arduino-mbed-tls-using-the-sha-256-algorithm/#more-25918
   support for sha256
 
@@ -297,21 +296,21 @@ unsigned long timeAPIstart;  //variable used to measure API access time
 ********************************************************************************/
 #include "mbedtls/md.h"
 mbedtls_md_context_t ctx;
-mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;      //select algorithm
+mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;      //select SHA256 algorithm
 
 
 
 /********************************************************************************
     Ark Crypto Library (version 1.0.0)
+ ================  NOTE: Version 1.1.0 is available however I have not yet tested with it ===========
       https://github.com/ArkEcosystem/Cpp-Crypto
-  // NOTE:
-  // If this Repo was Cloned from github, run the 'ARDUINO_IDE.sh' script first.
-  // It's in the 'extras/' folder and extends compatability to the Arduino IDE.
+    NOTE:
+    If this Repo was Cloned from github, run the 'ARDUINO_IDE.sh' script first.
+    It's in the 'extras/' folder and extends compatability to the Arduino IDE.
 
     Bip66 Library (version 0.3.2)
       https://github.com/sleepdefic1t/bip66
 ********************************************************************************/
-
 #include <arkCrypto.h>
 #include "arkCrypto_esp32.h"  // This is a helper header that includes all the Misc ARK C++ Crypto headers required for this sketch
 #include "transactions/builders/radians/radians.hpp"
@@ -326,9 +325,10 @@ using namespace Ark::Crypto::transactions;
 //const auto address      = Base58::parsePubkeyHash(pubKeyHash.data(), 65);
 //const auto addressString = Address::fromPassphrase(Passphrase).toString.c_str();
 
-//BridgeChain Network Structure Model.  see Ark-Cpp-Crypto\src\common\network.hpp
+// BridgeChain Network Structure Model.  see Ark-Cpp-Crypto\src\common\network.hpp
+// These are defined in secrets.h
 const Network BridgechainNetwork = {
-  BRIDGECHAIN_NETHASH,        //defined in secrets.h
+  BRIDGECHAIN_NETHASH,       
   BRIDGECHAIN_SLIP44,
   BRIDGECHAIN_WIF,
   BRIDGECHAIN_VERSION,
@@ -341,6 +341,7 @@ const Configuration cfg(BridgechainNetwork);
 
 /********************************************************************************
   Ark Client Library (version 1.4.0)
+ ================  NOTE: Version 1.4.1 is available however I have not yet tested with it ===========  
   https://github.com/ArkEcosystem/cpp-client
 
   https://docs.ark.io/iot/#which-sdk-supports-iot
@@ -350,26 +351,11 @@ const Configuration cfg(BridgechainNetwork);
 #include <arkClient.h>
 Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);   // create ARK blockchain connection
 
-//I think a structure here for transaction details would be better form
-//I need to do some work here to make things less hacky
-//struct transactionDetails {
-//   const char*  id;
-//   int amount;
-//   const char* senderAddress;
-//   const char* vendorField;
-//};
-
-//--------------------------------------------
-// these are used to store the received transation details returned from wallet search
-// https://www.geeksforgeeks.org/difference-const-char-p-char-const-p-const-char-const-p/
-//pointers to constant charaters. you cannot change the value but you can change the pointer
-//const char* id;              //transaction ID
-//const char* amount;           //transactions amount
-//const char* senderAddress;    //transaction address of sender
-//const char* senderPublicKey;  //transaction address of sender
-//const char* vendorField;      //vendor field
 
 
+/********************************************************************************
+  This structure is used to store all the details of a Rental session
+********************************************************************************/
 struct rental {
   char senderAddress[34 + 1];
   char payment[64 + 1];
@@ -390,22 +376,13 @@ struct rental {
 };
 struct rental scooterRental;
 
+//todo: put this in the rental struct
+const char* rentalStatus;     // Options: Available, Broken, Rented, Charging
 
-const char* rentalStatus;     // Available, Broken, Rented, Charging
+int lastRXpage = 0;               //page number of the last received transaction in wallet
+int lastRXpage_eeprom = 0;        //page number of the last received transaction in wallet(mirror of eeprom value)
 
-//NOTES!!!!!!!!!!!!!!
-//const char* is a pointer to memory that hopefully contains a null-terminated string.
-//A char* points to the memory location of a sequence of multiple chars.
-//char sz[] = {'t', 'e', 's', 't', 0};    //C-string
-//const char *psz = "test";
-
-//https://accu.org/index.php/journals/1445  char* x is the same as char *x
-
-
-int lastRXpage = 0;             //page number of the last received transaction in wallet
-int lastRXpage_eeprom = 0;             //page number of the last received transaction in wallet(mirror of eeprom value)
-
-char walletBalance[64 + 1];
+char walletBalance[64 + 1];       
 uint64_t walletNonce_Uint64 = 1ULL;
 char walletNonce[64 + 1];
 uint64_t walletBalance_Uint64 = 0ULL;
@@ -414,10 +391,8 @@ uint64_t walletBalance_Uint64 = 0ULL;
 
 /********************************************************************************
   State Machine
-
 ********************************************************************************/
-
-enum State_enum {STATE_0, STATE_1, STATE_2, STATE_3, STATE_4, STATE_5, STATE_6};  //The possible states of the state machine
+enum State_enum {STATE_0, STATE_1, STATE_2, STATE_3, STATE_4, STATE_5, STATE_6};    //The possible states of the state machine
 State_enum state = STATE_0;     //initialize the starting state.
 
 
@@ -478,28 +453,11 @@ void loop() {
   UpdateBatteryStatus();            //update battery status every UpdateInterval_Battery (5 seconds)
   UpdateRSSIStatus();               //update battery status every UpdateInterval_RSSI (5 seconds)
 
-  //getMostRecentReceivedTransaction();
-
-
-
-
-  //--------------------------------------------
-  // Update all the data on the Status Bar
-  //  if (millis() - previousTime_1 > 4000)  {
-  //   Serial.println(WiFiMQTTclient.isConnected());
-  //   previousTime_1 += 4000;
-  // }
-
   //--------------------------------------------
   // Publish MQTT data every UpdateInterval_MQTT_Publish (15 seconds)
   send_MQTTpacket();
 
-  //  if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
-  //      GPStoMQTT();
-  //    previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
-  //  }
-
-
-
+  
+  //getMostRecentReceivedTransaction();
 
 }

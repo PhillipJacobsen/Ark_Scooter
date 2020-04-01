@@ -1,3 +1,81 @@
+
+//just some temp MQTT stuff that is not being used.  put in onConnectionEstablished
+    // Subscribe to "mytopic/test" and display received message to Serial
+    //  WiFiMQTTclient.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", [](const String & payload) {
+    //    Serial.println(payload);
+    //  });
+
+    // Subscribe to "mytopic/test2"
+    //  WiFiMQTTclient.subscribe("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", test2Func);
+
+
+    // Publish a message to "mytopic/test"
+    //  WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test", "This is a message"); // You can activate the retain flag by setting the third parameter to true
+
+    // Execute delayed instructions
+    //  client.executeDelayed(5 * 1000, []() {
+    //    WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/test2", "This is a message sent 5 seconds later");
+    //  });
+
+
+
+
+
+
+    
+void displaySpeedScreen() {
+
+  // https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
+  // https://www.youtube.com/watch?v=L8MmTISmwZ8
+  // http://oleddisplay.squix.ch/#/home     awesome tool for generating custom font.
+  clearMainScreen();
+  //speedometer
+  tft.setFont(&Lato_Black_96);
+  tft.setTextColor(SpeedGreenDarker);
+  tft.setCursor(60, 105);
+  tft.print("12");
+
+  tft.setFont(&Lato_Medium_36);
+  tft.setTextColor(SpeedGreen);     // http://www.barth-dev.de/online/rgb565-color-picker/
+  tft.setCursor(75, 150);
+  tft.print("km/h");
+
+  //countdown timer
+  tft.setFont(&Lato_Semibold_48);
+  tft.setTextColor(OffWhite);
+  tft.setCursor(55, 230);
+  tft.print("10:32");
+
+  //breakpoint
+  //  while (1) {
+  //  }
+}
+
+
+
+
+//display received message to Serial
+void test2Func (const String & payload) {
+  Serial.print("Received MQTT message: ");
+  Serial.println(payload);
+}
+
+
+
+
+
+
+
+//NOTES!!!!!!!!!!!!!!
+//const char* is a pointer to memory that hopefully contains a null-terminated string.
+//A char* points to the memory location of a sequence of multiple chars.
+//char sz[] = {'t', 'e', 's', 't', 0};    //C-string
+//const char *psz = "test";
+
+//https://accu.org/index.php/journals/1445  char* x is the same as char *x
+    
+    
+    
     //https://forum.arduino.cc/index.php?topic=334771.0
     //  std::string balanceCopy = std::string(balance);
     //  balanceCopied = balanceCopy.c_str(); 
@@ -7,6 +85,90 @@
     // balanceUINT = strtol(balance, NULL, 10);    //returns the maximum value of a 32-bit number. Actually, we need a 64 bit number here.
     // nonceUINT = atol(*nonce);
     // balanceUINT = atol(*balance);
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Sign a Message using a 12-word Passphrase and Verify it.
+//
+// Given the text "Hello World",
+// and the passphrase "this is a top secret passphrase",
+// the computed 'Signature" is:
+// - "304402200fb4adddd1f1d652b544ea6ab62828a0a65b712ed447e2538db0caebfa68929e02205ecb2e1c63b29879c2ecf1255db506d671c8b3fa6017f67cfd1bf07e6edd1cc8".
+//
+// ---
+static const auto MessageText       = "Hello World";
+
+void signMessage() {
+  Message message;
+  message.sign(MessageText, PASSPHRASE);
+
+  const auto signatureString = BytesToHex(message.signature);
+  printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
+
+  const bool isValid = message.verify();
+  printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
+}
+
+
+
+
+
+//  http://www.fileformat.info/tool/hash.htm
+/*  
+  void encode_sha256() {
+
+  //int esprandom = (random(16384, 16777216));    //generate random number with a lower and upper bound
+
+
+  //char *payload = "Hello SHA 256!";
+  char *payload = "9299610";
+
+  byte shaResult[32];
+
+  const size_t payloadLength = strlen(payload);       //holds length of payload
+
+  mbedtls_md_init(&ctx);
+  mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
+  mbedtls_md_starts(&ctx);
+  mbedtls_md_update(&ctx, (const unsigned char *) payload, payloadLength);
+  mbedtls_md_finish(&ctx, shaResult);
+  mbedtls_md_free(&ctx);
+
+  Serial.print("Hash: ");
+
+  for (int i = 0; i < sizeof(shaResult); i++) {
+    char str[3];
+
+    sprintf(str, "%02x", (int)shaResult[i]);
+    Serial.print(str);
+  }
+  }
+
+*/
+
+
+
+
+
+//I think a structure here for transaction details would be better form
+//I need to do some work here to make things less hacky
+//struct transactionDetails {
+//   const char*  id;
+//   int amount;
+//   const char* senderAddress;
+//   const char* vendorField;
+//};
+
+//--------------------------------------------
+// these are used to store the received transation details returned from wallet search
+// https://www.geeksforgeeks.org/difference-const-char-p-char-const-p-const-char-const-p/
+//pointers to constant charaters. you cannot change the value but you can change the pointer
+//const char* id;              //transaction ID
+//const char* amount;           //transactions amount
+//const char* senderAddress;    //transaction address of sender
+//const char* senderPublicKey;  //transaction address of sender
+//const char* vendorField;      //vendor field
+
 
 
 
