@@ -16,8 +16,17 @@
 #define MQTT_CLIENT_NAME  "TestClient"
 #define MQTT_SERVER_PORT  1883
 
-  #define WIFI_SSID         "*****"
-  #define WIFI_PASS         "*****"
+//h
+//#define WIFI_SSID         "TELUS0183"
+//#define WIFI_PASS         "6z5g4hbdxi"
+
+//w
+#define WIFI_SSID         "TELUS6428"
+#define WIFI_PASS         "3mmkgc9gn2"
+
+//pj
+//#define WIFI_SSID         "hppj"
+//#define WIFI_PASS         "1compost2"
 
 
 // Todo: try using this library to handle daylight savings:  https://github.com/JChristensen/Timezone
