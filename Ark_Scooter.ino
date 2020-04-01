@@ -40,12 +40,11 @@
   https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
 
   //see this library file for the radians specific transactions
-
   D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\transactions\types\radians
   D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\test\transactions\types\radians
 
 
-  see this file for some string to nubmer conversion helpers D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\utils\str.hpp
+  see this file for some string to number conversion helpers D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\utils\str.hpp
 
 ********************************************************************************/
 
