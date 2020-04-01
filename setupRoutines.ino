@@ -3,7 +3,7 @@
 ********************************************************************************/
 
 /********************************************************************************
-  This function is called once everything is connected (Wifi and MQTT)
+  This function is called once WiFi and MQTT connections are complete
 ********************************************************************************/
 void onConnectionEstablished() {
 
@@ -27,18 +27,19 @@ void onConnectionEstablished() {
     //  we need some error handling here!!!!!!  What do we do if there is no ark node connected?
     //  if (checkArkNodeStatus()) {
 
-
     //--------------------------------------------
     //  Retrieve Wallet Nonce and Balance
     getWallet();
 
     //--------------------------------------------
     //  Copy data stored in Flash into RAM
-    loadEEPROM(); //load page number from eeprom
+    loadEEPROM();                 //load page number from eeprom
     if (lastRXpage_eeprom < 1) {
       lastRXpage_eeprom = 0;
     }
 
+    //--------------------------------------------
+    //  Copy data stored in Flash into RAM
     lastRXpage = getMostRecentReceivedTransaction(lastRXpage_eeprom + 1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 
     lastRXpage_eeprom = lastRXpage;
@@ -136,6 +137,8 @@ void setupDisplayTouchscreen() {
 void clearMainScreen() {
   tft.fillRect(0, 0, 240, 265 - 20, BLACK);   //clear the screen except for the status bar
 }
+
+
 
 /********************************************************************************
   Draw the status bar at the bottom of the screen

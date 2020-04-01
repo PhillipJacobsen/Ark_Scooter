@@ -1,3 +1,13 @@
+//NOTES!!!!!!!!!!!!!!
+//const char* is a pointer to memory that hopefully contains a null-terminated string.
+//A char* points to the memory location of a sequence of multiple chars.
+//char sz[] = {'t', 'e', 's', 't', 0};    //C-string
+//const char *psz = "test";
+
+//https://accu.org/index.php/journals/1445  char* x is the same as char *x
+    
+    
+    
     //https://forum.arduino.cc/index.php?topic=334771.0
     //  std::string balanceCopy = std::string(balance);
     //  balanceCopied = balanceCopy.c_str(); 
@@ -7,6 +17,55 @@
     // balanceUINT = strtol(balance, NULL, 10);    //returns the maximum value of a 32-bit number. Actually, we need a 64 bit number here.
     // nonceUINT = atol(*nonce);
     // balanceUINT = atol(*balance);
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Sign a Message using a 12-word Passphrase and Verify it.
+//
+// Given the text "Hello World",
+// and the passphrase "this is a top secret passphrase",
+// the computed 'Signature" is:
+// - "304402200fb4adddd1f1d652b544ea6ab62828a0a65b712ed447e2538db0caebfa68929e02205ecb2e1c63b29879c2ecf1255db506d671c8b3fa6017f67cfd1bf07e6edd1cc8".
+//
+// ---
+static const auto MessageText       = "Hello World";
+
+void signMessage() {
+  Message message;
+  message.sign(MessageText, PASSPHRASE);
+
+  const auto signatureString = BytesToHex(message.signature);
+  printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
+
+  const bool isValid = message.verify();
+  printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
+}
+
+
+
+
+
+
+
+//I think a structure here for transaction details would be better form
+//I need to do some work here to make things less hacky
+//struct transactionDetails {
+//   const char*  id;
+//   int amount;
+//   const char* senderAddress;
+//   const char* vendorField;
+//};
+
+//--------------------------------------------
+// these are used to store the received transation details returned from wallet search
+// https://www.geeksforgeeks.org/difference-const-char-p-char-const-p-const-char-const-p/
+//pointers to constant charaters. you cannot change the value but you can change the pointer
+//const char* id;              //transaction ID
+//const char* amount;           //transactions amount
+//const char* senderAddress;    //transaction address of sender
+//const char* senderPublicKey;  //transaction address of sender
+//const char* vendorField;      //vendor field
+
 
 
 

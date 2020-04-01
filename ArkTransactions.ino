@@ -34,25 +34,7 @@
 
 */
 
-////////////////////////////////////////////////////////////////////////////////
-// Sign a Message using a 12-word Passphrase and Verify it.
-//
-// Given the text "Hello World",
-// and the passphrase "this is a top secret passphrase",
-// the computed 'Signature" is:
-// - "304402200fb4adddd1f1d652b544ea6ab62828a0a65b712ed447e2538db0caebfa68929e02205ecb2e1c63b29879c2ecf1255db506d671c8b3fa6017f67cfd1bf07e6edd1cc8".
-//
-// ---
-void signMessage() {
-  Message message;
-  message.sign(MessageText, PASSPHRASE);
 
-  const auto signatureString = BytesToHex(message.signature);
-  printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
-
-  const bool isValid = message.verify();
-  printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
-}
 
 
 
@@ -163,17 +145,14 @@ bool checkArkNodeStatus() {
 ********************************************************************************/
 //void getWallet(const char* &nonce, const char* &balance) {
 void getWallet() {
-  //std::string walletGetResponse = connection.api.wallets.get(ArkAddress);
   const auto walletGetResponse = connection.api.wallets.get(ArkAddress);
 
   const size_t capacity = JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(6) + 200;
   DynamicJsonDocument doc(capacity);
 
-  //const char* json = "{\"data\":{\"address\":\"TKneFA9Rm6GrX9zVXhn6iGprnW2fEauouE\",\"publicKey\":\"039ae554142f4df0a22c5c25b182896e9b3a1c785c6a0b8d1581cade5936608452\",\"nonce\":\"2\",\"balance\":\"2099999480773504\",\"isDelegate\":false,\"isResigned\":false}}";
-
   deserializeJson(doc, walletGetResponse.c_str());
   JsonObject data = doc["data"];
-  strcpy(walletBalance, data["balance"]);      //copy into global character array
+  strcpy(walletBalance, data["balance"]);                       //copy into global character array
   walletBalance_Uint64 = strtoull(data["balance"], NULL, 10);   //string to unsigned long long
 
   strcpy(walletNonce, data["nonce"]);          //copy into global character array
