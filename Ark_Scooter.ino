@@ -172,9 +172,9 @@ Adafruit_GPS GPS(&GPSSerial);     // Connect to the GPS module via the hardware 
 #include <Fonts/FreeSans9pt7b.h>      //add custom fonts
 #include <Fonts/FreeSansBold18pt7b.h>  //add custom fonts
 
-#include <Fonts/Lato_Medium_36.h>  //add custom fonts
-#include <Fonts/Lato_Semibold_48.h>  //add custom fonts
-#include <Fonts/Lato_Black_96.h>  //add custom fonts
+#include "Fonts/Lato_Medium_36.h"     //add custom fonts
+#include "Fonts/Lato_Semibold_48.h"   //add custom fonts
+#include "Fonts/Lato_Black_96.h"      //add custom fonts
 
 // pin connections
 #define STMPE_CS 32
