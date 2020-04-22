@@ -169,8 +169,8 @@ Adafruit_GPS GPS(&GPSSerial);     // Connect to the GPS module via the hardware 
 #include <Adafruit_ILI9341.h>         //hardware specific library for display
 #include <Adafruit_STMPE610.h>        //hardware specific library for the touch sensor
 #include "bitmaps.h"                  //bitmaps stored in program memory
-#include <Fonts/FreeSans9pt7b.h>      //add custom fonts
-#include <Fonts/FreeSansBold18pt7b.h>  //add custom fonts
+#include <Fonts/FreeSans9pt7b.h>      //add additional fonts from library
+#include <Fonts/FreeSansBold18pt7b.h> //add additional fonts from library
 
 #include "Fonts/Lato_Medium_36.h"     //add custom fonts
 #include "Fonts/Lato_Semibold_48.h"   //add custom fonts
