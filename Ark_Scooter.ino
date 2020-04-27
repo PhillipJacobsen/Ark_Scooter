@@ -119,7 +119,7 @@ float previousSpeed = 0;
 
 #include "EspMQTTClient.h"
 
-// configure these parameters in secrets.h
+
 EspMQTTClient WiFiMQTTclient(
   WIFI_SSID,
   WIFI_PASS,
@@ -129,6 +129,8 @@ EspMQTTClient WiFiMQTTclient(
   MQTT_CLIENT_NAME, // Client name that uniquely identify your device
   MQTT_SERVER_PORT  // The MQTT port, default to 1883. this line can be omitted
 );
+
+
 
 /********************************************************************************
   This is the data packet that is sent to the CloudMQTT broker and then read by NodeRed client

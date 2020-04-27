@@ -1,5 +1,5 @@
 /********************************************************************************
-  This file contains various fuctions 
+  This file contains various fuctions
 ********************************************************************************/
 
 //   measuring accuracy of GPS
@@ -39,9 +39,9 @@ double convertDegMinToDecDeg (float degMin) {
 void build_MQTTpacket() {
   NodeRedMQTTpacket.battery = batteryPercent;
   strcpy( NodeRedMQTTpacket.walletBalance, walletBalance);
-  
+
   NodeRedMQTTpacket.status = rentalStatus;
-  
+
   NodeRedMQTTpacket.fix = int(GPS.fix);
   if (NodeRedMQTTpacket.fix) {
     //NodeRedMQTTpacket.status = "Available";
@@ -86,7 +86,9 @@ void send_MQTTpacket() {
       String  buf;
       buf += F("{");
       buf += F("\"status\":");
+      buf += F("\"");
       buf += String(NodeRedMQTTpacket.status);
+      buf += F("\"");
       buf += F(",\"fix\":");
       buf += String(NodeRedMQTTpacket.fix);
       buf += F(",\"lat\":");
@@ -114,16 +116,19 @@ void send_MQTTpacket() {
       char msgbackup[700 + 1];
       strcpy(msgbackup, msg);
 
+      //sign the packet using Private Key
       Message message;
       message.sign(msg, PASSPHRASE);
       const auto signatureString = BytesToHex(message.signature);
 
       buf += F(",\"sig\":");
-      buf += signatureString.c_str();
+      buf += F("\"");
+      buf += signatureString.c_str();   //append the signature
+      buf += F("\"");
       buf += F("}");
 
       printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
-      const bool isValid = message.verify();
+      const bool isValid = message.verify();        //verify the signature
       printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
       Serial.println("message that was signed: ");
       Serial.println(msgbackup);
@@ -132,7 +137,9 @@ void send_MQTTpacket() {
       Serial.println();
       Serial.print("send_MQTTpacket: ");
       Serial.println(buf);
-      WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data", buf.c_str());
+      //      WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data", buf.c_str());
+      WiFiMQTTclient.publish(MQTT_Base_Topic, buf.c_str());
+
     }
   }
 }

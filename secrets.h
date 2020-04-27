@@ -13,11 +13,22 @@
 #define MQTT_SERVER_IP    "40.85.223.207"
 #define MQTT_USERNAME     "esp32"
 #define MQTT_PASSWORD     "compost2"
-#define MQTT_CLIENT_NAME  "TestClient"
+char* MQTT_CLIENT_NAME =  "TestClient";
 #define MQTT_SERVER_PORT  1883
 
-  #define WIFI_SSID         "*****"
-  #define WIFI_PASS         "*****"
+
+
+
+//  #define WIFI_SSID         "*****"
+//  #define WIFI_PASS         "*****"
+
+//h
+#define WIFI_SSID         "TELUS0183"
+#define WIFI_PASS         "6z5g4hbdxi"
+
+//w
+//#define WIFI_SSID         "TELUS6428"
+//#define WIFI_PASS         "3mmkgc9gn2"
 
 
 // Todo: try using this library to handle daylight savings:  https://github.com/JChristensen/Timezone
@@ -36,6 +47,8 @@ const char* ArkAddress = "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1";   //RADIANS testn
 //const char* ArkPublicKey = "03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2";       
 static const auto PASSPHRASE        = "afford thumb forward wall salad diet title patch holiday metal cement wisdom";  //TRXA2NUACckkYwWnS9JRkATQA453ukAcD1
 //static const auto SecondPassphrase  = "this is a top secret passphrase too";
+
+const char* MQTT_Base_Topic = "scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data";
 
 
 // Configure Bridgechain Parameters
