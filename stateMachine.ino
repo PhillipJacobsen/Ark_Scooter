@@ -3,15 +3,6 @@
 
 ********************************************************************************/
 //--------------------------------------------
-//  Improvements that could be done:  Putting the transitional code in the state switch case makes your switch statement hard to alter
-//    (have to change transitional code in multiple spots).
-//  https://www.reddit.com/r/programming/comments/1vrhdq/tutorial_implementing_state_machines/
-//  https://pastebin.com/22s5khze
-
-//  Nice little tutorial on state machines: https://www.embeddedrelated.com/showarticle/723.php
-
-
-//--------------------------------------------
 // Mealy Finite State Machine
 // The state machine logic is executed once each cycle of the Arduino "main" loop.
 //--------------------------------------------
@@ -29,7 +20,7 @@ void StateMachine() {
           Serial.println(state);
         }
         else {
-          rentalStatus = "Broken";
+          scooterRental.rentalStatus = "Broken";
           state = STATE_0;
         }
         break;
@@ -49,7 +40,7 @@ void StateMachine() {
           Serial.println(state);
         }
         else {
-          rentalStatus = "Broken";
+          scooterRental.rentalStatus = "Broken";
           state = STATE_1;
         }
         break;
@@ -73,7 +64,7 @@ void StateMachine() {
           Serial.println(state);
         }
         else {
-          rentalStatus = "Broken";
+          scooterRental.rentalStatus = "Broken";
           state = STATE_2;
         }
         break;
@@ -102,105 +93,19 @@ void StateMachine() {
         }
         else if (GPS_status) {  //wait for GPS fix
 
-          //this is pseudorandom when the wifi or bluetooth does not have a connection. It can be considered "random" when the radios have a connection
-          //arduino random function is overloaded on to esp_random();
-          // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/system.html
-
-          uint32_t esprandom = (esp_random());            //generate 32 bit random number with a lower and upper bound using ESP32 RNG.
-
-          char QRcodeText[256 + 1];       // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
-          //NOTE!  I wonder if sprintf() is better to use here
-          //sprintf, strcpy, strcat (and also strlen function) are all considered dangerous - the all use pointer to buffers -
-          //there are no checks to see if the destination buffer is large enough to hold the resulting string -
-          //so can easily lead to buffer overflow.
-
-          strcpy(QRcodeText, "rad:");
-          strcat(QRcodeText, ArkAddress);
-
-          //   start sha256
-          // use this to check result of SHA256 https://passwordsgenerator.net/sha256-hash-generator/
-          // http://www.fileformat.info/tool/hash.htm
-
-          char SHApayload[10 + 1]; //max number is 4294967295
-          //itoa(esprandom, SHApayload, 10);      //this will interpret numbers as signed
-          utoa(esprandom, SHApayload, 10);        //use this instead for unsigned conversion
-          const size_t payloadLength = strlen(SHApayload);       //holds length of payload
-          mbedtls_md_init(&ctx);
-          mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
-          mbedtls_md_starts(&ctx);
-          mbedtls_md_update(&ctx, (const unsigned char *) SHApayload, payloadLength);
-          mbedtls_md_finish(&ctx, shaResult);   //shaResult is global variable of type bytes
-          mbedtls_md_free(&ctx);
-
-          //display the value to be hashed
-          Serial.print("value to be Hashed: ");
-          Serial.println(SHApayload);
-
-          //convert the SHAresult which is an array of bytes into an array of characters so we can send to terminal display
-          char shaResult_char[64 + 1];
-          shaResult_char[0] = '\0';
-          for (int i = 0; i < sizeof(shaResult); i++) {
-            char str[3];
-            sprintf(str, "%02x", (int)shaResult[i]);
-            //           Serial.print(str);
-            strcat(shaResult_char, str);
-          }
-          //display the resulting SHA256
-          Serial.print("QRcode SHA256: ");
-          Serial.println(shaResult_char);
-          //end sha256
-
-          strcat(QRcodeText, "?hash=");
-          //hardcode Hash for testing
-          //strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
-          //strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
-
-          strcat(QRcodeText, shaResult_char);     //append hash to QRcode string
-          strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction handler
-
-          strcat(QRcodeText, "&rate=");
-          strcat(QRcodeText, RENTAL_RATE_STR);
 
 
-          scooterRental.QRLatitude = convertDegMinToDecDeg(GPS.latitude);
-          if ( GPS.lat == 'S') {
-            scooterRental.QRLatitude = (0 - scooterRental.QRLatitude);
-          }
-
-          scooterRental.QRLongitude = convertDegMinToDecDeg(GPS.longitude);
-          if ( GPS.lon == 'W') {
-            scooterRental.QRLongitude = (0 - scooterRental.QRLongitude);
-          }
-
-          //buf += String(scooterRental.QRLatitude, 4);    // use 6 decimal point precision. alternate method
-          char QRLatitude[13];
-          snprintf(&QRLatitude[0], 13, "%.6f", scooterRental.QRLatitude);             //create string with 6 decimal point.
-
-          char QRLongitude[13];
-          snprintf(&QRLongitude[0], 13, "%.6f", scooterRental.QRLongitude);             //create string with 6 decimal point.
-
-          strcat(QRcodeText, "&lat=");
-          strcat(QRcodeText, QRLatitude);
-
-          strcat(QRcodeText, "&lon=");
-          strcat(QRcodeText, QRLongitude);
-
-          Serial.print("QR text: ");
-          Serial.println(QRcodeText);
-
-          //Example QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=1234300000000000000000000000000000000000000000000000000000000000&rate=370000000&lat=-180.222222&lon=1.111111"
-
-          displayQRcode(QRcodeText);    //display on the screen
+          GenerateDisplay_QRcode();
 
           previousUpdateTime_RentalStartSearch = millis();    //reset transaction search counter
 
-          rentalStatus = "Available";
+          scooterRental.rentalStatus = "Available";
           state = STATE_4;
           Serial.print("State: ");
           Serial.println(state);
         }
         else {
-          rentalStatus = "Broken";
+          scooterRental.rentalStatus = "Broken";
           state = STATE_3;
         }
         break;
@@ -246,14 +151,8 @@ void StateMachine() {
             rideTime_start_ms = millis();                 //We are using the ms timer for the ride timer. This id probably redundant. We could use the previous unix timer
 
             //record GPS coordinates of the Rental Start
-            scooterRental.startLatitude = convertDegMinToDecDeg(GPS.latitude);
-            if ( GPS.lat == 'S') {
-              scooterRental.startLatitude = (0 - scooterRental.startLatitude);
-            }
-            scooterRental.startLongitude = convertDegMinToDecDeg(GPS.longitude);
-            if ( GPS.lon == 'W') {
-              scooterRental.startLongitude = (0 - scooterRental.startLongitude);
-            }
+            scooterRental.startLatitude = convertDegMinToDecDeg_lat(GPS.latitude);
+            scooterRental.startLongitude = convertDegMinToDecDeg_lon(GPS.longitude);
 
             //calculate the ride length = received payment / Rental rate(RAD/seconds)
             uint64_t rideTime_length_sec = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;
@@ -274,10 +173,10 @@ void StateMachine() {
 
             previousSpeed = 0;
             updateSpeedometer();
-            
+
             unlockScooter();
 
-            rentalStatus = "Rented";
+            scooterRental.rentalStatus = "Rented";
             state = STATE_5;
             Serial.print("State: ");
             Serial.println(state);
@@ -312,14 +211,10 @@ void StateMachine() {
           scooterRental.endTime = time(nullptr);  //record Unix timestamp of the Rental Finish
 
           //record GPS coordinates of the Rental Finish
-          scooterRental.endLatitude = convertDegMinToDecDeg(GPS.latitude);
-          if ( GPS.lat == 'S') {
-            scooterRental.endLatitude = (0 - scooterRental.endLatitude);
-          }
-          scooterRental.endLongitude = convertDegMinToDecDeg(GPS.longitude);
-          if ( GPS.lon == 'W') {
-            scooterRental.endLongitude = (0 - scooterRental.endLongitude);
-          }
+          scooterRental.endLatitude = convertDegMinToDecDeg_lat(GPS.latitude);
+
+          scooterRental.endLongitude = convertDegMinToDecDeg_lon(GPS.longitude);
+
 
 
           getWallet();                    // We need to retrieve Wallet Nonce before you send a transaction
@@ -340,7 +235,7 @@ void StateMachine() {
           Serial.println("=================================");
           Serial.println("");
 
-          rentalStatus = "Available";
+          scooterRental.rentalStatus = "Available";
           state = STATE_6;
           Serial.print("State: ");
           Serial.println(state);
@@ -402,11 +297,6 @@ void updateCountdownTimer() {
     char currentTimer_char[10];
     snprintf(&currentTimer_char[0], 10, "%u", remainingRentalTime_s);             //create string from unsigned int
 
-    //Dec 3. removed the following 3 lines. This seems redundant.
-    //    if  (strcmp(currentTimer_char, previousTimer_char) == 0) {
-    //      return;     //do nothing if the # of seconds is the same.
-    //    }
-
     remainingRentalTime_previous_s = remainingRentalTime_s;               //update previous timer
     //update countdown timer display
     int16_t  x1, y1;
@@ -427,7 +317,7 @@ void updateCountdownTimer() {
   unlock the scooter
 ********************************************************************************/
 void unlockScooter() {
-  
+
 }
 
 
@@ -460,4 +350,95 @@ void updateSpeedometer() {
   tft.setTextColor(SpeedGreenDarker);
   tft.setCursor(30, 105);
   tft.print(speedkmh, 1);
+}
+
+
+/********************************************************************************
+  Generates the QRcode and displays on TFT display
+********************************************************************************/
+void GenerateDisplay_QRcode () {
+
+  uint32_t esprandom = (esp_random());            //generate 32 bit random number with a lower and upper bound using ESP32 RNG.
+  // this is pseudorandom when the wifi or bluetooth does not have a connection. It can be considered "random" when the radios have a connection
+  // arduino random function is overloaded on to esp_random();
+  // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/system.html
+
+
+  char QRcodeText[256 + 1];       // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
+  //NOTE!  I wonder if sprintf() is better to use here
+  //sprintf, strcpy, strcat (and also strlen function) are all considered dangerous - the all use pointer to buffers -
+  //there are no checks to see if the destination buffer is large enough to hold the resulting string -
+  //so can easily lead to buffer overflow.
+
+  strcpy(QRcodeText, "rad:");
+  strcat(QRcodeText, ArkAddress);
+
+  //   start sha256
+  // use this to check result of SHA256 https://passwordsgenerator.net/sha256-hash-generator/
+  // http://www.fileformat.info/tool/hash.htm
+
+  char SHApayload[10 + 1]; //max number is 4294967295
+  //itoa(esprandom, SHApayload, 10);      //this will interpret numbers as signed
+  utoa(esprandom, SHApayload, 10);        //use this instead for unsigned conversion
+  const size_t payloadLength = strlen(SHApayload);       //holds length of payload
+  mbedtls_md_init(&ctx);
+  mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
+  mbedtls_md_starts(&ctx);
+  mbedtls_md_update(&ctx, (const unsigned char *) SHApayload, payloadLength);
+  mbedtls_md_finish(&ctx, shaResult);   //shaResult is global variable of type bytes
+  mbedtls_md_free(&ctx);
+
+  //display the value to be hashed
+  Serial.print("value to be Hashed: ");
+  Serial.println(SHApayload);
+
+  //convert the SHAresult which is an array of bytes into an array of characters so we can send to terminal display
+  char shaResult_char[64 + 1];
+  shaResult_char[0] = '\0';
+  for (int i = 0; i < sizeof(shaResult); i++) {
+    char str[3];
+    sprintf(str, "%02x", (int)shaResult[i]);
+    //           Serial.print(str);
+    strcat(shaResult_char, str);
+  }
+  //display the resulting SHA256
+  Serial.print("QRcode SHA256: ");
+  Serial.println(shaResult_char);
+  //end sha256
+
+  strcat(QRcodeText, "?hash=");
+  //hardcode Hash for testing
+  //strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
+  //strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
+
+  strcat(QRcodeText, shaResult_char);     //append hash to QRcode string
+  strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction handler
+
+  strcat(QRcodeText, "&rate=");
+  strcat(QRcodeText, RENTAL_RATE_STR);
+
+
+  scooterRental.QRLatitude = convertDegMinToDecDeg_lat(GPS.latitude);
+  scooterRental.QRLongitude = convertDegMinToDecDeg_lon(GPS.longitude);
+
+
+  //buf += String(scooterRental.QRLatitude, 4);    // use 6 decimal point precision. alternate method
+  // http://joequery.me/code/snprintf-c/
+  char QRLatitude[13];
+  snprintf(&QRLatitude[0], 13, "%.6f", scooterRental.QRLatitude);             //create string with 6 decimal point.
+
+  char QRLongitude[13];
+  snprintf(&QRLongitude[0], 13, "%.6f", scooterRental.QRLongitude);           //create string with 6 decimal point.
+
+  strcat(QRcodeText, "&lat=");
+  strcat(QRcodeText, QRLatitude);
+
+  strcat(QRcodeText, "&lon=");
+  strcat(QRcodeText, QRLongitude);
+
+  Serial.print("QR text: ");
+  Serial.println(QRcodeText);
+
+  //Example QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=1234300000000000000000000000000000000000000000000000000000000000&rate=370000000&lat=-180.222222&lon=1.111111"
+  displayQRcode(QRcodeText);    //display on the screen
 }

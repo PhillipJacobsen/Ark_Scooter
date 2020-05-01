@@ -1,12 +1,13 @@
 /********************************************************************************
   This file contains various fuctions
 ********************************************************************************/
-   
+
+
 /********************************************************************************
-  converts lat/long from Adafruit degree-minute format to decimal-degrees
+  converts latitude from Adafruit degree-minute format to decimal-degrees
   https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674
 ********************************************************************************/
-double convertDegMinToDecDeg (float degMin) {
+double convertDegMinToDecDeg_lat (float degMin) {
   double min = 0.0;
   double decDeg = 0.0;
 
@@ -17,13 +18,36 @@ double convertDegMinToDecDeg (float degMin) {
   degMin = (int) ( degMin / 100 );
   decDeg = degMin + ( min / 60 );
 
+  if ( decDeg == 'S') {
+    decDeg = (0 - decDeg);
+  }
+  return decDeg;
+}
+
+/********************************************************************************
+  converts longitude from Adafruit degree-minute format to decimal-degrees
+  https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674
+********************************************************************************/
+double convertDegMinToDecDeg_lon (float degMin) {
+  double min = 0.0;
+  double decDeg = 0.0;
+
+  //get the minutes, fmod() requires double
+  min = fmod((double)degMin, 100.0);
+
+  //rebuild coordinates in decimal degrees
+  degMin = (int) ( degMin / 100 );
+  decDeg = degMin + ( min / 60 );
+
+  if ( decDeg == 'W') {
+    decDeg = (0 - decDeg);
+  }
   return decDeg;
 }
 
 
 /********************************************************************************
   Fill in the data structure to be sent via MQTT
-
   const char* status;
   int battery;
   int fix;
@@ -32,35 +56,29 @@ double convertDegMinToDecDeg (float degMin) {
   float longitude;
   float speedKPH;
   char walletBalance[65];
-  char signature[140];    
+  char signature[140];
 
  ********************************************************************************/
 void build_MQTTpacket() {
   NodeRedMQTTpacket.battery = batteryPercent;
-  strcpy( NodeRedMQTTpacket.walletBalance, walletBalance);
+  strcpy( NodeRedMQTTpacket.walletBalance, bridgechainWallet.walletBalance);
 
-  NodeRedMQTTpacket.status = rentalStatus;
+  NodeRedMQTTpacket.status = scooterRental.rentalStatus;
 
   NodeRedMQTTpacket.fix = int(GPS.fix);
-  if (NodeRedMQTTpacket.fix) {
-    NodeRedMQTTpacket.satellites = GPS.satellites;              //number of satellites
-    NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;             //convert knots to kph
+  if (NodeRedMQTTpacket.fix) {                          //check to see if there is a GPS lock
+    NodeRedMQTTpacket.satellites = GPS.satellites;      //number of satellites
+    NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;     //convert knots to kph
     //we need to do some fomatting of the GPS signal so it is suitable for mapping software on Thingsboard
-    NodeRedMQTTpacket.latitude = convertDegMinToDecDeg(GPS.latitude);
-    if ( GPS.lat == 'S') {
-      NodeRedMQTTpacket.latitude = (0 - NodeRedMQTTpacket.latitude);
-    }
-    NodeRedMQTTpacket.longitude = convertDegMinToDecDeg(GPS.longitude);
-    if ( GPS.lon == 'W') {
-      NodeRedMQTTpacket.longitude = (0 - NodeRedMQTTpacket.longitude);
-    }
+    NodeRedMQTTpacket.latitude = convertDegMinToDecDeg_lat(GPS.latitude);
+    NodeRedMQTTpacket.longitude = convertDegMinToDecDeg_lon(GPS.longitude);
   }
   else {        //we do not have a GPS fix. What should the GPS location be?
     //  NodeRedMQTTpacket.status = "Broken";
-    NodeRedMQTTpacket.latitude = 53.53583908;       //default location
-    NodeRedMQTTpacket.longitude = -113.27674103;    //default location
-    NodeRedMQTTpacket.satellites = 0;               //number of satellites
-    NodeRedMQTTpacket.speedKPH = 0;
+    NodeRedMQTTpacket.latitude = 53.53583908;         //default location
+    NodeRedMQTTpacket.longitude = -113.27674103;      //default location
+    NodeRedMQTTpacket.satellites = 0;                 //number of satellites
+    NodeRedMQTTpacket.speedKPH = 0;                   //speed 
   }
 }
 
@@ -86,9 +104,9 @@ void send_MQTTpacket() {
       buf += F(",\"fix\":");
       buf += String(NodeRedMQTTpacket.fix);
       buf += F(",\"lat\":");
-      buf += String(NodeRedMQTTpacket.latitude + 0.0032, 8);    //add noise to gps signal.  use 8 decimal point precision.
+      buf += String(NodeRedMQTTpacket.latitude, 8);    //use 8 decimal point precision.
       buf += F(",\"lon\":");
-      buf += String(NodeRedMQTTpacket.longitude + 0.00221, 8);
+      buf += String(NodeRedMQTTpacket.longitude, 8);
       buf += F(",\"speed\":");
       buf += String(NodeRedMQTTpacket.speedKPH);
       buf += F(",\"sat\":");
@@ -141,6 +159,7 @@ void send_MQTTpacket() {
 /********************************************************************************
   update the clock on the status bar
   https://github.com/esp8266/Arduino/issues/4749
+  http://www.cplusplus.com/reference/ctime/strftime/
 ********************************************************************************/
 void UpdateDisplayTime() {
   time_t now = time(nullptr);   //get current time
@@ -155,7 +174,7 @@ void UpdateDisplayTime() {
       Serial.print("time is: ");
       Serial.println(now);
       char formattedTime [30];
-      strftime (formattedTime, 30, "%R", timeinfo); // http://www.cplusplus.com/reference/ctime/strftime/
+      strftime (formattedTime, 30, "%R", timeinfo);
       Serial.println(formattedTime);
 
       tft.setFont(&FreeSans9pt7b);
@@ -207,40 +226,22 @@ void UpdateRSSIStatus() {
 
 /********************************************************************************
   read the battery voltage and update status bar
-  the ESP32 ADC should really be calibrated so these readings are good for relative measurements.
+  the ESP32 ADC should really be calibrated so these readings are only good for relative measurements.
 ********************************************************************************/
 void UpdateBatteryStatus() {
   if (millis() - previousUpdateTime_Battery > UpdateInterval_Battery)  {
     previousUpdateTime_Battery += UpdateInterval_Battery;
-    // batteryFloat = battery / 620.6; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
-    //  batteryFloat = battery / 560; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)  adjust with fudge factor
-    //4.1 real v was reading 3.7V
-
-    //full power = approximate range: 1945 -> 2355
-
     int battery = analogRead(BAT_PIN);
     batteryPercent = map(battery, 1945, 2348, 0, 100);
     batteryPercent = constrain(batteryPercent, 0, 100);
-
-    //    Serial.print("battery: ");
-    //    Serial.print(battery);
-    //    Serial.print("  ");
-    //    Serial.print(batteryPercent);
-    //    Serial.print("%  ");
-
+    // batteryFloat = battery / 620.6; // battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
     float batteryFloat = battery / 559.5; //we needed to add fudge factor to calibrate readings. There must not be a 50% voltage divider on the input.
-    //    battery = battery / 4096;   //battery(12 bit reading) / 4096 * 3.3V * 2(there is a resistor divider)
-    //    battery = battery /620.60606060606;
-    //    Serial.print(batteryFloat);
-    //    Serial.println("V");
-
     tft.setFont(&FreeSans9pt7b);
     tft.setTextColor(WHITE);
     tft.fillRect(190, 301 - 17, 40, 19, BLACK);   //clear the last voltage reading
     tft.setCursor(190, 301);
     tft.print(batteryFloat);
     tft.print("V");
-
   }
 }
 
@@ -326,12 +327,10 @@ void UpdateGPSConnectionStatus() {
       tft.setTextColor(WHITE);
       tft.setCursor(190, 319);
       tft.print(GPS.satellites);
-
       tft.fillRect(0, 283 - 17, 35, 18, BLACK);   //clear the last speed reading
       tft.setCursor(0, 283);
       float speedkmh = GPS.speed * 1.852;
       tft.print(speedkmh, 1);
-
       GPS_status = true;
     }
   }
@@ -343,11 +342,9 @@ void UpdateGPSConnectionStatus() {
       tft.setTextColor(WHITE);
       tft.setCursor(190, 319);
       tft.print('0');
-
       tft.fillRect(0, 283 - 17, 35, 18, BLACK);   //clear the last speed reading
       tft.setCursor(0, 283);
       tft.print('0');
-
       GPS_status = false;
     }
   }
@@ -369,21 +366,13 @@ void clearMainScreen() {
 
 
 /********************************************************************************
-  Copy data from nonvolatile memory into RAM.
+  Load data from nonvolatile memory into RAM.
   Note. ESP32 has FLASH memory(not EEPROM) however the standard high level Arduino EEPROM arduino functions work.
 ********************************************************************************/
-// Load data from EEPROM
-// You need to call EEPROM.begin(size) before you start reading or writing, size being the number of bytes you want to use.
-// Size can be anywhere between 4 and 4096 bytes.
-
 void loadEEPROM() {
   EEPROM.begin(512);
   EEPROM.get(0, lastRXpage_eeprom);
-  // EEPROM.get(0 + sizeof(ssid), password);
-  // EEPROM.get(0 + sizeof(ssid) + sizeof(password), coinname);
   char ok[2 + 1];
-  //EEPROM.get(0+sizeof(ssid)+sizeof(password), ok);
-  //EEPROM.get(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
   EEPROM.get(0 + sizeof(lastRXpage_eeprom), ok);
   EEPROM.end();
   if (String(ok) != String("OK")) {
@@ -392,9 +381,6 @@ void loadEEPROM() {
   Serial.println("Recovered credentials from FLASH");
   Serial.println(ok);
   Serial.println(lastRXpage_eeprom);
-  // Serial.println(strlen(ssid) > 0 ? ssid : "<no ssid>");
-  // Serial.println(strlen(password) > 0 ? "********" : "<no password>");
-  //Serial.println(strlen(coinname) > 0 ? coinname : "<no coinname>");
 }
 
 
@@ -402,16 +388,11 @@ void loadEEPROM() {
   Store data in nonvolatile memory.
   Note. ESP32 has FLASH memory(not EEPROM) however the standard high level Arduino EEPROM arduino functions work.
   EEPROM.write does not write to flash immediately, instead you must call EEPROM.commit() whenever you wish to save changes to flash. EEPROM.end() will also commit, and will release the RAM copy of EEPROM contents.
-
 ********************************************************************************/
 void saveEEPROM() {
   EEPROM.begin(512);
   EEPROM.put(0, lastRXpage_eeprom);
-  // EEPROM.put(0 + sizeof(ssid), password);
-  // EEPROM.put(0 + sizeof(ssid) + sizeof(password), coinname);
   char ok[2 + 1] = "OK";
-  //EEPROM.put(0+sizeof(ssid)+sizeof(password), ok);
-  //EEPROM.put(0 + sizeof(ssid) + sizeof(password) + sizeof(coinname), ok);
   EEPROM.put(0 + sizeof(lastRXpage_eeprom), ok);
   EEPROM.commit();
   EEPROM.end();

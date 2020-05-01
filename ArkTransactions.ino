@@ -43,25 +43,26 @@ bool checkArkNodeStatus() {
   This routine retrieves the current nonce and the balance for the wallet
 
      This is equivalant to calling http://37.34.60.90:4040/api/v2/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1
+    
      json-formatted object:
   {
-  "data":{
-  "address":"TKneFA9Rm6GrX9zVXhn6iGprnW2fEauouE",
-  "publicKey":"039ae554142f4df0a22c5c25b182896e9b3a1c785c6a0b8d1581cade5936608452",
-  "nonce":"2",
-  "balance":"2099999480773504",
-  "isDelegate":false,
-  "isResigned":false
-  }
+     "data":{
+        "address":"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1",
+        "publicKey":"03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2",
+        "nonce":"140",
+        "balance":"94968174556",
+        "isDelegate":false,
+        "isResigned":false
+     }
   }
 
-  virtual std::string get(const char *const identifier) = 0;
-
-  function writes directly to global variables
-  char walletBalance[64];
+  this function writes directly to these global variables:
+struct wallet {
+  char walletBalance[64 + 1];
   uint64_t walletNonce_Uint64 = 1ULL;
-  char walletNonce[64];
+  char walletNonce[64 + 1];
   uint64_t walletBalance_Uint64 = 0ULL;
+}
 
 ********************************************************************************/
 void getWallet() {
@@ -72,19 +73,19 @@ void getWallet() {
 
   deserializeJson(doc, walletGetResponse.c_str());
   JsonObject data = doc["data"];
-  strcpy(walletBalance, data["balance"]);                       //copy into global character array
-  walletBalance_Uint64 = strtoull(data["balance"], NULL, 10);   //string to unsigned long long
+  strcpy(bridgechainWallet.walletBalance, data["balance"]);                       //copy into global character array
+  bridgechainWallet.walletBalance_Uint64 = strtoull(data["balance"], NULL, 10);   //convert string to unsigned long long
 
-  strcpy(walletNonce, data["nonce"]);          //copy into global character array
-  walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);   //string to unsigned long long
+  strcpy(bridgechainWallet.walletNonce, data["nonce"]);                           //copy into global character array
+  bridgechainWallet.walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);       //convert string to unsigned long long
 
-  Serial.print("\nGet Wallet ");
-  Serial.println(walletGetResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
+  Serial.print("\nGet Wallet Response");
+  Serial.println(walletGetResponse.c_str());                    // The response is a 'std::string', to Print on Arduino, we need the c_string type.
   Serial.print("Nonce: ");
-  Serial.println(walletNonce);
-  Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal
+  Serial.println(bridgechainWallet.walletNonce);
+  Serial.printf("%" PRIu64 "\n", bridgechainWallet.walletNonce_Uint64);           //PRIx64 to print in hexadecimal
   Serial.print("Balance: ");
-  Serial.println(walletBalance);
+  Serial.println(bridgechainWallet.walletBalance);
 }
 
 
@@ -401,9 +402,7 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
 
 void SendTransaction_RentalFinish() {
 
-  walletNonce_Uint64 = walletNonce_Uint64 + 1;      //If the send fails then we need to unwind this increment.
-
- // static const uint8_t session_SHA256[32] = {1, 2, 3, 4, 5, 6, 5, 6, 5, 4, 5, 6, 5, 4, 5, 6, 7, 8, 9, 8, 7, 4, 5, 6, 7, 2, 1, 3, 4, 5, 6, 5};
+  bridgechainWallet.walletNonce_Uint64 = bridgechainWallet.walletNonce_Uint64 + 1;      //If the send fails then we need to unwind this increment.
 
   uint64_t endlat = (uint64_t) (scooterRental.endLatitude * 1000000);       
   uint64_t endlon = (uint64_t) (scooterRental.endLongitude * 1000000);
@@ -423,41 +422,21 @@ void SendTransaction_RentalFinish() {
   Serial.print("endlon ");
   Serial.printf("%" PRIu64 "\n", endlon);   //PRIx64 to print in hexadecimal
   Serial.println("");
-  /*
-    strcpy(walletNonce, data["nonce"]);          //copy into global character array
-    walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);   //string to unsigned long long
-
-    Serial.print("Nonce: ");
-    Serial.println(walletNonce);
-    Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal
-  */
 
   // Use the Transaction Builder to make a transaction.
   auto bridgechainTransaction = builder::radians::ScooterRentalFinish(cfg)
-                                //.type(RADIANS_SCOOTER_RENTAL_FINISH_TYPE)
-                                //.senderPublicKey(identities::Keys::fromPassphrase(Passphrase).publicKey.data())
-                                // .recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
                                 .recipientId(scooterRental.senderAddress)
                                 .timestamp(scooterRental.startTime, 0)                //uint32_t
-                                .latitude(startlat, 0)          //uint64_t
-                                .longitude(startlon, 0)        //uint64_t
+                                .latitude(startlat, 0)            //uint64_t
+                                .longitude(startlon, 0)           //uint64_t
                                 .timestamp(scooterRental.endTime, 1)    //uint32_t
-                                //.latitude(15111111, 1)          //uint64_t
-                                //.longitude(-25222222, 1)        //uint64_t
-                                .latitude(endlat, 1)          //uint64_t
-                                .longitude(endlon, 1)        //uint64_t
-
-                                .sessionId(shaResult)       //QRcodeHash_Byte is type byte. This should be the same as uint8_t
-                                //bug: session id is 0000000
-                                //.sessionId(session_SHA256)       //QRcodeHash_Byte is type byte. I think this is the same as uint8_t
-
-                                .containsRefund(false)             //there seems to be a problem with this is false
+                                .latitude(endlat, 1)              //uint64_t
+                                .longitude(endlon, 1)             //uint64_t
+                                .sessionId(shaResult)             //QRcodeHash_Byte is type byte. This should be the same as uint8_t
+                                .containsRefund(false)            //there seems to be a problem with this is false
                                 .fee(10000000)
-
-                                .nonce(walletNonce_Uint64)
+                                .nonce(bridgechainWallet.walletNonce_Uint64)
                                 .amount(1)                        // bignumber error when amount = 0(regardless of the state of contains refund).  validation error when containsRefund = false.
-                                //.expiration(0)
-                                //  .secondSign(SecondPassphrase)
                                 .sign(PASSPHRASE)
                                 .build();
 
@@ -481,7 +460,7 @@ void SendTransaction_RentalFinish() {
 // Send a BridgeChain transaction, tailored for a custom network.
 void sendBridgechainTransaction() {
   // Use the Transaction Builder to make a transaction.
-  walletNonce_Uint64 = walletNonce_Uint64 + 1;
+  bridgechainWallet.walletNonce_Uint64 = bridgechainWallet.walletNonce_Uint64 + 1;
 
   char tempVendorField[80];
   strcpy(tempVendorField, "Ride End: ");
@@ -495,7 +474,7 @@ void sendBridgechainTransaction() {
                                 .vendorField(tempVendorField)
                                 .fee(TYPE_0_FEE)
                                 .sign(PASSPHRASE)
-                                .nonce(walletNonce_Uint64)
+                                .nonce(bridgechainWallet.walletNonce_Uint64)
                                 .amount(10000ULL)
                                 .expiration(0UL)
                                 //  .secondSign(SecondPassphrase)

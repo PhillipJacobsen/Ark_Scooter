@@ -143,7 +143,7 @@ struct MQTTpacket {
   float longitude;
   float speedKPH;
   char walletBalance[65];
-  char signature[140];       
+  char signature[140];
 };
 struct MQTTpacket NodeRedMQTTpacket;
 
@@ -296,7 +296,7 @@ mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;      //select SHA256 algorithm
 
 /********************************************************************************
     Ark Crypto Library (version 1.0.0)
- ================  NOTE: Version 1.1.0 is available however I have not yet tested with it ===========
+  ================  NOTE: Version 1.1.0 is available however I have not yet tested with it ===========
       https://github.com/ArkEcosystem/Cpp-Crypto
     NOTE:
     If this Repo was Cloned from github, run the 'ARDUINO_IDE.sh' script first.
@@ -317,7 +317,7 @@ using namespace Ark::Crypto::transactions;
 // BridgeChain Network Structure Model.  see Ark-Cpp-Crypto\src\common\network.hpp
 // These are defined in secrets.h
 const Network BridgechainNetwork = {
-  BRIDGECHAIN_NETHASH,       
+  BRIDGECHAIN_NETHASH,
   BRIDGECHAIN_SLIP44,
   BRIDGECHAIN_WIF,
   BRIDGECHAIN_VERSION,
@@ -330,7 +330,7 @@ const Configuration cfg(BridgechainNetwork);
 
 /********************************************************************************
   Ark Client Library (version 1.4.0)
- ================  NOTE: Version 1.4.1 is available however I have not yet tested with it ===========  
+  ================  NOTE: Version 1.4.1 is available however I have not yet tested with it ===========
   https://github.com/ArkEcosystem/cpp-client
 
   https://docs.ark.io/iot/#which-sdk-supports-iot
@@ -346,6 +346,7 @@ Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);   // c
   This structure is used to store all the details of a Rental session
 ********************************************************************************/
 struct rental {
+  const char* rentalStatus;     // Options: Available, Broken, Rented, Charging
   char senderAddress[34 + 1];
   char payment[64 + 1];
   uint64_t payment_Uint64;
@@ -364,16 +365,21 @@ struct rental {
 };
 struct rental scooterRental;
 
-//todo: put this in the rental struct
-const char* rentalStatus;     // Options: Available, Broken, Rented, Charging
+/********************************************************************************
+  This structure is used to store details of the bridgechain wallet
+********************************************************************************/
+struct wallet {
+  char walletBalance[64 + 1];             //current balance
+  uint64_t walletBalance_Uint64 = 0ULL;   //current balance
+  char walletNonce[64 + 1];               //current nonce
+  uint64_t walletNonce_Uint64 = 1ULL;     //current nonce
+};
+struct wallet bridgechainWallet;
+
 
 int lastRXpage = 0;               //page number of the last received transaction in wallet
 int lastRXpage_eeprom = 0;        //page number of the last received transaction in wallet(mirror of eeprom value)
 
-char walletBalance[64 + 1];       
-uint64_t walletNonce_Uint64 = 1ULL;
-char walletNonce[64 + 1];
-uint64_t walletBalance_Uint64 = 0ULL;
 
 
 
@@ -402,6 +408,9 @@ void GPStoMQTT();
 void UpdateBatteryStatus();
 void StateMachine();
 void UpdateRSSIStatus();
+void Generate_QRcode();
+//double convertDegMinToDecDeg_lat(float degMin);
+//double convertDegMinToDecDeg_long(float degMin);
 
 
 /********************************************************************************
