@@ -1,12 +1,10 @@
 /********************************************************************************
   This file contains various fuctions
 ********************************************************************************/
-
-//   measuring accuracy of GPS
-//   https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674
+   
 /********************************************************************************
   converts lat/long from Adafruit degree-minute format to decimal-degrees
-  http://arduinodev.woofex.net/2013/02/06/adafruit_gps_forma/
+  https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674
 ********************************************************************************/
 double convertDegMinToDecDeg (float degMin) {
   double min = 0.0;
@@ -33,7 +31,8 @@ double convertDegMinToDecDeg (float degMin) {
   float latitude;
   float longitude;
   float speedKPH;
-  char walletBalance[64];
+  char walletBalance[65];
+  char signature[140];    
 
  ********************************************************************************/
 void build_MQTTpacket() {
@@ -44,19 +43,14 @@ void build_MQTTpacket() {
 
   NodeRedMQTTpacket.fix = int(GPS.fix);
   if (NodeRedMQTTpacket.fix) {
-    //NodeRedMQTTpacket.status = "Available";
-    //NodeRedMQTTpacket.status = rentalStatus;
-
     NodeRedMQTTpacket.satellites = GPS.satellites;              //number of satellites
-    NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;  //convert knots to kph
+    NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;             //convert knots to kph
     //we need to do some fomatting of the GPS signal so it is suitable for mapping software on Thingsboard
     NodeRedMQTTpacket.latitude = convertDegMinToDecDeg(GPS.latitude);
     if ( GPS.lat == 'S') {
-      //   if (( GPS.lat == 'S') | ( GPS.lat == 'W')) {
       NodeRedMQTTpacket.latitude = (0 - NodeRedMQTTpacket.latitude);
     }
     NodeRedMQTTpacket.longitude = convertDegMinToDecDeg(GPS.longitude);
-    //if (( GPS.lon == 'S') | ( GPS.lon == 'W')) {
     if ( GPS.lon == 'W') {
       NodeRedMQTTpacket.longitude = (0 - NodeRedMQTTpacket.longitude);
     }
@@ -78,7 +72,7 @@ void send_MQTTpacket() {
   if (millis() - previousUpdateTime_MQTT_Publish > UpdateInterval_MQTT_Publish)  {
     previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
 
-    if (WiFiMQTTclient.isWifiConnected()) {
+    if (WiFiMQTTclient.isMqttConnected()) {
       build_MQTTpacket();
 
       //NOTE!  I think sprintf() is better to use here. update when you have a chance
@@ -137,7 +131,6 @@ void send_MQTTpacket() {
       Serial.println();
       Serial.print("send_MQTTpacket: ");
       Serial.println(buf);
-      //      WiFiMQTTclient.publish("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/data", buf.c_str());
       WiFiMQTTclient.publish(MQTT_Base_Topic, buf.c_str());
 
     }
@@ -147,8 +140,8 @@ void send_MQTTpacket() {
 
 /********************************************************************************
   update the clock on the status bar
+  https://github.com/esp8266/Arduino/issues/4749
 ********************************************************************************/
-//https://github.com/esp8266/Arduino/issues/4749
 void UpdateDisplayTime() {
   time_t now = time(nullptr);   //get current time
 
@@ -159,25 +152,16 @@ void UpdateDisplayTime() {
 
     if ((timeinfo->tm_min) != prevDisplayMinute) { //update the display only if time has changed (updates every minute)
       prevDisplayMinute = timeinfo->tm_min;
-      //   if (now != prevDisplayTime) { //update the display only if time has changed (updates every second)
-      //     prevDisplayTime = now;
-
       Serial.print("time is: ");
       Serial.println(now);
-      //      Serial.println(ctime(&now));
-
       char formattedTime [30];
       strftime (formattedTime, 30, "%R", timeinfo); // http://www.cplusplus.com/reference/ctime/strftime/
       Serial.println(formattedTime);
 
       tft.setFont(&FreeSans9pt7b);
       tft.setTextColor(WHITE);
-      //      tft.fillRect(0, 60 - 18, 65, 20, BLACK); //clear the previous time
-      //      tft.setCursor(0, 60);
       tft.fillRect(70 + 13, 283 - 17, 65, 18, BLACK); //clear the previous time
       tft.setCursor(70 + 13, 283);
-
-      //tft.print(ctime(&now));      //dislay the current time
       tft.print(formattedTime);      //dislay the current time
     }
   }
@@ -216,9 +200,6 @@ void UpdateRSSIStatus() {
       tft.setTextColor(WHITE);
       tft.setCursor(195, 283);
       tft.print(rssi);
-
-      //      Serial.print("RSSI:");
-      //      Serial.println(rssi);
     }
   }
 }

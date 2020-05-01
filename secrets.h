@@ -44,7 +44,7 @@ int ARK_PORT = 4040;
 
 // Configure Wallet info for Scooter
 const char* ArkAddress = "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1";   //RADIANS testnet address. nickname:  pjtest
-//const char* ArkPublicKey = "03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2";       
+const char* ArkPublicKey = "03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2";       
 static const auto PASSPHRASE        = "afford thumb forward wall salad diet title patch holiday metal cement wisdom";  //TRXA2NUACckkYwWnS9JRkATQA453ukAcD1
 //static const auto SecondPassphrase  = "this is a top secret passphrase too";
 

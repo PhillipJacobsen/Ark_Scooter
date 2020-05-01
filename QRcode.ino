@@ -10,7 +10,7 @@ void displayQRcode(char *const QRcodeText) {
   clearMainScreen();
   tft.setFont(&FreeSansBold18pt7b);
   tft.setTextColor(ArkRed);
-  tft.setCursor(12, 30);        //12,45
+  tft.setCursor(12, 30);       
   tft.print("Scan to Ride");
   tft.setFont(&FreeSans9pt7b);
   tft.setTextColor(WHITE);
