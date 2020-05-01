@@ -81,7 +81,6 @@ bool ARK_status = false;    // = true when communication to Radians Bridgechain 
 bool MQTT_status = false;   // = true when connected to MQTT broker
 
 int batteryPercent = 0;     // use to store battery level in percentage
-
 float previousSpeed = 0;
 
 /********************************************************************************
@@ -126,7 +125,7 @@ EspMQTTClient WiFiMQTTclient(
   MQTT_SERVER_IP,   // MQTT Broker server ip
   MQTT_USERNAME,    // Can be omitted if not needed
   MQTT_PASSWORD,    // Can be omitted if not needed
-  MQTT_CLIENT_NAME, // Client name that uniquely identify your device
+  MQTT_CLIENT_NAME, // Client name that uniquely identifies your device
   MQTT_SERVER_PORT  // The MQTT port, default to 1883. this line can be omitted
 );
 
@@ -144,7 +143,7 @@ struct MQTTpacket {
   float longitude;
   float speedKPH;
   char walletBalance[65];
-  char signature[140];        //is the signature always 140 characters?
+  char signature[140];       
 };
 struct MQTTpacket NodeRedMQTTpacket;
 
@@ -163,7 +162,6 @@ Adafruit_GPS GPS(&GPSSerial);     // Connect to the GPS module via the hardware 
   Adafruit GFX libraries
     graphics primitives documentation:  https://learn.adafruit.com/adafruit-gfx-graphics-library/graphics-primitives
     top left corner is (0,0)
-
     http://oleddisplay.squix.ch/#/home     great tool for generating custom fonts.
 ********************************************************************************/
 #include <SPI.h>
@@ -280,12 +278,6 @@ uint32_t previousUpdateTime_RentalStartSearch = millis();
 uint32_t UpdateInterval_GPS = 5000;
 uint32_t previousUpdateTime_GPS = millis();
 
-//These are some variables used to measure the access time when reading from the Ark network. This is needed only for testing
-unsigned long timeNow;  //variable used to hold current millis() time.
-unsigned long timeAPIfinish;  //variable used to measure API access time
-unsigned long timeAPIstart;  //variable used to measure API access time
-
-
 
 /********************************************************************************
      mbed TLS Library for SHA256 function
@@ -322,11 +314,6 @@ using namespace Ark::Crypto;
 using namespace Ark::Crypto::identities;
 using namespace Ark::Crypto::transactions;
 
-//const auto publicKey    = identities::Keys::fromPassphrase(Passphrase).publicKey;
-//const auto pubKeyHash   = Hash::ripemd160(publicKey.data());
-//const auto address      = Base58::parsePubkeyHash(pubKeyHash.data(), 65);
-//const auto addressString = Address::fromPassphrase(Passphrase).toString.c_str();
-
 // BridgeChain Network Structure Model.  see Ark-Cpp-Crypto\src\common\network.hpp
 // These are defined in secrets.h
 const Network BridgechainNetwork = {
@@ -362,7 +349,6 @@ struct rental {
   char senderAddress[34 + 1];
   char payment[64 + 1];
   uint64_t payment_Uint64;
-  // char rentalRate[64+1] = RENTAL_RATE_STR;
   char rentalRate[64 + 1];
   uint64_t rentalRate_Uint64;
   float QRLatitude;
@@ -434,14 +420,12 @@ void loop() {
   //--------------------------------------------
   // Parse GPS data if available
   // We need to call GPS.read() constantly in the main loop to watch for data arriving on the serial port
-  // The hardware serial port has some buffer and perhaps arduino also configures some sort of FIFO.  This may set the buffer size???: Serial1.setRxBufferSize(1024);
-  // I need to learn more about the hardware buffer available on the ESP32 serial port.
   char c = GPS.read();
 
   //ask if a new chunk of data has been received by calling GPS.newNMEAreceived(), if this returns true then we can ask the library to parse that data with GPS.parse(GPS.lastNMEA()).
   if (GPS.newNMEAreceived()) {
     if (!GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
-      return; // we can fail to parse a sentence in which case we should just wait for another
+      return;                       // we can fail to parse a sentence in which case we should just wait for another
   }
 
 
@@ -456,7 +440,7 @@ void loop() {
   UpdateRSSIStatus();               //update battery status every UpdateInterval_RSSI (5 seconds)
 
   //--------------------------------------------
-  // Publish MQTT data every UpdateInterval_MQTT_Publish (15 seconds)
+  // Publish MQTT data every UpdateInterval_MQTT_Publish
   send_MQTTpacket();
 
 }

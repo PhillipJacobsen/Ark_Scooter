@@ -7,19 +7,13 @@
 ********************************************************************************/
 void setup()
 {
-  //--------------------------------------------
-  // test the integrated DAC
-  //dacWrite(DAC1, 50);           //range 0>255, pin25 / A1
-  //dacWrite(DAC2, 255);      //range 0>255, pin26 / A0
-
   Serial.begin(115200);         // Initialize Serial Connection for debug
   while ( !Serial && millis() < 20 );
 
   pinMode(LED_PIN, OUTPUT);      // initialize on board LED control pin as an output.
   digitalWrite(LED_PIN, HIGH);    // Turn LED on
 
-//read the MAC address. 
-// https://cpp4arduino.com/2018/11/21/eight-tips-to-use-the-string-class-efficiently.html
+  //read the MAC address.
   uint8_t baseMac[6];
   esp_read_mac(baseMac, ESP_MAC_WIFI_STA);      // Get MAC address for WiFi station
   char baseMacChr[18] = {0};
@@ -27,10 +21,6 @@ void setup()
   sprintf(baseMacChr, "%02X%02X%02X%02X%02X%02X", baseMac[0], baseMac[1], baseMac[2], baseMac[3], baseMac[4], baseMac[5]);       // B4E62DA8EF6D
   Serial.print("MAC Address:  ");
   Serial.println(baseMacChr);       // B4:E6:2D:A8:EF:6D
-//  MQTT_CLIENT_NAME = (char*)baseMacChr;
-//  strcpy (MQTT_CLIENT_NAME, (char*)baseMacChr);
-
-
 
   //--------------------------------------------
   // Optional Features of EspMQTTClient
@@ -51,12 +41,8 @@ void setup()
   // 9600 NMEA is the default baud rate for Adafruit MTK GPS
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);   // turn on RMC (recommended minimum) and GGA (fix data) including altitude
-  // GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);  //use this for just the minimum recommended data
-
-  // For the parsing code to work nicely and have time to sort thru the data, and
-  // print it out we don't suggest using anything higher than 1 Hz
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
-  GPS.sendCommand(PGCMD_ANTENNA);  // Request updates on antenna status, comment out to keep quiet
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);      // 1 Hz update rate
+  GPS.sendCommand(PGCMD_ANTENNA);                 // Request updates on antenna status, comment out to keep quiet
 
   //show bootup screen for 500ms
   delay(500);
@@ -145,8 +131,8 @@ void onConnectionEstablished() {
     //--------------------------------------------
     //  Update clock on TFT display
     UpdateDisplayTime();
+    
   }
-
 
   else {
     //--------------------------------------------
