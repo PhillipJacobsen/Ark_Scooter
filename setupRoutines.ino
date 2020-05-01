@@ -7,11 +7,6 @@
 ********************************************************************************/
 void setup()
 {
-  //--------------------------------------------
-  // test the integrated DAC
-  //dacWrite(DAC1, 50);           //range 0>255, pin25 / A1
-  //dacWrite(DAC2, 255);      //range 0>255, pin26 / A0
-
   Serial.begin(115200);         // Initialize Serial Connection for debug
   while ( !Serial && millis() < 20 );
 
