@@ -446,7 +446,7 @@ void loop() {
 
 
   //--------------------------------------------
-  // Update all the data displayed on the OLED Status Bar
+  // Update all the data displayed on the TFT Display Status Bar
   UpdateWiFiConnectionStatus();     //update WiFi status bar
   UpdateMQTTConnectionStatus();     //update MQTT status bar
   UpdateGPSConnectionStatus();      //update GPS status bar
@@ -458,8 +458,5 @@ void loop() {
   //--------------------------------------------
   // Publish MQTT data every UpdateInterval_MQTT_Publish (15 seconds)
   send_MQTTpacket();
-
-  
-  //getMostRecentReceivedTransaction();
 
 }

@@ -107,7 +107,6 @@ void StateMachine() {
           // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/system.html
 
           uint32_t esprandom = (esp_random());            //generate 32 bit random number with a lower and upper bound using ESP32 RNG.
-          //int esprandom = (random(16384, 16777216));    //This uses Arduino PRNG that is overloaded. Provide it with a lower and upper bound
 
           char QRcodeText[256 + 1];       // QRcode Version = 10 with ECC=2 gives 211 Alphanumeric characters or 151 bytes(any characters)
           //NOTE!  I wonder if sprintf() is better to use here
@@ -275,11 +274,8 @@ void StateMachine() {
 
             previousSpeed = 0;
             updateSpeedometer();
-            //we need to update the initial display here
-            //remainingRentalTime_previous = 0;
-
-            //startRideTimer();
-            //unlockScooter();
+            
+            unlockScooter();
 
             rentalStatus = "Rented";
             state = STATE_5;
@@ -424,6 +420,14 @@ void updateCountdownTimer() {
     tft.setCursor(70, 230);
     tft.print(remainingRentalTime_s);
   }
+}
+
+
+/********************************************************************************
+  unlock the scooter
+********************************************************************************/
+void unlockScooter() {
+  
 }
 
 

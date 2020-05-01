@@ -403,7 +403,7 @@ void SendTransaction_RentalFinish() {
 
   walletNonce_Uint64 = walletNonce_Uint64 + 1;      //If the send fails then we need to unwind this increment.
 
-  static const uint8_t session_SHA256[32] = {1, 2, 3, 4, 5, 6, 5, 6, 5, 4, 5, 6, 5, 4, 5, 6, 7, 8, 9, 8, 7, 4, 5, 6, 7, 2, 1, 3, 4, 5, 6, 5};
+ // static const uint8_t session_SHA256[32] = {1, 2, 3, 4, 5, 6, 5, 6, 5, 4, 5, 6, 5, 4, 5, 6, 7, 8, 9, 8, 7, 4, 5, 6, 7, 2, 1, 3, 4, 5, 6, 5};
 
   uint64_t endlat = (uint64_t) (scooterRental.endLatitude * 1000000);       
   uint64_t endlon = (uint64_t) (scooterRental.endLongitude * 1000000);

@@ -9,16 +9,17 @@ void setup()
 {
   //--------------------------------------------
   // test the integrated DAC
-  dacWrite(DAC1, 50);           //range 0>255, pin25 / A1
+  //dacWrite(DAC1, 50);           //range 0>255, pin25 / A1
   //dacWrite(DAC2, 255);      //range 0>255, pin26 / A0
 
   Serial.begin(115200);         // Initialize Serial Connection for debug
   while ( !Serial && millis() < 20 );
 
   pinMode(LED_PIN, OUTPUT);      // initialize on board LED control pin as an output.
-  digitalWrite(LED_PIN, LOW);    // Turn LED off
+  digitalWrite(LED_PIN, HIGH);    // Turn LED on
 
- 
+//read the MAC address. 
+// https://cpp4arduino.com/2018/11/21/eight-tips-to-use-the-string-class-efficiently.html
   uint8_t baseMac[6];
   esp_read_mac(baseMac, ESP_MAC_WIFI_STA);      // Get MAC address for WiFi station
   char baseMacChr[18] = {0};
@@ -28,6 +29,8 @@ void setup()
   Serial.println(baseMacChr);       // B4:E6:2D:A8:EF:6D
 //  MQTT_CLIENT_NAME = (char*)baseMacChr;
 //  strcpy (MQTT_CLIENT_NAME, (char*)baseMacChr);
+
+
 
   //--------------------------------------------
   // Optional Features of EspMQTTClient
@@ -116,14 +119,11 @@ void onConnectionEstablished() {
     }
 
     //--------------------------------------------
-    //  Copy data stored in Flash into RAM
+    //  Parse the wallet looking for the last received transaction
     lastRXpage = getMostRecentReceivedTransaction(lastRXpage_eeprom + 1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 
     //TODO.  Sometimes I find that the API reads will return with no data even if there are additional transactions to be read
     // I think this occurs when the WiFi connection or my network is a bit flakey.
-    //    Serial.print("try scanning wallet a second time ");
-    //    lastRXpage = getMostRecentReceivedTransaction(lastRXpage+1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
-
     lastRXpage_eeprom = lastRXpage;
     saveEEPROM();
 
@@ -137,13 +137,13 @@ void onConnectionEstablished() {
     strcpy(scooterRental.rentalRate, RENTAL_RATE_STR);
 
 
-    //wait for time to sync from servers
+    //wait for time to sync from NTP servers
     while (time(nullptr) <= 100000) {
       delay(50);
     }
 
     //--------------------------------------------
-    //  get time synced from NTP server
+    //  Update clock on TFT display
     UpdateDisplayTime();
   }
 
