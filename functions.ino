@@ -371,18 +371,20 @@ void clearMainScreen() {
   Load data from nonvolatile memory into RAM.
   Note. ESP32 has FLASH memory(not EEPROM) however the standard high level Arduino EEPROM arduino functions work.
 ********************************************************************************/
-void loadEEPROM() {
+int loadEEPROM() {
   EEPROM.begin(512);
-  EEPROM.get(0, lastRXpage_eeprom);
+  int RXpage = 0;   
+  EEPROM.get(0, RXpage);
   char ok[2 + 1];
-  EEPROM.get(0 + sizeof(lastRXpage_eeprom), ok);
+  EEPROM.get(0 + sizeof(RXpage), ok);
   EEPROM.end();
   if (String(ok) != String("OK")) {
-    lastRXpage_eeprom = 0;
+    RXpage = 0;
   }
   Serial.println("Recovered credentials from FLASH");
   Serial.println(ok);
-  Serial.println(lastRXpage_eeprom);
+  Serial.println(RXpage);
+  return RXpage;
 }
 
 
@@ -391,11 +393,11 @@ void loadEEPROM() {
   Note. ESP32 has FLASH memory(not EEPROM) however the standard high level Arduino EEPROM arduino functions work.
   EEPROM.write does not write to flash immediately, instead you must call EEPROM.commit() whenever you wish to save changes to flash. EEPROM.end() will also commit, and will release the RAM copy of EEPROM contents.
 ********************************************************************************/
-void saveEEPROM() {
+void saveEEPROM(int RXpage) {
   EEPROM.begin(512);
-  EEPROM.put(0, lastRXpage_eeprom);
+  EEPROM.put(0, RXpage);
   char ok[2 + 1] = "OK";
-  EEPROM.put(0 + sizeof(lastRXpage_eeprom), ok);
+  EEPROM.put(0 + sizeof(RXpage), ok);
   EEPROM.commit();
   EEPROM.end();
   Serial.println("Saved credentials to FLASH");

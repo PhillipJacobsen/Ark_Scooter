@@ -26,7 +26,7 @@ void setup()
 
   //--------------------------------------------
   // Optional Features of EspMQTTClient
-  WiFiMQTTclient.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  //WiFiMQTTclient.enableDebuggingMessages(); // Enable debugging messages sent to serial output
   // WiFiMQTTclient.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
   WiFiMQTTclient.enableLastWillMessage("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/lastwill", "{\"status\":\"Broken\"}");  // You can activate the retain flag by setting the third parameter to true
 
@@ -47,23 +47,23 @@ void setup()
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);      // 1 Hz update rate
   GPS.sendCommand(PGCMD_ANTENNA);                 // Request updates on antenna status, comment out to keep quiet
 
-  delay(500);                         //show bootup screen for 500ms
+  delay(500);                             //show bootup screen for 500ms
 
   tft.setTextColor(WHITE);
   tft.setFont(&FreeSans9pt7b);
   tft.setCursor(50, 280);
-  tft.println("Connecting to WiFi");  // display WiFi connect message
+  tft.println("Connecting to WiFi");      // display WiFi connect message
   tft.setCursor(70, 300);
   tft.println(WIFI_SSID);
 
-  delay(1200);                         // show bootup screen for additional 1200ms
+  delay(1200);                            // show bootup screen for additional 1200ms
 
   scooterRental.rentalStatus = "Broken";  // set default scooter status displayed in Analytics Dashboard
 
-  InitStatusBar();                    // display the status bar on the bottom of the screen
-  UpdateBatteryStatus();              // update battery voltage on the status bar
+  InitStatusBar();                        // display the status bar on the bottom of the screen
+  UpdateBatteryStatus();                  // update battery voltage on the status bar
    
-  GPSSerial.println(PMTK_Q_RELEASE);  // request firmware version from GPS module. This can be used as a way to detect if GPS module is connected and operational.
+  GPSSerial.println(PMTK_Q_RELEASE);      // request firmware version from GPS module. This can be used as a way to detect if GPS module is connected and operational.
 }
 
 
@@ -101,19 +101,18 @@ void onConnectionEstablished() {
 
     //--------------------------------------------
     //  Copy data stored in Flash into RAM
-    loadEEPROM();                 //load page number from eeprom
-    if (lastRXpage_eeprom < 1) {
-      lastRXpage_eeprom = 0;
+    lastRXpage = loadEEPROM();                 //load page number from eeprom
+    if (lastRXpage < 1) {
+      lastRXpage = 0;
     }
 
     //--------------------------------------------
     //  Parse the wallet looking for the last received transaction
-    lastRXpage = getMostRecentReceivedTransaction(lastRXpage_eeprom + 1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+    lastRXpage = getMostRecentReceivedTransaction(lastRXpage + 1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 
     //TODO.  Sometimes I find that the API reads will return with no data even if there are additional transactions to be read
     // I think this occurs when the WiFi connection or my network is a bit flakey.
-    lastRXpage_eeprom = lastRXpage;
-    saveEEPROM();
+    saveEEPROM(lastRXpage);
 
 
     //--------------------------------------------

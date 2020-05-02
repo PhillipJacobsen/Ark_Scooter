@@ -333,13 +333,9 @@ const Configuration cfg(BridgechainNetwork);
   ================  NOTE: Version 1.4.1 is available however I have not yet tested with it ===========
   https://github.com/ArkEcosystem/cpp-client
 
-  https://docs.ark.io/iot/#which-sdk-supports-iot
-  https://docs.ark.io/tutorials/iot/storing-data-on-the-blockchain.html#step-1-project-setup
-  https://docs.ark.io/tutorials/iot/reacting-to-data-on-the-blockchain.html#step-1-project-setup
 ********************************************************************************/
 #include <arkClient.h>
 Ark::Client::Connection<Ark::Client::Api> connection(ARK_PEER, ARK_PORT);   // create ARK blockchain connection
-
 
 
 /********************************************************************************
@@ -373,12 +369,13 @@ struct wallet {
   uint64_t walletBalance_Uint64 = 0ULL;   //current balance
   char walletNonce[64 + 1];               //current nonce
   uint64_t walletNonce_Uint64 = 1ULL;     //current nonce
+  
 };
 struct wallet bridgechainWallet;
 
 
-int lastRXpage = 0;               //page number of the last received transaction in wallet
-int lastRXpage_eeprom = 0;        //page number of the last received transaction in wallet(mirror of eeprom value)
+int lastRXpage = 0;                       //page number of the last received transaction in wallet
+//int lastRXpage_eeprom = 0;              //page number of the last received transaction in wallet(mirror of eeprom value)
 
 
 

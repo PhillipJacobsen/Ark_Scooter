@@ -61,11 +61,6 @@ static const auto BRIDGECHAIN_EPOCH             = "2019-10-25T09:05:40.856Z";  /
 
 constexpr uint64_t TYPE_0_FEE               = 1000000ULL;   //0.01RAD
 constexpr uint8_t TYPE_0_TYPE               = 0U;
-//constexpr uint32_t TYPE_0_TIMESTAMP         = 83506126UL;
-//constexpr uint32_t TYPE_0_VF_TIMESTAMP      = 83506245;
-//constexpr uint64_t TYPE_0_FEE               = 10000000ULL;
-//constexpr uint64_t TYPE_0_AMOUNT            = 1ULL;
-//constexpr uint32_t TYPE_0_EXPIRATION        = 0UL;
 
 //Configure the Rental rate of the scooter.  Units are RAD per Second
 const char* RENTAL_RATE_STR = "61667";                //rate per second
