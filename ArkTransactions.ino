@@ -79,10 +79,12 @@ void getWallet() {
   strcpy(bridgechainWallet.walletNonce, data["nonce"]);                           //copy into global character array
   bridgechainWallet.walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);       //convert string to unsigned long long
 
+  Serial.println("\n=================================");
+  Serial.println("Retrieving wallet Nonce & Balance");
   Serial.print("\nGet Wallet Response");
   Serial.println(walletGetResponse.c_str());                    // The response is a 'std::string', to Print on Arduino, we need the c_string type.
   Serial.print("Nonce: ");
-  Serial.println(bridgechainWallet.walletNonce);
+  //Serial.println(bridgechainWallet.walletNonce);
   Serial.printf("%" PRIu64 "\n", bridgechainWallet.walletNonce_Uint64);           //PRIx64 to print in hexadecimal
   Serial.print("Balance: ");
   Serial.println(bridgechainWallet.walletBalance);
@@ -201,7 +203,8 @@ int GetReceivedTransaction(const char *const address, int page, const char* &id,
 
 ********************************************************************************/
 int getMostRecentReceivedTransaction(int page = 1) {
-  Serial.println("\n\nScanning all the received transactions in the wallet looking for the the newest one.");
+  Serial.println("\n=================================");
+  Serial.println("Scanning all the received transactions in the wallet looking for the the newest one...");
   const char* id;               //transaction ID
   const char* amount;           //transactions amount
   const char* senderAddress;    //transaction address of sender
@@ -228,6 +231,9 @@ int search_RentalStartTx() {
   if (millis() - previousUpdateTime_RentalStartSearch > UpdateInterval_RentalStartSearch)  {    //poll Ark node every 8 seconds for a new transaction
     previousUpdateTime_RentalStartSearch += UpdateInterval_RentalStartSearch;
 
+    Serial.println("\n=================================");
+    Serial.println("Polling Radians network to see if Rental Start transaction has been received. ");
+
     //  check to see if new new transaction has been received in wallet
     // lastRXpage is the page# of the last received transaction
     int searchRXpage = lastRXpage + 1;
@@ -243,6 +249,9 @@ int search_RentalStartTx() {
     const char* asset_rate;
 
     if ( GetTransaction_RentalStart(ArkAddress, searchRXpage, id, amount, senderAddress, senderPublicKey, vendorField, asset_gps_latitude, asset_gps_longitude, asset_sessionId, asset_rate) ) {
+      Serial.println("\n=================================");
+      Serial.println("Rental Start transaction was received");
+
       lastRXpage++;         //increment received counter if rental start was received.
       lastRXpage_eeprom = lastRXpage;
       saveEEPROM();         //store the page in the Flash
@@ -258,11 +267,12 @@ int search_RentalStartTx() {
         scooterRental.payment_Uint64 = strtoull(amount, NULL, 10);    //convert string to unsigned long long global
         strcpy(scooterRental.sessionID, asset_sessionId);             //copy into global character array
 
+        Serial.println("Received SessionID matched QR code SessionID");
         return 1;
       }
 
       else {        //we received a transaction that did not match. We should issue refund.
-        Serial.print("session id did not match hash embedded in QRcode");
+        Serial.print("SessionID did not match hash embedded in QRcode");
         // issueRefund();  TODO!!!!!!!!!!!!!!!!!!!!!!!
         return 0;
       }
@@ -395,7 +405,6 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
     }
     //--------------------------------------------
     //  Rental Start transaction was received
-    Serial.println("\nRental Start transaction was received!");
     JsonObject data_0_asset = data_0["asset"];
     JsonObject data_0_asset_gps = data_0_asset["gps"];
 
@@ -504,12 +513,14 @@ void SendTransaction_RentalFinish() {
                                 .sign(PASSPHRASE)
                                 .build();
 
-  Serial.println("\n Sending Rental Finish Transaction");
+  Serial.println("\n=================================");
+  Serial.println("Ride is Finished. Locking scooter.");
+  Serial.println("\nSending Rental Finish Transaction");
 
   //--------------------------------------------
   // Create and Print the Json representation of the Transaction.
   const auto transactionJson = bridgechainTransaction.toJson();
-  printf("\n\nBridgechain Transaction: %s\n\n", transactionJson.c_str());
+  printf("Bridgechain Transaction: %s\n", transactionJson.c_str());
 
   //--------------------------------------------
   // Sign the transaction
@@ -527,14 +538,14 @@ void SendTransaction_RentalFinish() {
   Serial.println(sendResponse.c_str());
 
   //--------------------------------------------
-  // NOET: there should be some error handling here in case the transaction failed to send
+  // NOTE: there should be some error handling here in case the transaction failed to send
 }
 
 
 /********************************************************************************
- Send a standard BridgeChain transaction, tailored for a custom network.
+  Send a standard BridgeChain transaction, tailored for a custom network.
 
- NOTE: This project does not send any standard transactions so the following is not used.
+  NOTE: This project does not send any standard transactions so the following is not used.
 
 ********************************************************************************/
 void sendBridgechainTransaction() {

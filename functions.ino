@@ -78,7 +78,7 @@ void build_MQTTpacket() {
     NodeRedMQTTpacket.latitude = 53.53583908;         //default location
     NodeRedMQTTpacket.longitude = -113.27674103;      //default location
     NodeRedMQTTpacket.satellites = 0;                 //number of satellites
-    NodeRedMQTTpacket.speedKPH = 0;                   //speed 
+    NodeRedMQTTpacket.speedKPH = 0;                   //speed
   }
 }
 
@@ -139,18 +139,18 @@ void send_MQTTpacket() {
       buf += F("\"");
       buf += F("}");
 
-      printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
+
+      Serial.println("\n=================================");
+      Serial.println("Signing MQTT packet");
+      printf("Signature from Signed Message: %s\n", signatureString.c_str());
       const bool isValid = message.verify();        //verify the signature
-      printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
-      Serial.println("message that was signed: ");
+      printf("Message Signature is valid? %s\n", isValid ? "true" : "false");
+      Serial.print("message that was signed: ");
       Serial.println(msgbackup);
 
-
-      Serial.println();
-      Serial.print("send_MQTTpacket: ");
+      Serial.print("Sending MQTT packet: ");
       Serial.println(buf);
       WiFiMQTTclient.publish(MQTT_Base_Topic, buf.c_str());
-
     }
   }
 }
@@ -171,10 +171,12 @@ void UpdateDisplayTime() {
 
     if ((timeinfo->tm_min) != prevDisplayMinute) { //update the display only if time has changed (updates every minute)
       prevDisplayMinute = timeinfo->tm_min;
-      Serial.print("time is: ");
+      Serial.println("\n=================================");
+      Serial.print("Unix epoch time: ");
       Serial.println(now);
       char formattedTime [30];
       strftime (formattedTime, 30, "%R", timeinfo);
+      Serial.print("24hr time: ");
       Serial.println(formattedTime);
 
       tft.setFont(&FreeSans9pt7b);

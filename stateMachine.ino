@@ -16,7 +16,8 @@ void StateMachine() {
     case STATE_0: {
         if (WiFi_status) {          //wait for WiFi to connect
           state = STATE_1;
-          Serial.print("State: ");
+          Serial.print("\nObtained WiFi connection. ");
+          Serial.print("Entering State: ");
           Serial.println(state);
         }
         else {
@@ -36,8 +37,10 @@ void StateMachine() {
         }
         else if (MQTT_status) {  //wait for MQTT connect
           state = STATE_2;
-          Serial.print("State: ");
+          Serial.print("\nObtained MQTT connection. ");
+          Serial.print("Entering State: ");
           Serial.println(state);
+
         }
         else {
           scooterRental.rentalStatus = "Broken";
@@ -60,7 +63,8 @@ void StateMachine() {
         }
         else if (ARK_status) {  //wait for ARK network connect
           state = STATE_3;
-          Serial.print("State: ");
+          Serial.print("\nObtained Radians connection. ");
+          Serial.print("Entering State: ");
           Serial.println(state);
         }
         else {
@@ -101,7 +105,8 @@ void StateMachine() {
 
           scooterRental.rentalStatus = "Available";
           state = STATE_4;
-          Serial.print("State: ");
+          Serial.print("\nObtained GPS connection. ");
+          Serial.print("Entering State: ");
           Serial.println(state);
         }
         else {
@@ -146,7 +151,7 @@ void StateMachine() {
         }
         else {                  //we are looking for a Rental Start Tx
           if (search_RentalStartTx()) {
-            Serial.println("\nUnlocking Scooter & Starting Ride Timer");
+            Serial.println("Unlocking Scooter & Starting Ride Timer");
             scooterRental.startTime = time(nullptr);      //record Unix timestamp of the Rental start
             rideTime_start_ms = millis();                 //We are using the ms timer for the ride timer. This id probably redundant. We could use the previous unix timer
 
@@ -157,14 +162,14 @@ void StateMachine() {
             //calculate the ride length = received payment / Rental rate(RAD/seconds)
             uint64_t rideTime_length_sec = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;
 
-// NOTE, println does not support uint64_t           
-//            Serial.print("Ride time length(seconds): ");
-//            Serial.println(rideTime_length_sec);
-            
+            // NOTE, println does not support uint64_t
+            //            Serial.print("Ride time length(seconds): ");
+            //            Serial.println(rideTime_length_sec);
+
             rideTime_length_ms = rideTime_length_sec * 1000;      //convert to ms
             Serial.print("Ride time length(ms): ");
-            Serial.println(rideTime_length_ms); 
-            
+            Serial.println(rideTime_length_ms);
+
             remainingRentalTime_previous_s = rideTime_length_sec;    //this is used by the countdown timer to refresh the display only once each second.
             // remainingRentalTime_previous_s = 0;   //Might need to use this to ensure that timer display shows the initial timer value.  Otherwise it might not show anything until the first second has elapsed.
 
@@ -182,7 +187,8 @@ void StateMachine() {
 
             scooterRental.rentalStatus = "Rented";
             state = STATE_5;
-            Serial.print("State: ");
+            Serial.println("Rental Started. ");
+            Serial.print("Entering State: ");
             Serial.println(state);
             break;
           }
@@ -217,7 +223,7 @@ void StateMachine() {
           //record GPS coordinates of the Rental Finish
           scooterRental.endLatitude = convertDegMinToDecDeg_lat(GPS.latitude);
           scooterRental.endLongitude = convertDegMinToDecDeg_lon(GPS.longitude);
-         
+
           SendTransaction_RentalFinish(); // send Rental Finish transaction
 
           Serial.println("");
@@ -235,12 +241,12 @@ void StateMachine() {
           Serial.println("=================================");
           Serial.println("");
 
-//  Serial.print("endlat ");
-//  Serial.printf("%" PRIu64 "\n", endlat);   //PRIx64 to print in hexadecimal
-//  Serial.println("");
-//  Serial.print("endlon ");
-//  Serial.printf("%" PRIu64 "\n", endlon);   //PRIx64 to print in hexadecimal
-//  Serial.println("");
+          //  Serial.print("endlat ");
+          //  Serial.printf("%" PRIu64 "\n", endlat);   //PRIx64 to print in hexadecimal
+          //  Serial.println("");
+          //  Serial.print("endlon ");
+          //  Serial.printf("%" PRIu64 "\n", endlon);   //PRIx64 to print in hexadecimal
+          //  Serial.println("");
 
 
           scooterRental.rentalStatus = "Available";
@@ -396,8 +402,11 @@ void GenerateDisplay_QRcode () {
   mbedtls_md_finish(&ctx, shaResult);   //shaResult is global variable of type bytes
   mbedtls_md_free(&ctx);
 
+  Serial.println("\n=================================");
+  Serial.println("Generating QRcode");
+  
   //display the value to be hashed
-  Serial.print("value to be Hashed: ");
+  Serial.print("random value to be Hashed: ");
   Serial.println(SHApayload);
 
   //convert the SHAresult which is an array of bytes into an array of characters so we can send to terminal display
@@ -410,7 +419,7 @@ void GenerateDisplay_QRcode () {
     strcat(shaResult_char, str);
   }
   //display the resulting SHA256
-  Serial.print("QRcode SHA256: ");
+  Serial.print("SHA256 hash: ");
   Serial.println(shaResult_char);
   //end sha256
 
@@ -444,7 +453,7 @@ void GenerateDisplay_QRcode () {
   strcat(QRcodeText, "&lon=");
   strcat(QRcodeText, QRLongitude);
 
-  Serial.print("QR text: ");
+  Serial.print("QR code text: ");
   Serial.println(QRcodeText);
 
   //Example QRcodeText = "rad:TRXA2NUACckkYwWnS9JRkATQA453ukAcD1?hash=1234300000000000000000000000000000000000000000000000000000000000&rate=370000000&lat=-180.222222&lon=1.111111"
