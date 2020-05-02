@@ -58,7 +58,7 @@ void setup()
 
   delay(1200);                         // show bootup screen for additional 1200ms
 
-  scooterRental.rentalStatus = "Broken";            // set default scooter status displayed in Analytics Dashboard
+  scooterRental.rentalStatus = "Broken";  // set default scooter status displayed in Analytics Dashboard
 
   InitStatusBar();                    // display the status bar on the bottom of the screen
   UpdateBatteryStatus();              // update battery voltage on the status bar

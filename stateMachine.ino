@@ -146,25 +146,29 @@ void StateMachine() {
         }
         else {                  //we are looking for a Rental Start Tx
           if (search_RentalStartTx()) {
-            Serial.println("Start Ride Timer");
+            Serial.println("\nUnlocking Scooter & Starting Ride Timer");
             scooterRental.startTime = time(nullptr);      //record Unix timestamp of the Rental start
             rideTime_start_ms = millis();                 //We are using the ms timer for the ride timer. This id probably redundant. We could use the previous unix timer
 
-            //record GPS coordinates of the Rental Start
+            //record current GPS coordinates at the start of the Rental
             scooterRental.startLatitude = convertDegMinToDecDeg_lat(GPS.latitude);
             scooterRental.startLongitude = convertDegMinToDecDeg_lon(GPS.longitude);
 
             //calculate the ride length = received payment / Rental rate(RAD/seconds)
             uint64_t rideTime_length_sec = scooterRental.payment_Uint64 / RENTAL_RATE_UINT64;
 
+// NOTE, println does not support uint64_t           
+//            Serial.print("Ride time length(seconds): ");
+//            Serial.println(rideTime_length_sec);
+            
             rideTime_length_ms = rideTime_length_sec * 1000;      //convert to ms
-            Serial.print("ride time length: ");
-            Serial.println(rideTime_length_ms);
-
-
+            Serial.print("Ride time length(ms): ");
+            Serial.println(rideTime_length_ms); 
+            
             remainingRentalTime_previous_s = rideTime_length_sec;    //this is used by the countdown timer to refresh the display only once each second.
             // remainingRentalTime_previous_s = 0;   //Might need to use this to ensure that timer display shows the initial timer value.  Otherwise it might not show anything until the first second has elapsed.
 
+            //erase QRcode from display and show speedometer and ride timer
             clearMainScreen();
             tft.setFont(&Lato_Medium_36);
             tft.setTextColor(SpeedGreen);     // http://www.barth-dev.de/online/rgb565-color-picker/
@@ -174,7 +178,7 @@ void StateMachine() {
             previousSpeed = 0;
             updateSpeedometer();
 
-            unlockScooter();
+            unlockScooter();                  //put control logic to unlock scoote here
 
             scooterRental.rentalStatus = "Rented";
             state = STATE_5;
@@ -212,12 +216,8 @@ void StateMachine() {
 
           //record GPS coordinates of the Rental Finish
           scooterRental.endLatitude = convertDegMinToDecDeg_lat(GPS.latitude);
-
           scooterRental.endLongitude = convertDegMinToDecDeg_lon(GPS.longitude);
-
-
-
-          getWallet();                    // We need to retrieve Wallet Nonce before you send a transaction
+         
           SendTransaction_RentalFinish(); // send Rental Finish transaction
 
           Serial.println("");
@@ -234,6 +234,14 @@ void StateMachine() {
           Serial.println(scooterRental.vendorField);
           Serial.println("=================================");
           Serial.println("");
+
+//  Serial.print("endlat ");
+//  Serial.printf("%" PRIu64 "\n", endlat);   //PRIx64 to print in hexadecimal
+//  Serial.println("");
+//  Serial.print("endlon ");
+//  Serial.printf("%" PRIu64 "\n", endlon);   //PRIx64 to print in hexadecimal
+//  Serial.println("");
+
 
           scooterRental.rentalStatus = "Available";
           state = STATE_6;
