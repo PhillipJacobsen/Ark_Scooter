@@ -43,25 +43,26 @@ bool checkArkNodeStatus() {
   This routine retrieves the current nonce and the balance for the wallet
 
      This is equivalant to calling http://37.34.60.90:4040/api/v2/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1
+
      json-formatted object:
   {
-  "data":{
-  "address":"TKneFA9Rm6GrX9zVXhn6iGprnW2fEauouE",
-  "publicKey":"039ae554142f4df0a22c5c25b182896e9b3a1c785c6a0b8d1581cade5936608452",
-  "nonce":"2",
-  "balance":"2099999480773504",
-  "isDelegate":false,
-  "isResigned":false
-  }
+     "data":{
+        "address":"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1",
+        "publicKey":"03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2",
+        "nonce":"140",
+        "balance":"94968174556",
+        "isDelegate":false,
+        "isResigned":false
+     }
   }
 
-  virtual std::string get(const char *const identifier) = 0;
-
-  function writes directly to global variables
-  char walletBalance[64];
+  this function writes directly to these global variables:
+  struct wallet {
+  char walletBalance[64 + 1];
   uint64_t walletNonce_Uint64 = 1ULL;
-  char walletNonce[64];
+  char walletNonce[64 + 1];
   uint64_t walletBalance_Uint64 = 0ULL;
+  }
 
 ********************************************************************************/
 void getWallet() {
@@ -72,26 +73,155 @@ void getWallet() {
 
   deserializeJson(doc, walletGetResponse.c_str());
   JsonObject data = doc["data"];
-  strcpy(walletBalance, data["balance"]);                       //copy into global character array
-  walletBalance_Uint64 = strtoull(data["balance"], NULL, 10);   //string to unsigned long long
+  strcpy(bridgechainWallet.walletBalance, data["balance"]);                       //copy into global character array
+  bridgechainWallet.walletBalance_Uint64 = strtoull(data["balance"], NULL, 10);   //convert string to unsigned long long
 
-  strcpy(walletNonce, data["nonce"]);          //copy into global character array
-  walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);   //string to unsigned long long
+  strcpy(bridgechainWallet.walletNonce, data["nonce"]);                           //copy into global character array
+  bridgechainWallet.walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);       //convert string to unsigned long long
 
-  Serial.print("\nGet Wallet ");
-  Serial.println(walletGetResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
+  Serial.print("\nGet Wallet Response");
+  Serial.println(walletGetResponse.c_str());                    // The response is a 'std::string', to Print on Arduino, we need the c_string type.
   Serial.print("Nonce: ");
-  Serial.println(walletNonce);
-  Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal
+  Serial.println(bridgechainWallet.walletNonce);
+  Serial.printf("%" PRIu64 "\n", bridgechainWallet.walletNonce_Uint64);           //PRIx64 to print in hexadecimal
   Serial.print("Balance: ");
-  Serial.println(walletBalance);
+  Serial.println(bridgechainWallet.walletBalance);
 }
 
 
 
 /********************************************************************************
+  This routine retrieves 1 received transaction in wallet if available
+  Returns '0' if no transaction exist
+  returns parameters in
+  id -> transaction ID
+  amount -> amount of Arktoshi
+  senderAddress -> transaction sender address
+  vendorfield -> 255(or 256??? check this) Byte vendor field
+
+  This is equivalant to calling:
+    https://radians.nl/api/v2/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp:asc
+    query = "?page=1&limit=1&orderBy=timestamp:asc"
+
+  json-formatted object:
+  {
+     "meta":{
+        "totalCountIsEstimate":true,
+        "count":1,
+        "pageCount":133,
+        "totalCount":133,
+        "next":"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=2&limit=1&orderBy=timestamp%3Aasc&transform=true",
+        "previous":null,
+        "self":"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true",
+        "first":"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true",
+        "last":"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=133&limit=1&orderBy=timestamp%3Aasc&transform=true"
+     },
+     "data":[
+        {
+           "id":"c45656ae40a6de17dea7694826f2bbb00d115130fbcaba257feaa820886acac3",
+           "blockId":"4937253598533919154",
+           "version":2,
+           "type":0,
+           "typeGroup":1,
+           "amount":"100000000000",
+           "fee":"9613248",
+           "sender":"TEf7p5jf1LReywuits5orBsmpkMe8fLTkk",
+           "senderPublicKey":"02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a",
+           "recipient":"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1",
+           "signature":"57d78bc151d6b41d013e528966aee161c7fbc6f4d598774f33ac30f796c4b1ab7e2b2ce5f96612aebfe120a2956ce482515f99c73b3f52d7486a29ed8391295b",
+           "confirmations":1366750,
+           "timestamp":{
+              "epoch":374000,
+              "unix":1572368340,
+              "human":"2019-10-29T16:59:00.856Z"
+           },
+           "nonce":"2"
+        }
+     ]
+  }
+********************************************************************************/
+int GetReceivedTransaction(const char *const address, int page, const char* &id, const char* &amount, const char* &senderAddress, const char* &senderPublicKey, const char* &vendorField ) {
+
+  //--------------------------------------------
+  // assemble query string where the page number is a function parameter
+  // query = "?page=1&limit=1&orderBy=timestamp:asc"
+  char query[50];
+  strcpy(query, "?page=");
+  char page_char[8];
+  itoa(page, page_char, 10);    //convert int to string in base 10
+  strcat(query, page_char);
+  strcat(query, "&limit=1&orderBy=timestamp:asc");
+
+  //--------------------------------------------
+  //peform the API call
+  //sort by oldest transactions first.  For simplicity set limit = 1 so we only get 1 transaction returned
+  const auto walletGetResponse = connection.api.wallets.transactionsReceived(address, query);
+
+  const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(14) + 1240 + 250; //add an extra 250 to be safe
+  DynamicJsonDocument doc(capacity);
+  deserializeJson(doc, walletGetResponse.c_str());
+
+  JsonObject data_0 = doc["data"][0];
+  id = data_0["id"];
+  amount = data_0["amount"];
+  senderAddress = data_0["sender"];
+  senderPublicKey = data_0["senderPublicKey"];
+  vendorField = data_0["vendorField"];
+
+  //--------------------------------------------
+  //  Print the received transaction response
+  Serial.print("\nGet Received Transaction Response");
+  Serial.println(walletGetResponse.c_str());                    // The response is a 'std::string', to Print on Arduino, we need the c_string type.
+
+  Serial.print("Page: ");
+  Serial.println(page);
+
+  //--------------------------------------------
+  //  the data_0_id parameter will be used to determine if a valid transaction was found.
+  if (id == nullptr) {
+    Serial.println("No Transaction found. data_0_id is null");
+    return 0;           //no transaction found
+  }
+  else {
+    Serial.println("Transaction was received");
+    Serial.print("Transactions ID: ");
+    Serial.println(id);
+
+    return 1;           //transaction found
+  }
+}
+
+
+
+/********************************************************************************
+  This routine will search through all the received transactions of ArkAddress wallet starting from the oldest.
+  The routine returns the page number of the most recent transaction.
+  The final page number is also equal to the total number of received transactions in the wallet.
+  Empty wallet will return '0' (NOT YET TESTED)
+
+********************************************************************************/
+int getMostRecentReceivedTransaction(int page = 1) {
+  Serial.println("\n\nScanning all the received transactions in the wallet looking for the the newest one.");
+  const char* id;               //transaction ID
+  const char* amount;           //transactions amount
+  const char* senderAddress;    //transaction address of sender
+  const char* senderPublicKey;  //transaction address of sender
+  const char* vendorField;      //vendor field
+
+  while ( GetReceivedTransaction(ArkAddress, page, id, amount, senderAddress, senderPublicKey, vendorField ) ) {
+    page++;
+  };
+
+  Serial.print("No more Transactions ");
+  Serial.print("\nThe most recent transaction was page #: ");
+  Serial.println(page - 1);
+  return page - 1;
+}
+
+
+/********************************************************************************
   This routine will poll the Ark node API searching for the RentalStart custom transaction
-  It polls once every 8 seconds
+  It polls once every 8 seconds (defined by UpdateInterval_RentalStartSearch)
   When polling the API we set the limit = 1 so we only retrieve 1 transaction at a time.
 ********************************************************************************/
 int search_RentalStartTx() {
@@ -123,7 +253,6 @@ int search_RentalStartTx() {
 
       //check to see if sessionID of new transaction matches the Hash embedded in QRcode that was displayed
       if  (strcmp(asset_sessionId, QRcodeHash) == 0) {
-
         strcpy(scooterRental.senderAddress, senderAddress);           //copy into global character array
         strcpy(scooterRental.payment, amount);                        //copy into global character array
         scooterRental.payment_Uint64 = strtoull(amount, NULL, 10);    //convert string to unsigned long long global
@@ -149,150 +278,60 @@ int search_RentalStartTx() {
 
 
 /********************************************************************************
-  This routine retrieves 1 received transaction in wallet if available
-  Returns '0' if no transaction exist
-  returns parameters in
-  id -> transaction ID
-  amount -> amount of Arktoshi
-  senderAddress -> transaction sender address
-  vendorfield -> 255(or 256??? check this) Byte vendor field
+  This routine retrieves 1 RentalStart transaction if available in wallet
+  Returns '0' if no transaction exists or if other transaction type exists.
+  Pass wallet address and page to function
 
-
-********************************************************************************/
-int GetReceivedTransaction(const char *const address, int page, const char* &id, const char* &amount, const char* &senderAddress, const char* &senderPublicKey, const char* &vendorField ) {
-
-  //this is what we need to assemble:  https://radians.nl/api/v2/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp:asc
+  //this is equivalent to called:  https://radians.nl/api/v2/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=41&limit=1&orderBy=timestamp:asc
   //query = "?page=1&limit=1&orderBy=timestamp:asc"
 
-  Serial.print("Page: ");
-  Serial.println(page);
-
-  char query[50];
-  strcpy(query, "?page=");
-  char page_char[8];
-  itoa(page, page_char, 10);    //convert int to string
-  strcat(query, page_char);
-  strcat(query, "&limit=1&orderBy=timestamp:asc");
-
-  //--------------------------------------------
-  //peform the API
-  //sort by oldest transactions first.  For simplicity set limit = 1 so we only get 1 transaction returned
-  const auto walletGetResponse = connection.api.wallets.transactionsReceived(address, query);
-
-  const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(14) + 1240 + 250; //add an extra 250 to be safe
-  DynamicJsonDocument doc(capacity);
-  //const char* json = "{\"meta\":{\"totalCountIsEstimate\":true,\"count\":1,\"pageCount\":2,\"totalCount\":2,\"next\":null,\"previous\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"self\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=2&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"first\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"last\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=2&limit=1&orderBy=timestamp%3Aasc&transform=true\"},\"data\":[{\"id\":\"a59b33f8e708d14fb726a7f5bd2c3bb35c35b6389553e6be6869a6699cdc69d5\",\"blockId\":\"14320034153575802056\",\"version\":2,\"type\":0,\"typeGroup\":1,\"amount\":\"100000000\",\"fee\":\"9806624\",\"sender\":\"TEf7p5jf1LReywuits5orBsmpkMe8fLTkk\",\"senderPublicKey\":\"02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a\",\"recipient\":\"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1\",\"signature\":\"36772f190c7c11134f6c00db0cb03d3ac5ac7e972abc7ddef076afe4a4362e29afd6e55ef3a0f0fa76466d2f4bdd1afbf488e836fd2f83a195e58561ce7c7244\",\"confirmations\":16883,\"timestamp\":{\"epoch\":2191712,\"unix\":1574186052,\"human\":\"2019-11-19T17:54:12.856Z\"},\"nonce\":\"3\"}]}";
-  deserializeJson(doc, walletGetResponse.c_str());
-
-  /*
-    JsonObject meta = doc["meta"];
-    bool meta_totalCountIsEstimate = meta["totalCountIsEstimate"]; // false
-    int meta_count = meta["count"]; // 1
-    int meta_pageCount = meta["pageCount"]; // 1
-    int meta_totalCount = meta["totalCount"]; // 1
-    const char* meta_self = meta["self"]; // "/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?transform=true&page=1&limit=100"
-    const char* meta_first = meta["first"]; // "/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?transform=true&page=1&limit=100"
-    const char* meta_last = meta["last"]; // "/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?transform=true&page=1&limit=100"
-  */
-
-  JsonObject data_0 = doc["data"][0];
-  const char* data_0_id = data_0["id"]; // "c45656ae40a6de17dea7694826f2bbb00d115130fbcaba257feaa820886acac3"
-  //  const char* data_0_blockId = data_0["blockId"]; // "4937253598533919154"
-  //  int data_0_version = data_0["version"]; // 2
-  //  int data_0_type = data_0["type"]; // 0
-  //  int data_0_typeGroup = data_0["typeGroup"]; // 1
-  const char* data_0_amount = data_0["amount"]; // "100000000000"
-  //  const char* data_0_fee = data_0["fee"]; // "9613248"
-  const char* data_0_sender = data_0["sender"]; // "TEf7p5jf1LReywuits5orBsmpkMe8fLTkk"
-  const char* data_0_senderPublicKey = data_0["senderPublicKey"]; // "02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a"
-  //  const char* data_0_recipient = data_0["recipient"]; // "TRXA2NUACckkYwWnS9JRkATQA453ukAcD1"
-  //  const char* data_0_signature = data_0["signature"]; // "57d78bc151d6b41d013e528966aee161c7fbc6f4d598774f33ac30f796c4b1ab7e2b2ce5f96612aebfe120a2956ce482515f99c73b3f52d7486a29ed8391295b"
-  const char* data_0_vendorField = data_0["vendorField"];
-  //  long data_0_confirmations = data_0["confirmations"]; // 125462
-
-  /*
-    JsonObject data_0_timestamp = data_0["timestamp"];
-    long data_0_timestamp_epoch = data_0_timestamp["epoch"]; // 374000
-    long data_0_timestamp_unix = data_0_timestamp["unix"]; // 1572368340
-    const char* data_0_timestamp_human = data_0_timestamp["human"]; // "2019-10-29T16:59:00.856Z"
-    const char* data_0_nonce = data_0["nonce"]; // "2"
-  */
-
-
-  //--------------------------------------------
-  //  Print the entire returned response string
-  Serial.print("Get Wallet Received Transaction: ");
-  Serial.println(walletGetResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
-
-  //--------------------------------------------
-  //  The meta parameters that are returned are currently not reliable and are "estimates". Apparently this is due to lower performance nodes
-  //  For this reason I will not use any of the meta parameters
-
-  //--------------------------------------------
-  //  the data_0_id parameter will be used to determine if a valid transaction was found.
-  if (data_0_id == nullptr) {
-    Serial.println("No Transaction. data_0_id is null");
-    return 0;           //no transaction found
+  json-formatted object:
+  {
+   "meta":{
+      "totalCountIsEstimate":true,
+      "count":1,
+      "pageCount":133,
+      "totalCount":133,
+      "next":"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=42&limit=1&orderBy=timestamp%3Aasc&transform=true",
+      "previous":"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=40&limit=1&orderBy=timestamp%3Aasc&transform=true",
+      "self":"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=41&limit=1&orderBy=timestamp%3Aasc&transform=true",
+      "first":"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true",
+      "last":"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=133&limit=1&orderBy=timestamp%3Aasc&transform=true"
+   },
+   "data":[
+      {
+         "id":"2238687a95688eb434953ac6548ade4648a3963a8158c036b65ee8e434e17230",
+         "blockId":"10300106383332556177",
+         "version":2,
+         "type":500,
+         "typeGroup":4000,
+         "amount":"1",
+         "fee":"10000000",
+         "sender":"TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT",
+         "senderPublicKey":"02cbe4667ab08693cbb3c248b96635f84b5412a99b49237f059a724f2cfe2b733f",
+         "recipient":"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1",
+         "signature":"cc5b22000e267dad4ac52a319120fe3dd022ba6fcb102f635ffe66fc2ec1f6ae6b2491c53eb88352aadddab68d18dc6ce6ef4cba12bd84e53be1c28364350566",
+         "asset":{
+            "gps":{
+               "timestamp":1583125216,
+               "latitude":"1.111111",
+               "longitude":"-180.222222",
+               "human":"2020-03-02T05:00:16.000Z"
+            },
+            "sessionId":"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+            "rate":"5",
+            "gpsCount":1
+         },
+         "confirmations":658462,
+         "timestamp":{
+            "epoch":11130880,
+            "unix":1583125220,
+            "human":"2020-03-02T05:00:20.856Z"
+         },
+         "nonce":"40"
+      }
+   ]
   }
-  else {
-    Serial.println("transaction was received");
-    id = data_0_id;
-    amount = data_0_amount;
-    senderAddress = data_0_sender;
-    senderPublicKey = data_0_senderPublicKey;
-    vendorField = data_0_vendorField;
-  }
-
-  return 1;           //transaction found
-}
-
-
-
-
-
-/********************************************************************************
-  This routine will search through all the received transactions of ArkAddress wallet starting from the oldest.
-  "searching wallet + page#" will be displayed. text will toggle between red/white every received transaction
-  The page number of the last transaction in the search will be displayed.
-  This is the page to the most newest receive transaction on the chain.
-  The final page number is also equal to the total number of received transactions in the wallet.
-
-  The routine returns the page number of the most recent transaction.
-  Empty wallet will return '0' (NOT YET TESTED)
-
-********************************************************************************/
-
-int getMostRecentReceivedTransaction(int page = 1) {
-  Serial.println("\n\nHere are all the transactions in a wallet");
-  // int page = 1;
-  const char* id;               //transaction ID
-  const char* amount;           //transactions amount
-  const char* senderAddress;    //transaction address of sender
-  const char* senderPublicKey;  //transaction address of sender
-  const char* vendorField;      //vendor field
-
-  while ( GetReceivedTransaction(ArkAddress, page, id, amount, senderAddress, senderPublicKey, vendorField ) ) {
-    Serial.print("Page: ");
-    Serial.println(page);
-    Serial.print("Vendor Field: ");
-    Serial.println(vendorField);
-    page++;
-  };
-
-  Serial.print("No more Transactions ");
-  Serial.print("\nThe most recent transaction was page #: ");
-  Serial.println(page - 1);
-  return page - 1;
-}
-
-
-
-
-
-/********************************************************************************
-  This routine retrieves 1 RentalStart transaction if available in wallet
-  Returns '0' if no transaction exists or if other transaction type exists
-  Pass wallet address and page to function
 
   returns parameters:
   id -> transaction ID
@@ -308,27 +347,23 @@ int getMostRecentReceivedTransaction(int page = 1) {
 ********************************************************************************/
 int GetTransaction_RentalStart(const char *const address, int page, const char* &id, const char* &amount, const char* &senderAddress, const char* &senderPublicKey, const char* &vendorField, const char* &asset_gps_latitude, const char* &asset_gps_longitude, const char* &asset_sessionId, const char* &asset_rate ) {
 
-  //this is what we need to assemble:  https://radians.nl/api/v2/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=41&limit=1&orderBy=timestamp:asc
-  //query = "?page=1&limit=1&orderBy=timestamp:asc"
-
-  Serial.print("Page: ");
-  Serial.println(page);
-
+  //--------------------------------------------
+  // assemble query string where the page number is a function parameter
+  // query = "?page=1&limit=1&orderBy=timestamp:asc"
   char query[50];
   strcpy(query, "?page=");
   char page_char[8];
-  itoa(page, page_char, 10);    //convert int to string
+  itoa(page, page_char, 10);    //convert int to string in base 10
   strcat(query, page_char);
   strcat(query, "&limit=1&orderBy=timestamp:asc");
 
   //--------------------------------------------
-  //peform the API
+  //peform the API call
   //sort by oldest transactions first.  For simplicity set limit = 1 so we only get 1 transaction returned
   const auto walletGetResponse = connection.api.wallets.transactionsReceived(address, query);
 
   const size_t capacity = JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 2 * JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(15) + 1580;
   DynamicJsonDocument doc(capacity);
-  //const char* json = "{\"meta\":{\"totalCountIsEstimate\":true,\"count\":1,\"pageCount\":72,\"totalCount\":72,\"next\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=42&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"previous\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=40&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"self\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=41&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"first\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=1&limit=1&orderBy=timestamp%3Aasc&transform=true\",\"last\":\"/api/wallets/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/transactions/received?page=72&limit=1&orderBy=timestamp%3Aasc&transform=true\"},\"data\":[{\"id\":\"2238687a95688eb434953ac6548ade4648a3963a8158c036b65ee8e434e17230\",\"blockId\":\"10300106383332556177\",\"version\":2,\"type\":500,\"typeGroup\":4000,\"amount\":\"1\",\"fee\":\"10000000\",\"sender\":\"TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT\",\"senderPublicKey\":\"02cbe4667ab08693cbb3c248b96635f84b5412a99b49237f059a724f2cfe2b733f\",\"recipient\":\"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1\",\"signature\":\"cc5b22000e267dad4ac52a319120fe3dd022ba6fcb102f635ffe66fc2ec1f6ae6b2491c53eb88352aadddab68d18dc6ce6ef4cba12bd84e53be1c28364350566\",\"asset\":{\"gps\":{\"timestamp\":1583125216,\"latitude\":\"1.111111\",\"longitude\":\"-180.222222\",\"human\":\"2020-03-02T05:00:16.000Z\"},\"sessionId\":\"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\",\"rate\":\"5\",\"gpsCount\":1},\"confirmations\":10618,\"timestamp\":{\"epoch\":11130880,\"unix\":1583125220,\"human\":\"2020-03-02T05:00:20.856Z\"},\"nonce\":\"40\"}]}";
   deserializeJson(doc, walletGetResponse.c_str());
 
   //--------------------------------------------
@@ -336,53 +371,43 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
   Serial.print("Get Wallet Received Transaction: ");
   Serial.println(walletGetResponse.c_str()); // The response is a 'std::string', to Print on Arduino, we need the c_string type.
 
-  //--------------------------------------------
-  //  The meta parameters that are returned are currently not reliable and are "estimates". Apparently this is due to lower performance nodes
-  //  For this reason I will not use any of the meta parameters
-
   JsonObject data_0 = doc["data"][0];
-  const char* data_0_id = data_0["id"]; // "c45656ae40a6de17dea7694826f2bbb00d115130fbcaba257feaa820886acac3"
+  const char* data_0_id = data_0["id"];
 
   //--------------------------------------------
   //  the data_0_id parameter will be used to determine if a valid transaction was found.
   if (data_0_id == nullptr) {
-    Serial.println("No Transaction. data_0_id is null");
+    Serial.println("No Transaction received");
     return 0;           //no transaction found
   }
   else {
-    Serial.println("transaction was received");
-    int data_0_type = data_0["type"]; // 500
-    int data_0_typeGroup = data_0["typeGroup"]; // 4000
+    int data_0_type = data_0["type"];
+    int data_0_typeGroup = data_0["typeGroup"];
 
     //--------------------------------------------
-    //  check for valid transaction type.
+    //  check for valid Rental Start transaction type.
     if (!((data_0_type == 500) && (data_0_typeGroup == 4000))) {
-      Serial.println("transaction I don't care about was received");
-      lastRXpage++;   //increment global receiver counter.
+      Serial.println("\nTransaction I don't care about was received");
+      lastRXpage++;   //increment global receive transaction counter.
       lastRXpage_eeprom = lastRXpage;
       saveEEPROM();
       return 0;
     }
     //--------------------------------------------
     //  Rental Start transaction was received
-
+    Serial.println("\nRental Start transaction was received!");
     JsonObject data_0_asset = data_0["asset"];
     JsonObject data_0_asset_gps = data_0_asset["gps"];
 
-    //    const char* data_0_asset_gps_latitude = data_0_asset_gps["latitude"]; // "1.111111"
-    //    const char* data_0_asset_gps_longitude = data_0_asset_gps["longitude"]; // "-180.222222"
-    //    const char* data_0_asset_sessionId = data_0_asset["sessionId"]; // "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
-    //    const char* data_0_asset_rate = data_0_asset["rate"]; // "5"
+    asset_gps_latitude = data_0_asset_gps["latitude"];
+    asset_gps_longitude = data_0_asset_gps["longitude"];
+    asset_sessionId = data_0_asset["sessionId"];
+    asset_rate = data_0_asset["rate"];
 
-    asset_gps_latitude = data_0_asset_gps["latitude"]; // "1.111111"
-    asset_gps_longitude = data_0_asset_gps["longitude"]; // "-180.222222"
-    asset_sessionId = data_0_asset["sessionId"]; // "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
-    asset_rate = data_0_asset["rate"]; // "5"
-
-    id = data_0["id"]; // "2238687a95688eb434953ac6548ade4648a3963a8158c036b65ee8e434e17230"
-    amount = data_0["amount"]; // "100000000000"
-    senderAddress = data_0["sender"]; // "TEf7p5jf1LReywuits5orBsmpkMe8fLTkk"
-    senderPublicKey = data_0["senderPublicKey"]; // "02b7cca8003dbce7394f87d3a7127f6fab5a8ebace83e5633baaae38c58f3eee7a"
+    id = data_0["id"];
+    amount = data_0["amount"];
+    senderAddress = data_0["sender"];
+    senderPublicKey = data_0["senderPublicKey"];
     vendorField = data_0["vendorField"];
 
     return 1;           //transaction found
@@ -393,95 +418,128 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
 
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Send a Rental Finish Custom BridgeChain transaction
+/********************************************************************************
+  // Send a Rental Finish Custom BridgeChain transaction
 
-// view rental finish transaction in explorer.
-// https://radians.nl/api/v2/transactions/61ebc45edcc87ca34a50b5e4590e5881dd4148c905bcf8208ad0afd2e7076348
+  view rental finish transaction in explorer.
+  https://radians.nl/api/v2/transactions/61ebc45edcc87ca34a50b5e4590e5881dd4148c905bcf8208ad0afd2e7076348
 
+  {
+   "data":{
+      "id":"61ebc45edcc87ca34a50b5e4590e5881dd4148c905bcf8208ad0afd2e7076348",
+      "blockId":"5533205050820353537",
+      "version":2,
+      "type":600,
+      "typeGroup":4000,
+      "amount":"1",
+      "fee":"10000000",
+      "sender":"TRXA2NUACckkYwWnS9JRkATQA453ukAcD1",
+      "senderPublicKey":"03e063f436ccfa3dfa9e9e6ee5e08a65a82a5ce2b2daf58a9be235753a971411e2",
+      "recipient":"TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT",
+      "signature":"30440220432bf3354b4e6394dd49ae3193ec591778ed12052b16ac85bd30aa341e5f724d022024e495b752469d8648ef010658a848c0acfc5a10cdb0b328749807869c7764f7",
+      "asset":{
+         "gps":[
+            {
+               "timestamp":1583475939,
+               "latitude":"53.535352",
+               "longitude":"-113.277912",
+               "human":"2020-03-06T06:25:39.000Z"
+            },
+            {
+               "timestamp":1583475999,
+               "latitude":"53.535400",
+               "longitude":"-113.277944",
+               "human":"2020-03-06T06:26:39.000Z"
+            }
+         ],
+         "sessionId":"dd2691b9d5990f7ec03349fee853154f15ee7416af6784d31a66f5c7224d6061",
+         "containsRefund":true,
+         "gpsCount":2,
+         "rideDuration":60
+      },
+      "confirmations":614893,
+      "timestamp":{
+         "epoch":11481664,
+         "unix":1583476004,
+         "human":"2020-03-06T06:26:44.856Z"
+      },
+      "nonce":"109"
+   }
+  }
+********************************************************************************/
 void SendTransaction_RentalFinish() {
 
-  walletNonce_Uint64 = walletNonce_Uint64 + 1;      //If the send fails then we need to unwind this increment.
+  //--------------------------------------------
+  // Retrieve Wallet Nonce from blockchain before sending transaction
+  getWallet();
 
- // static const uint8_t session_SHA256[32] = {1, 2, 3, 4, 5, 6, 5, 6, 5, 4, 5, 6, 5, 4, 5, 6, 7, 8, 9, 8, 7, 4, 5, 6, 7, 2, 1, 3, 4, 5, 6, 5};
+  //--------------------------------------------
+  // increment the current nonce.
+  // note: If the send fails then we need to unwind this increment.
+  bridgechainWallet.walletNonce_Uint64 = bridgechainWallet.walletNonce_Uint64 + 1;
 
-  uint64_t endlat = (uint64_t) (scooterRental.endLatitude * 1000000);       
+  //--------------------------------------------
+  // convert the floating point representation to 64-bit integers
+  uint64_t endlat = (uint64_t) (scooterRental.endLatitude * 1000000);
   uint64_t endlon = (uint64_t) (scooterRental.endLongitude * 1000000);
 
   uint64_t startlat = (uint64_t) (scooterRental.startLatitude * 1000000);
   uint64_t startlon = (uint64_t) (scooterRental.startLongitude * 1000000);
 
-  Serial.println("Scooter Rental Finish GPS");
-  Serial.print("scooterRental.endLatitude ");
-  Serial.println(scooterRental.endLatitude, 6);       //type = real
-  Serial.print("scooterRental.endLongitude ");
-  Serial.println(scooterRental.endLongitude, 6);       //type = real
-
-  Serial.print("endlat ");
-  Serial.printf("%" PRIu64 "\n", endlat);   //PRIx64 to print in hexadecimal
-  Serial.println("");
-  Serial.print("endlon ");
-  Serial.printf("%" PRIu64 "\n", endlon);   //PRIx64 to print in hexadecimal
-  Serial.println("");
-  /*
-    strcpy(walletNonce, data["nonce"]);          //copy into global character array
-    walletNonce_Uint64 = strtoull(data["nonce"], NULL, 10);   //string to unsigned long long
-
-    Serial.print("Nonce: ");
-    Serial.println(walletNonce);
-    Serial.printf("%" PRIu64 "\n", walletNonce_Uint64);   //PRIx64 to print in hexadecimal
-  */
-
+  //--------------------------------------------
   // Use the Transaction Builder to make a transaction.
   auto bridgechainTransaction = builder::radians::ScooterRentalFinish(cfg)
-                                //.type(RADIANS_SCOOTER_RENTAL_FINISH_TYPE)
-                                //.senderPublicKey(identities::Keys::fromPassphrase(Passphrase).publicKey.data())
-                                // .recipientId("TLdYHTKRSD3rG66zsytqpAgJDX75qbcvgT")        //genesis_2
                                 .recipientId(scooterRental.senderAddress)
-                                .timestamp(scooterRental.startTime, 0)                //uint32_t
-                                .latitude(startlat, 0)          //uint64_t
-                                .longitude(startlon, 0)        //uint64_t
+                                .timestamp(scooterRental.startTime, 0)  //uint32_t
+                                .latitude(startlat, 0)                  //uint64_t
+                                .longitude(startlon, 0)                 //uint64_t
                                 .timestamp(scooterRental.endTime, 1)    //uint32_t
-                                //.latitude(15111111, 1)          //uint64_t
-                                //.longitude(-25222222, 1)        //uint64_t
-                                .latitude(endlat, 1)          //uint64_t
-                                .longitude(endlon, 1)        //uint64_t
-
-                                .sessionId(shaResult)       //QRcodeHash_Byte is type byte. This should be the same as uint8_t
-                                //bug: session id is 0000000
-                                //.sessionId(session_SHA256)       //QRcodeHash_Byte is type byte. I think this is the same as uint8_t
-
-                                .containsRefund(false)             //there seems to be a problem with this is false
+                                .latitude(endlat, 1)                    //uint64_t
+                                .longitude(endlon, 1)                   //uint64_t
+                                .sessionId(shaResult)                   //array of uint8_t ????
+                                .containsRefund(false)
                                 .fee(10000000)
-
-                                .nonce(walletNonce_Uint64)
-                                .amount(1)                        // bignumber error when amount = 0(regardless of the state of contains refund).  validation error when containsRefund = false.
-                                //.expiration(0)
-                                //  .secondSign(SecondPassphrase)
+                                .nonce(bridgechainWallet.walletNonce_Uint64)
+                                .amount(1)
                                 .sign(PASSPHRASE)
                                 .build();
 
+  Serial.println("\n Sending Rental Finish Transaction");
+
+  //--------------------------------------------
   // Create and Print the Json representation of the Transaction.
   const auto transactionJson = bridgechainTransaction.toJson();
   printf("\n\nBridgechain Transaction: %s\n\n", transactionJson.c_str());
 
-  bridgechainTransaction.sign(PASSPHRASE);      //Is this required????????
+  //--------------------------------------------
+  // Sign the transaction
+  bridgechainTransaction.sign(PASSPHRASE);
 
+  //--------------------------------------------
+  // Create the JSON bufffer
   char transactionsBuffer[1500];
   snprintf(&transactionsBuffer[0], 1500, "{\"transactions\":[%s]}", bridgechainTransaction.toJson().c_str());
   std::string jsonStr = transactionsBuffer;
+
+  //--------------------------------------------
+  // Send the transaction and display the response
   std::string sendResponse = connection.api.transactions.send(jsonStr);
   Serial.println(sendResponse.c_str());
+
+  //--------------------------------------------
+  // NOET: there should be some error handling here in case the transaction failed to send
 }
 
 
+/********************************************************************************
+ Send a standard BridgeChain transaction, tailored for a custom network.
 
+ NOTE: This project does not send any standard transactions so the following is not used.
 
-////////////////////////////////////////////////////////////////////////////////
-// Send a BridgeChain transaction, tailored for a custom network.
+********************************************************************************/
 void sendBridgechainTransaction() {
   // Use the Transaction Builder to make a transaction.
-  walletNonce_Uint64 = walletNonce_Uint64 + 1;
+  bridgechainWallet.walletNonce_Uint64 = bridgechainWallet.walletNonce_Uint64 + 1;
 
   char tempVendorField[80];
   strcpy(tempVendorField, "Ride End: ");
@@ -495,7 +553,7 @@ void sendBridgechainTransaction() {
                                 .vendorField(tempVendorField)
                                 .fee(TYPE_0_FEE)
                                 .sign(PASSPHRASE)
-                                .nonce(walletNonce_Uint64)
+                                .nonce(bridgechainWallet.walletNonce_Uint64)
                                 .amount(10000ULL)
                                 .expiration(0UL)
                                 //  .secondSign(SecondPassphrase)

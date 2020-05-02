@@ -7,20 +7,22 @@
 ********************************************************************************/
 void setup()
 {
-  Serial.begin(115200);         // Initialize Serial Connection for debug
+  Serial.begin(115200);             // Initialize Serial Connection for debug
   while ( !Serial && millis() < 20 );
 
-  pinMode(LED_PIN, OUTPUT);      // initialize on board LED control pin as an output.
-  digitalWrite(LED_PIN, HIGH);    // Turn LED on
+  pinMode(LED_PIN, OUTPUT);         // initialize on board LED control pin as an output.
+  digitalWrite(LED_PIN, HIGH);      // Turn LED on
 
-  //read the MAC address.
+  //--------------------------------------------
+  // read the MAC address. 
+  // currently this is not being used but likely will be used as unique identifier as part of the MQTT connect sequence
+  // Use this to get MAC address of ESP32 prior to WiFi being enabled.   
   uint8_t baseMac[6];
   esp_read_mac(baseMac, ESP_MAC_WIFI_STA);      // Get MAC address for WiFi station
   char baseMacChr[18] = {0};
-  //  sprintf(baseMacChr, "%02X:%02X:%02X:%02X:%02X:%02X", baseMac[0], baseMac[1], baseMac[2], baseMac[3], baseMac[4], baseMac[5]);      // B4:E6:2D:A8:EF:6D
-  sprintf(baseMacChr, "%02X%02X%02X%02X%02X%02X", baseMac[0], baseMac[1], baseMac[2], baseMac[3], baseMac[4], baseMac[5]);       // B4E62DA8EF6D
-  Serial.print("MAC Address:  ");
-  Serial.println(baseMacChr);       // B4:E6:2D:A8:EF:6D
+  sprintf(baseMacChr, "%02X%02X%02X%02X%02X%02X", baseMac[0], baseMac[1], baseMac[2], baseMac[3], baseMac[4], baseMac[5]);  // Example: B4E62DA8EF6D
+  Serial.print("MAC Address: ");
+  Serial.println(baseMacChr); 
 
   //--------------------------------------------
   // Optional Features of EspMQTTClient
@@ -33,6 +35,7 @@ void setup()
   //configure the 2.4" TFT display and the touchscreen controller
   setupDisplayTouchscreen();
 
+  //--------------------------------------------
   // Bootup Screen
   // Display Ark bitmap on middle portion of screen
   DisplayArkBitmap();
@@ -44,26 +47,23 @@ void setup()
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);      // 1 Hz update rate
   GPS.sendCommand(PGCMD_ANTENNA);                 // Request updates on antenna status, comment out to keep quiet
 
-  //show bootup screen for 500ms
-  delay(500);
+  delay(500);                         //show bootup screen for 500ms
 
   tft.setTextColor(WHITE);
   tft.setFont(&FreeSans9pt7b);
   tft.setCursor(50, 280);
-  tft.println("Connecting to WiFi");
+  tft.println("Connecting to WiFi");  // display WiFi connect message
   tft.setCursor(70, 300);
   tft.println(WIFI_SSID);
 
-  // show bootup screen for additional 1200ms
-  delay(1200);
+  delay(1200);                         // show bootup screen for additional 1200ms
 
-  rentalStatus = "Broken";
+  scooterRental.rentalStatus = "Broken";  // set default scooter status displayed in Analytics Dashboard
 
-  InitStatusBar();        //display the status bar on the bottom of the screen
-  UpdateBatteryStatus();
-
-  GPSSerial.println(PMTK_Q_RELEASE);// request firmware version from GPS module
-
+  InitStatusBar();                    // display the status bar on the bottom of the screen
+  UpdateBatteryStatus();              // update battery voltage on the status bar
+   
+  GPSSerial.println(PMTK_Q_RELEASE);  // request firmware version from GPS module. This can be used as a way to detect if GPS module is connected and operational.
 }
 
 
@@ -75,11 +75,13 @@ void onConnectionEstablished() {
 
   if (!initialConnectionEstablished_Flag) {     //execute this the first time we have established a WiFi and MQTT connection after powerup
     initialConnectionEstablished_Flag = true;
+    
     //--------------------------------------------
     //  sync local time to NTP server
-    // https://github.com/esp8266/Arduino/issues/4749  check this to see how to make this better
     configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
 
+    //--------------------------------------------
+    //  display IP address
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
 
