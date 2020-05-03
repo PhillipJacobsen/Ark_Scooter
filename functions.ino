@@ -78,7 +78,7 @@ void build_MQTTpacket() {
     NodeRedMQTTpacket.latitude = 53.53583908;         //default location
     NodeRedMQTTpacket.longitude = -113.27674103;      //default location
     NodeRedMQTTpacket.satellites = 0;                 //number of satellites
-    NodeRedMQTTpacket.speedKPH = 0;                   //speed 
+    NodeRedMQTTpacket.speedKPH = 0;                   //speed
   }
 }
 
@@ -139,18 +139,18 @@ void send_MQTTpacket() {
       buf += F("\"");
       buf += F("}");
 
-      printf("\n\nSignature from Signed Message: %s\n", signatureString.c_str());
+
+      Serial.println("\n=================================");
+      Serial.println("Signing MQTT packet");
+      printf("Signature from Signed Message: %s\n", signatureString.c_str());
       const bool isValid = message.verify();        //verify the signature
-      printf("\nMessage Signature is valid: %s\n\n", isValid ? "true" : "false");
-      Serial.println("message that was signed: ");
+      printf("Message Signature is valid? %s\n", isValid ? "true" : "false");
+      Serial.print("message that was signed: ");
       Serial.println(msgbackup);
 
-
-      Serial.println();
-      Serial.print("send_MQTTpacket: ");
+      Serial.print("Sending MQTT packet: ");
       Serial.println(buf);
       WiFiMQTTclient.publish(MQTT_Base_Topic, buf.c_str());
-
     }
   }
 }
@@ -171,10 +171,12 @@ void UpdateDisplayTime() {
 
     if ((timeinfo->tm_min) != prevDisplayMinute) { //update the display only if time has changed (updates every minute)
       prevDisplayMinute = timeinfo->tm_min;
-      Serial.print("time is: ");
+      Serial.println("\n=================================");
+      Serial.print("Unix epoch time: ");
       Serial.println(now);
       char formattedTime [30];
       strftime (formattedTime, 30, "%R", timeinfo);
+      Serial.print("24hr time: ");
       Serial.println(formattedTime);
 
       tft.setFont(&FreeSans9pt7b);
@@ -369,18 +371,20 @@ void clearMainScreen() {
   Load data from nonvolatile memory into RAM.
   Note. ESP32 has FLASH memory(not EEPROM) however the standard high level Arduino EEPROM arduino functions work.
 ********************************************************************************/
-void loadEEPROM() {
+int loadEEPROM() {
   EEPROM.begin(512);
-  EEPROM.get(0, lastRXpage_eeprom);
+  int RXpage = 0;   
+  EEPROM.get(0, RXpage);
   char ok[2 + 1];
-  EEPROM.get(0 + sizeof(lastRXpage_eeprom), ok);
+  EEPROM.get(0 + sizeof(RXpage), ok);
   EEPROM.end();
   if (String(ok) != String("OK")) {
-    lastRXpage_eeprom = 0;
+    RXpage = 0;
   }
   Serial.println("Recovered credentials from FLASH");
   Serial.println(ok);
-  Serial.println(lastRXpage_eeprom);
+  Serial.println(RXpage);
+  return RXpage;
 }
 
 
@@ -389,11 +393,11 @@ void loadEEPROM() {
   Note. ESP32 has FLASH memory(not EEPROM) however the standard high level Arduino EEPROM arduino functions work.
   EEPROM.write does not write to flash immediately, instead you must call EEPROM.commit() whenever you wish to save changes to flash. EEPROM.end() will also commit, and will release the RAM copy of EEPROM contents.
 ********************************************************************************/
-void saveEEPROM() {
+void saveEEPROM(int RXpage) {
   EEPROM.begin(512);
-  EEPROM.put(0, lastRXpage_eeprom);
+  EEPROM.put(0, RXpage);
   char ok[2 + 1] = "OK";
-  EEPROM.put(0 + sizeof(lastRXpage_eeprom), ok);
+  EEPROM.put(0 + sizeof(RXpage), ok);
   EEPROM.commit();
   EEPROM.end();
   Serial.println("Saved credentials to FLASH");
