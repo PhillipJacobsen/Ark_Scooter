@@ -14,15 +14,26 @@ void setup()
   digitalWrite(LED_PIN, HIGH);      // Turn LED on
 
   //--------------------------------------------
-  // read the MAC address. 
+  // If you are reprogramming a new wallet address into an existing ESP32 module you need to erase the Flash which stores the number of received transactions in the wallet.
+  // 1. Define ERASE_FLASH in secrets.h
+  // 2. Download firmware
+  // 3. undefine ERASE_FLASH and reprogram
+#ifdef ERASE_FLASH
+  clearEEPROM();
+  while (true) {
+  }
+#endif
+
+  //--------------------------------------------
+  // read the MAC address.
   // currently this is not being used but likely will be used as unique identifier as part of the MQTT connect sequence
-  // Use this to get MAC address of ESP32 prior to WiFi being enabled.   
+  // Use this to get MAC address of ESP32 prior to WiFi being enabled.
   uint8_t baseMac[6];
   esp_read_mac(baseMac, ESP_MAC_WIFI_STA);      // Get MAC address for WiFi station
   char baseMacChr[18] = {0};
   sprintf(baseMacChr, "%02X%02X%02X%02X%02X%02X", baseMac[0], baseMac[1], baseMac[2], baseMac[3], baseMac[4], baseMac[5]);  // Example: B4E62DA8EF6D
   Serial.print("MAC Address: ");
-  Serial.println(baseMacChr); 
+  Serial.println(baseMacChr);
 
   //--------------------------------------------
   // Optional Features of EspMQTTClient
@@ -62,7 +73,7 @@ void setup()
 
   InitStatusBar();                        // display the status bar on the bottom of the screen
   UpdateBatteryStatus();                  // update battery voltage on the status bar
-   
+
   GPSSerial.println(PMTK_Q_RELEASE);      // request firmware version from GPS module. This can be used as a way to detect if GPS module is connected and operational.
 }
 
@@ -75,7 +86,7 @@ void onConnectionEstablished() {
 
   if (!initialConnectionEstablished_Flag) {     //execute this the first time we have established a WiFi and MQTT connection after powerup
     initialConnectionEstablished_Flag = true;
-    
+
     //--------------------------------------------
     //  sync local time to NTP server
     configTime(TIME_ZONE * 3600, DST, "pool.ntp.org", "time.nist.gov");
@@ -132,7 +143,7 @@ void onConnectionEstablished() {
     //--------------------------------------------
     //  Update clock on TFT display
     UpdateDisplayTime();
-    
+
   }
 
   else {

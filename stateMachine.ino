@@ -230,16 +230,15 @@ void StateMachine() {
           Serial.println("=================================");
           Serial.println("Rental Structure: ");
           Serial.println(scooterRental.senderAddress);
-          Serial.println(scooterRental.payment);
+          //Serial.println(scooterRental.payment);
           Serial.printf("%" PRIu64 "\n", scooterRental.payment_Uint64);   //PRIx64 to print in hexadecimal
           Serial.println(scooterRental.rentalRate);
           Serial.println(scooterRental.startLatitude, 6);     //this prints out only 6 decimal places.  It has 8 decimals
           Serial.println(scooterRental.startLongitude, 6);
           Serial.println(scooterRental.endLatitude, 6);
           Serial.println(scooterRental.endLongitude, 6);
-          Serial.println(scooterRental.vendorField);
+          //Serial.println(scooterRental.vendorField);
           Serial.println("=================================");
-          Serial.println("");
 
           //  Serial.print("endlat ");
           //  Serial.printf("%" PRIu64 "\n", endlat);   //PRIx64 to print in hexadecimal
@@ -404,7 +403,7 @@ void GenerateDisplay_QRcode () {
 
   Serial.println("\n=================================");
   Serial.println("Generating QRcode");
-  
+
   //display the value to be hashed
   Serial.print("random value to be Hashed: ");
   Serial.println(SHApayload);
@@ -415,7 +414,6 @@ void GenerateDisplay_QRcode () {
   for (int i = 0; i < sizeof(scooterRental.sessionID_QRcode_byte); i++) {
     char str[3];
     sprintf(str, "%02x", (int)scooterRental.sessionID_QRcode_byte[i]);
-    //           Serial.print(str);
     strcat(shaResult_char, str);
   }
   //display the resulting SHA256
@@ -424,10 +422,6 @@ void GenerateDisplay_QRcode () {
   //end sha256
 
   strcat(QRcodeText, "?hash=");
-  //hardcode Hash for testing
-  //strcat(QRcodeText, "1234300000000000000000000000000000000000000000000000000000000000");     //append hash
-  //strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
-
   strcat(QRcodeText, shaResult_char);     //append hash to QRcode string
   strcpy(scooterRental.sessionID_QRcode, shaResult_char);    //stash hash away for use later in rental start transaction handler
 
