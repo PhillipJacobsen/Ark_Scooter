@@ -153,8 +153,11 @@ void onConnectionEstablished() {
     //  update WiFi and MQTT connection status bar
     UpdateWiFiConnectionStatus();     //update WiFi status bar
     UpdateMQTTConnectionStatus();     //update MQTT status bar
-
   }
+
+  //--------------------------------------------
+  // Publish MQTT packet 1 seconds after connecting to broker 
+  previousUpdateTime_MQTT_Publish = millis() - UpdateInterval_MQTT_Publish + 1000;  
 
 }
 
