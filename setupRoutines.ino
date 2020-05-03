@@ -38,7 +38,9 @@ void setup()
   //--------------------------------------------
   // Optional Features of EspMQTTClient
   //WiFiMQTTclient.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  // WiFiMQTTclient.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
+#ifdef ENABLE_WIRELESS_UPDATE
+  WiFiMQTTclient.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overwritten with enableHTTPWebUpdater("user", "password").
+#endif
   WiFiMQTTclient.enableLastWillMessage("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/lastwill", "{\"status\":\"Broken\"}");  // You can activate the retain flag by setting the third parameter to true
 
 

@@ -396,9 +396,6 @@ void UpdateBatteryStatus();
 void StateMachine();
 void UpdateRSSIStatus();
 void Generate_QRcode();
-//double convertDegMinToDecDeg_lat(float degMin);
-//double convertDegMinToDecDeg_long(float degMin);
-
 
 /********************************************************************************
   MAIN LOOP

@@ -59,3 +59,12 @@ constexpr uint64_t RENTAL_RATE_UINT64 = 61667ULL;     //.037RAD
 // 2. Download firmware
 // 3. undefine ERASE_FLASH and reprogram
 //#define ERASE_FLASH
+
+//--------------------------------------------
+// Wireless Firmware Updating
+// 1.to generate .bin firmware image go to "Export Compiled Binary" in the Arduino IDE's "Sketch" menu
+// 2. In Adduino IDE go to tools->Partition Scheme and set to: Minimal SPIFFS(Large APPS with OTA)
+// go to http://IPaddress   IPaddress of the ESP32 module is displayed on terminal after powerup.
+// enter MQTT_USERNAME and MQTT_PASSWORD
+//upload .bin file
+#define ENABLE_WIRELESS_UPDATE
