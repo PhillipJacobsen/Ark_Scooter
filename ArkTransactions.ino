@@ -237,7 +237,7 @@ int search_RentalStartTx() {
 
     //  check to see if new new transaction has been received in wallet
     // lastRXpage is the page# of the last received transaction
-    int searchRXpage = lastRXpage + 1;
+    int searchRXpage = bridgechainWallet.lastRXpage + 1;
     const char* id;               //transaction ID
     const char* amount;           //transactions amount
     const char* senderAddress;    //transaction address of sender
@@ -253,21 +253,20 @@ int search_RentalStartTx() {
       Serial.println("\n=================================");
       Serial.println("Rental Start transaction was received");
 
-      lastRXpage++;             //increment received counter if rental start was received.
-      //lastRXpage_eeprom = lastRXpage;
-      saveEEPROM(lastRXpage);   //store the page in the Flash
+      bridgechainWallet.lastRXpage++;             //increment received counter if rental start was received.
+      saveEEPROM(bridgechainWallet.lastRXpage);   //store the page in the Flash
       
-      Serial.print("Received sessionId: ");
+      Serial.print("Received SessionID: ");
       Serial.println(asset_sessionId);
-      Serial.print("QRcodeHash: ");
-      Serial.println(QRcodeHash);
+      Serial.print("QR code SessionID: ");
+      Serial.println(scooterRental.sessionID_QRcode);
 
       //check to see if sessionID of new transaction matches the Hash embedded in QRcode that was displayed
-      if  (strcmp(asset_sessionId, QRcodeHash) == 0) {
+      if  (strcmp(asset_sessionId, scooterRental.sessionID_QRcode) == 0) {
         strcpy(scooterRental.senderAddress, senderAddress);           //copy into global character array
         strcpy(scooterRental.payment, amount);                        //copy into global character array
         scooterRental.payment_Uint64 = strtoull(amount, NULL, 10);    //convert string to unsigned long long global
-        strcpy(scooterRental.sessionID, asset_sessionId);             //copy into global character array
+        strcpy(scooterRental.sessionID_RentalStart, asset_sessionId);             //copy into global character array
 
         Serial.println("Received SessionID matched QR code SessionID");
         return 1;
@@ -396,9 +395,8 @@ int GetTransaction_RentalStart(const char *const address, int page, const char* 
     if (!((data_0["type"] == 500) && (data_0["typeGroup"] == 4000))) {
 
       Serial.println("\nTransaction I don't care about was received");
-      lastRXpage++;   //increment global receive transaction counter.
-      //lastRXpage_eeprom = lastRXpage;
-      saveEEPROM(lastRXpage);   //store the page in the Flash
+      bridgechainWallet.lastRXpage++;              //increment global receive transaction counter.
+      saveEEPROM(bridgechainWallet.lastRXpage);   //store the page in the Flash
       return 0;
     }
     //--------------------------------------------
@@ -502,7 +500,7 @@ void SendTransaction_RentalFinish() {
                                 .timestamp(scooterRental.endTime, 1)    //uint32_t
                                 .latitude(endlat, 1)                    //uint64_t
                                 .longitude(endlon, 1)                   //uint64_t
-                                .sessionId(shaResult)                   //array of uint8_t ????
+                                .sessionId(scooterRental.sessionID_QRcode_byte)   //array of uint8_t 
                                 .containsRefund(false)
                                 .fee(10000000)
                                 .nonce(bridgechainWallet.walletNonce_Uint64)
@@ -551,7 +549,7 @@ void sendBridgechainTransaction() {
 
   char tempVendorField[80];
   strcpy(tempVendorField, "Ride End: ");
-  strcat(tempVendorField, QRcodeHash);
+  strcat(tempVendorField, scooterRental.sessionID_QRcode);
 
   auto bridgechainTransaction = builder::Transfer(cfg)
                                 // .type(TYPE_0_TYPE)

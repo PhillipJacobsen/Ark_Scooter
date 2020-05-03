@@ -101,18 +101,18 @@ void onConnectionEstablished() {
 
     //--------------------------------------------
     //  Copy data stored in Flash into RAM
-    lastRXpage = loadEEPROM();                 //load page number from eeprom
-    if (lastRXpage < 1) {
-      lastRXpage = 0;
+    bridgechainWallet.lastRXpage = loadEEPROM();                 //load page number from eeprom
+    if (bridgechainWallet.lastRXpage < 1) {
+      bridgechainWallet.lastRXpage = 0;
     }
 
     //--------------------------------------------
     //  Parse the wallet looking for the last received transaction
-    lastRXpage = getMostRecentReceivedTransaction(lastRXpage + 1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
+    bridgechainWallet.lastRXpage = getMostRecentReceivedTransaction(bridgechainWallet.lastRXpage + 1);  //lastRXpage is equal to the page number of the last received transaction in the wallet.
 
     //TODO.  Sometimes I find that the API reads will return with no data even if there are additional transactions to be read
     // I think this occurs when the WiFi connection or my network is a bit flakey.
-    saveEEPROM(lastRXpage);
+    saveEEPROM(bridgechainWallet.lastRXpage);
 
 
     //--------------------------------------------

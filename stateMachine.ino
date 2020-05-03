@@ -399,7 +399,7 @@ void GenerateDisplay_QRcode () {
   mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
   mbedtls_md_starts(&ctx);
   mbedtls_md_update(&ctx, (const unsigned char *) SHApayload, payloadLength);
-  mbedtls_md_finish(&ctx, shaResult);   //shaResult is global variable of type bytes
+  mbedtls_md_finish(&ctx, scooterRental.sessionID_QRcode_byte);   //shaResult is global variable of type bytes
   mbedtls_md_free(&ctx);
 
   Serial.println("\n=================================");
@@ -412,9 +412,9 @@ void GenerateDisplay_QRcode () {
   //convert the SHAresult which is an array of bytes into an array of characters so we can send to terminal display
   char shaResult_char[64 + 1];
   shaResult_char[0] = '\0';
-  for (int i = 0; i < sizeof(shaResult); i++) {
+  for (int i = 0; i < sizeof(scooterRental.sessionID_QRcode_byte); i++) {
     char str[3];
-    sprintf(str, "%02x", (int)shaResult[i]);
+    sprintf(str, "%02x", (int)scooterRental.sessionID_QRcode_byte[i]);
     //           Serial.print(str);
     strcat(shaResult_char, str);
   }
@@ -429,7 +429,7 @@ void GenerateDisplay_QRcode () {
   //strcpy(QRcodeHash, "1234300000000000000000000000000000000000000000000000000000000000");    //stash hash away for use later in rental start transaction
 
   strcat(QRcodeText, shaResult_char);     //append hash to QRcode string
-  strcpy(QRcodeHash, shaResult_char);    //stash hash away for use later in rental start transaction handler
+  strcpy(scooterRental.sessionID_QRcode, shaResult_char);    //stash hash away for use later in rental start transaction handler
 
   strcat(QRcodeText, "&rate=");
   strcat(QRcodeText, RENTAL_RATE_STR);

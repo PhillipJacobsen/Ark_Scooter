@@ -210,8 +210,8 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);         //create Touchscreen
 #define SpeedGreenDarker 0x0760       // rgb(0, 236, 0)
 #define QRCODE_DARK_PIXEL_COLOR 0xF1A7
 
-int CursorX = 0;         //used to store current cursor position of the display
-int CursorY = 0;         //used to store current cursor position of the display
+//int CursorX = 0;         //used to store current cursor position of the display
+//int CursorY = 0;         //used to store current cursor position of the display
 
 
 
@@ -230,8 +230,8 @@ const int QRcode_Version = 10;    // set the version (range 1->40)
 const int QRcode_ECC = 1;         // set the Error Correction level (range 0-3) or symbolic (ECC_LOW, ECC_MEDIUM, ECC_QUARTILE and ECC_HIGH)
 QRCode qrcode;                    // Create the QR code object
 
-char QRcodeHash[64 + 1];
-byte shaResult[32];
+
+
 
 /********************************************************************************
   Time Library
@@ -357,7 +357,9 @@ struct rental {
   float endLatitude;
   float endLongitude;
   char vendorField[256 + 1];
-  char sessionID[64 + 1];
+  char sessionID_RentalStart[64 + 1];
+  char sessionID_QRcode[64 + 1]; 
+  byte sessionID_QRcode_byte[32];
 };
 struct rental scooterRental;
 
@@ -369,16 +371,10 @@ struct wallet {
   uint64_t walletBalance_Uint64 = 0ULL;   //current balance
   char walletNonce[64 + 1];               //current nonce
   uint64_t walletNonce_Uint64 = 1ULL;     //current nonce
-  
+  int lastRXpage = 0;                    //page number of the last received transaction in wallet
 };
 struct wallet bridgechainWallet;
-
-
-int lastRXpage = 0;                       //page number of the last received transaction in wallet
-//int lastRXpage_eeprom = 0;              //page number of the last received transaction in wallet(mirror of eeprom value)
-
-
-
+                 
 
 /********************************************************************************
   State Machine
