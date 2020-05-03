@@ -18,7 +18,7 @@ double convertDegMinToDecDeg_lat (float degMin) {
   degMin = (int) ( degMin / 100 );
   decDeg = degMin + ( min / 60 );
 
-  if ( decDeg == 'S') {
+  if ( GPS.lat == 'S') {
     decDeg = (0 - decDeg);
   }
   return decDeg;
@@ -39,7 +39,7 @@ double convertDegMinToDecDeg_lon (float degMin) {
   degMin = (int) ( degMin / 100 );
   decDeg = degMin + ( min / 60 );
 
-  if ( decDeg == 'W') {
+  if ( GPS.lon == 'W') {
     decDeg = (0 - decDeg);
   }
   return decDeg;
@@ -70,6 +70,9 @@ void build_MQTTpacket() {
     NodeRedMQTTpacket.satellites = GPS.satellites;      //number of satellites
     NodeRedMQTTpacket.speedKPH = GPS.speed * 1.852;     //convert knots to kph
     //we need to do some fomatting of the GPS signal so it is suitable for mapping software on Thingsboard
+     NodeRedMQTTpacket.latitude = 53.53583908;         //default location
+    NodeRedMQTTpacket.longitude = -113.27674103;      //default location
+       
     NodeRedMQTTpacket.latitude = convertDegMinToDecDeg_lat(GPS.latitude);
     NodeRedMQTTpacket.longitude = convertDegMinToDecDeg_lon(GPS.longitude);
   }
