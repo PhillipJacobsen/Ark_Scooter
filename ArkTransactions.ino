@@ -537,12 +537,16 @@ void SendTransaction_RentalFinish() {
 }
 
 
+
+
 /********************************************************************************
   Send a standard BridgeChain transaction, tailored for a custom network.
 
   NOTE: This project does not send any standard transactions so the following is not used.
 
 ********************************************************************************/
+/*
+
 void sendBridgechainTransaction() {
   // Use the Transaction Builder to make a transaction.
   bridgechainWallet.walletNonce_Uint64 = bridgechainWallet.walletNonce_Uint64 + 1;
@@ -576,3 +580,4 @@ void sendBridgechainTransaction() {
   std::string sendResponse = connection.api.transactions.send(jsonStr);
   Serial.println(sendResponse.c_str());
 }
+*/

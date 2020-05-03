@@ -91,11 +91,9 @@ void send_MQTTpacket() {
     previousUpdateTime_MQTT_Publish += UpdateInterval_MQTT_Publish;
 
     if (WiFiMQTTclient.isMqttConnected()) {
-      build_MQTTpacket();
-
-      //NOTE!  I think sprintf() is better to use here. update when you have a chance
+      build_MQTTpacket();        
       // example: {"status":"Rented","fix":1,"lat":53.53849358,"lon":-113.27589669,"speed":0.74,"sat":5,"bal":99990386752,"bat":96}
-      String  buf;
+      String  buf;    //NOTE!  I think sprintf() is better to use here. update when you have a chance
       buf += F("{");
       buf += F("\"status\":");
       buf += F("\"");
@@ -125,7 +123,7 @@ void send_MQTTpacket() {
       //const char * msg = buf.substring( 1, buf.length() ).c_str();
       //     const char * msg = buf.c_str();
 
-      char msgbackup[700 + 1];
+      char msgbackup[500 + 1];
       strcpy(msgbackup, msg);
 
       //sign the packet using Private Key
@@ -373,7 +371,7 @@ void clearMainScreen() {
 ********************************************************************************/
 int loadEEPROM() {
   EEPROM.begin(512);
-  int RXpage = 0;   
+  int RXpage = 0;
   EEPROM.get(0, RXpage);
   char ok[2 + 1];
   EEPROM.get(0 + sizeof(RXpage), ok);
@@ -381,7 +379,7 @@ int loadEEPROM() {
   if (String(ok) != String("OK")) {
     RXpage = 0;
   }
-  Serial.println("Recovered credentials from FLASH");
+  Serial.println("Recovered RXpage from FLASH");
   Serial.println(ok);
   Serial.println(RXpage);
   return RXpage;
@@ -400,5 +398,21 @@ void saveEEPROM(int RXpage) {
   EEPROM.put(0 + sizeof(RXpage), ok);
   EEPROM.commit();
   EEPROM.end();
-  Serial.println("Saved credentials to FLASH");
+  Serial.println("Saved RXpage to FLASH");
+}
+
+/********************************************************************************
+  Clear data in nonvolatile memory.
+  Note. ESP32 has FLASH memory(not EEPROM) however the standard high level Arduino EEPROM arduino functions work.
+  EEPROM.write does not write to flash immediately, instead you must call EEPROM.commit() whenever you wish to save changes to flash. EEPROM.end() will also commit, and will release the RAM copy of EEPROM contents.
+********************************************************************************/
+void clearEEPROM() {
+  EEPROM.begin(512);
+  EEPROM.put(0, 0);
+  EEPROM.put(1, 0);
+  EEPROM.put(2, 0);
+  EEPROM.put(3, 0);
+  EEPROM.commit();
+  EEPROM.end();
+  Serial.println("cleared FLASH");
 }

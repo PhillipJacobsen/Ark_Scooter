@@ -64,7 +64,6 @@
                             Misc I/O Definitions
 ********************************************************************************/
 const int LED_PIN = 13;     //LED integrated on Adafruit HUZZAH32 module
-
 const int BAT_PIN = 35;     //ADC connected to Battery input pin (A13 = 35;)
 //const int DAC1 = 25;      //declared in \packages\esp32\hardware\esp32\1.0.4\variants\feather_esp32/pins_arduino.h
 //const int DAC2 = 26;
@@ -209,11 +208,6 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);         //create Touchscreen
 #define SpeedGreen 0xAFF5             // rgb(170, 255, 170)
 #define SpeedGreenDarker 0x0760       // rgb(0, 236, 0)
 #define QRCODE_DARK_PIXEL_COLOR 0xF1A7
-
-//int CursorX = 0;         //used to store current cursor position of the display
-//int CursorY = 0;         //used to store current cursor position of the display
-
-
 
 /********************************************************************************
     QRCode by Richard Moore version 0.0.1
