@@ -43,8 +43,8 @@ void setup()
 #endif
   WiFiMQTTclient.enableLastWillMessage("scooter/TRXA2NUACckkYwWnS9JRkATQA453ukAcD1/lastwill", "{\"status\":\"Broken\"}");  // You can activate the retain flag by setting the third parameter to true
 
- // WiFiMQTTclient.enableMQTTConnect();               //experimental - requires modified MQTT library
- // WiFiMQTTclient.enableMACaddress_for_ClientName(); //experimental - requires modified MQTT library
+  WiFiMQTTclient.enableMQTTConnect();               //experimental - requires modified MQTT library
+  WiFiMQTTclient.enableMACaddress_for_ClientName(); //experimental - requires modified MQTT library
 
   //--------------------------------------------
   //configure the 2.4" TFT display and the touchscreen controller
