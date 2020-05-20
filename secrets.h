@@ -8,13 +8,10 @@
   #define WIFI_PASS         "*****"
 */
 
-//h
-#define WIFI_SSID         "TELUS0357"
-#define WIFI_PASS         "77kmm7r7hz"
 
-//w
-//#define WIFI_SSID         "TELUS6428"
-//#define WIFI_PASS         "3mmkgc9gn2"
+#define WIFI_SSID         "xxxxxx"
+#define WIFI_PASS         "xxxxxx"
+
 
 //configure MQTT Broker.
 #define MQTT_SERVER_IP    "40.85.223.207"
