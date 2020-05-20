@@ -502,7 +502,7 @@ void SendTransaction_RentalFinish() {
                                 .longitude(endlon, 1)                   //uint64_t
                                 .sessionId(scooterRental.sessionID_QRcode_byte)   //array of uint8_t 
                                 .containsRefund(false)
-                                .fee(10000000)
+                                .fee(1)
                                 .nonce(bridgechainWallet.walletNonce_Uint64)
                                 .amount(1)
                                 .sign(PASSPHRASE)

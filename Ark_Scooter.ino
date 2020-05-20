@@ -24,27 +24,10 @@
 
     Ark Library Verions
     Tested with:
-    Ark-CPP-client v1.4.0-arduino
-    change from v1.3->v1.4: added 2.6 endpoint
-    https://github.com/ArkEcosystem/cpp-client/pull/159
-
-    *****************  this is Simons version with Radians transaction support. *******************8
-    https://github.com/sleepdefic1t/cpp-crypto/tree/chains/radians
-
-    Ark-CPP-crypto v1.0.0
-    bipp66 0.3.2
-    https://github.com/sleepdefic1t/bip66
-  See this file for library dependencies
-  https://github.com/ArkEcosystem/cpp-crypto/blob/master/library.json#L23
-
-  https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
-
-  //see this library file for the radians specific transactions
-  D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\transactions\types\radians
-  D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\test\transactions\types\radians
+    Ark-CPP-client v1.4.1-arduino
 
 
-  see this file for some string to number conversion helpers D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\utils\str.hpp
+
 
 ********************************************************************************/
 
@@ -225,8 +208,6 @@ const int QRcode_ECC = 1;         // set the Error Correction level (range 0-3) 
 QRCode qrcode;                    // Create the QR code object
 
 
-
-
 /********************************************************************************
   Time Library
   required for internal clock to syncronize with NTP server.
@@ -246,7 +227,6 @@ time_t prevDisplayTime = 0;           // this is used if you want to update cloc
 
 //time variables use for clock on the display
 int prevDisplayMinute = 0;            // this is used if you want to update clock every minute
-
 
 
 /********************************************************************************
@@ -290,14 +270,25 @@ mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;      //select SHA256 algorithm
 
 /********************************************************************************
     Ark Crypto Library (version 1.0.0)
-  ================  NOTE: Version 1.1.0 is available however I have not yet tested with it ===========
-      https://github.com/ArkEcosystem/Cpp-Crypto
-    NOTE:
+
+    Ark-CPP-crypto v1.0.0
+    *****************  this is forked version with Radians transaction support. *******************8
+     https://github.com/sleepdefic1t/cpp-crypto/tree/chains/radians
+
+    See this file for library dependencies
+    https://github.com/ArkEcosystem/cpp-crypto/blob/master/library.json#L23
+  
+    BIP66 by Ark Ecosystem Ver 0.3.2
+    https://github.com/sleepdefic1t/bip66
+
+    bcl by Project Nayuki Ver 0.0.5
+    https://github.com/sleepdefic1t/bcl/releases/tag/0.0.5
+
+    see this file for some string to number conversion helpers D:\Documents\Arduino\libraries\Ark-Cpp-Crypto\src\utils\str.hpp
+    
     If this Repo was Cloned from github, run the 'ARDUINO_IDE.sh' script first.
     It's in the 'extras/' folder and extends compatability to the Arduino IDE.
 
-    Bip66 Library (version 0.3.2)
-      https://github.com/sleepdefic1t/bip66
 ********************************************************************************/
 #include <arkCrypto.h>
 #include "arkCrypto_esp32.h"  // This is a helper header that includes all the Misc ARK C++ Crypto headers required for this sketch
@@ -323,9 +314,7 @@ const Configuration cfg(BridgechainNetwork);
 
 
 /********************************************************************************
-  Ark Client Library (version 1.4.0)
-  ================  NOTE: Version 1.4.1 is available however I have not yet tested with it ===========
-  https://github.com/ArkEcosystem/cpp-client
+  Ark Client Library (version 1.4.1)
 
 ********************************************************************************/
 #include <arkClient.h>
@@ -352,7 +341,7 @@ struct rental {
   float endLongitude;
   char vendorField[256 + 1];
   char sessionID_RentalStart[64 + 1];
-  char sessionID_QRcode[64 + 1]; 
+  char sessionID_QRcode[64 + 1];
   byte sessionID_QRcode_byte[32];
 };
 struct rental scooterRental;
@@ -368,7 +357,7 @@ struct wallet {
   int lastRXpage = 0;                    //page number of the last received transaction in wallet
 };
 struct wallet bridgechainWallet;
-                 
+
 
 /********************************************************************************
   State Machine
